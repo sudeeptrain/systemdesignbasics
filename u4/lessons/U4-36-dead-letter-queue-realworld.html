@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dead Letter Queue — The Returns Bin · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.qcol{position:absolute; left:38%; top:24%; width:46px; height:54%; transform:translateX(-50%); border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:1}
+.qfill{position:absolute; left:0; right:0; bottom:0; height:0%; background:linear-gradient(180deg,#6fb1ff,#1f6fe6); transition:height .3s}
+.dlq{position:absolute; left:74%; top:70%; width:60px; height:40px; transform:translate(-50%,-50%); border:1.5px dashed var(--bad); border-radius:8px; background:#fdeceb; display:flex; align-items:center; justify-content:center; font-size:11px; font-family:var(--fmono); color:var(--bad); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Dead Letter Queue — The Returns Bin</h1>
+  <p class="subtitle">At a sorting office, most parcels get delivered — but some have a smudged or wrong address and keep coming back. Re-attempting one forever jams the whole line. So it's set aside in a 'returns' bin: the good parcels keep moving, and a clerk sorts out the problem ones later.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Delivered OK</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">On the belt</div><div class="stat-v" id="statDepth">0</div></div>
+  <div class="stat"><div class="stat-k">In returns bin</div><div class="stat-v" id="statDLQ">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:40%"><div class="box sm">📤</div><div class="lbl"><span class="k">Drop-off</span></div></div>
+<div class="qcol"><div class="qfill" id="qfill"></div></div>
+<div class="nlbl" style="left:38%;top:82%">sorting belt</div>
+<div class="node abs" data-show="1" style="left:60%;top:40%"><div class="box sm consumer">🧑‍🏭</div><div class="lbl"><span class="k">Sorter</span></div></div>
+<div class="dlq" id="dlqbox">📦 returns: 0</div>
+<div class="acts">
+  <button class="act bad" id="actPoison">📛 Drop a bad-address parcel</button>
+  <button class="act" id="actInspect">🔍 Check the returns bin</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let queue=[], done=0, dlq=0, running=false, busy=false;
+  const elD=document.getElementById('statDone'), elDepth=document.getElementById('statDepth'), elDLQ=document.getElementById('statDLQ'), qfill=document.getElementById('qfill'), dlqbox=document.getElementById('dlqbox');
+  const consumerEl=scene.querySelector('.consumer');
+  function setDepth(){ elDepth.textContent=queue.length; qfill.style.height=Math.min(100,queue.length*10)+'%'; }
+  function enqueue(poison){ queue.push({poison:!!poison, tries:0}); setDepth();
+    const d=document.createElement('div'); d.className='dot'+(poison?' fail':''); d.style.left='13%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='38%'; }); setTimeout(()=>d.remove(),leg+100);
+  }
+  function consume(){ if(document.hidden||busy||!queue.length) return; busy=true; const m=queue[0];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='38%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='60%'; });
+    setTimeout(()=>{ if(consumerEl){consumerEl.classList.add('busy'); setTimeout(()=>consumerEl.classList.remove('busy'),200);}
+      if(m.poison){ m.tries++; d.classList.add('fail');
+        if(m.tries>=3){ queue.shift(); setDepth(); dlq++; elDLQ.textContent=dlq; elDLQ.className='stat-v warn'; dlqbox.textContent='📦 returns: '+dlq; dlqbox.style.boxShadow='0 0 0 4px rgba(216,58,46,.18)'; setTimeout(()=>dlqbox.style.boxShadow='',300);
+          d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='74%'; d.style.top='70%'; setTimeout(()=>d.remove(),leg); }
+        else { setTimeout(()=>d.remove(),300); }
+        busy=false; return; }
+      queue.shift(); setDepth(); done++; elD.textContent=done; d.classList.add('done'); d.style.left='74%'; setTimeout(()=>d.remove(),leg); busy=false;
+    }, leg);
+  }
+  function poison(){ enqueue(true); }
+  function inspect(){ dlqbox.style.boxShadow='0 0 0 5px rgba(216,58,46,.25)'; setTimeout(()=>dlqbox.style.boxShadow='',500); }
+  function loop(){ if(!running)return; if(Math.random()<0.6) enqueue(false); consume(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actPoison').onclick=poison;
+  document.getElementById('actInspect').onclick=inspect;
+  setDepth(); running=true; loop();
+  return {enqueue,consume,poison,inspect};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A sorter pulls parcels off the belt and sends each on its way. Most are fine — but what about one the sorter simply <em>can't</em> deliver?", dur:4800},
+  {cap:"Maybe the address is smudged or doesn't exist. Every attempt to deliver it <b>fails</b> and it comes right back.", dur:4400, on(){SIM.poison();}},
+  {cap:"It returns to the <b>front of the belt</b>, gets tried again… and fails again. And again.", dur:4400},
+  {cap:"That one <b>bad parcel</b> now <span class='hl-bad'>blocks every good parcel behind it.</span> The whole line grinds to a halt.", dur:4800},
+  {cap:"The fix is a <b>returns bin</b> (a dead letter queue). After a few failed attempts, the problem parcel is <b>set aside</b> into it.", dur:4800, on(){SIM.poison();}},
+  {cap:"With the troublemaker off the belt, the <span class='hl-good'>good parcels move again.</span> One bad address no longer stops everything.", dur:4600},
+  {cap:"The set-aside parcels aren't thrown out — they wait in the returns bin for a <b>clerk to inspect</b>, fix the address, and re-send.", dur:4600, on(){SIM.inspect();}},
+  {cap:"It's also a warning sign: a returns bin that keeps filling up means something's systematically wrong and needs a look.", dur:4400},
+  {cap:"Your turn 👉 <b>📛 Drop bad-address parcels</b> and watch them divert to the returns bin, then <b>🔍 check</b> it.", dur:5200},
+  {cap:"A dead letter queue sets aside undeliverable items after a few tries — keeping the main line flowing while saving the failures for review.", dur:4800}
+]});
+
+</script>
+</body></html>

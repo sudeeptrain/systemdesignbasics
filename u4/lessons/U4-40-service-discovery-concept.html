@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service Discovery · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.reg{position:absolute; left:50%; top:24%; transform:translate(-50%,-50%); width:120px; text-align:center; font-family:var(--fmono); font-size:11px; padding:8px; border-radius:9px; border:1.5px solid var(--accent); background:#eef4ff; color:var(--accent-d); z-index:3; min-height:30px}
+.inst.dead .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Service Discovery</h1>
+  <p class="subtitle">In a dynamic system, service addresses change constantly — instances scale up, die, move. Hardcoding IPs breaks. Service discovery adds a registry (Consul, etcd): instances register themselves, and clients look up a healthy address on demand.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Lookups</div><div class="stat-v accent" id="statLookups">0</div></div>
+  <div class="stat"><div class="stat-k">Registered</div><div class="stat-v" id="statReg">2</div></div>
+  <div class="stat"><div class="stat-k">Stale addresses hit</div><div class="stat-v good" id="statStale">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:60%"><div class="box sm">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="reg" id="reg">📒 registry</div>
+<div id="insts"></div>
+<div class="acts">
+  <button class="act ok" id="actRegister">➕ Instance registers</button>
+  <button class="act" id="actLookup">🔎 Client looks up</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('insts'), reg=document.getElementById('reg');
+  let insts=[{alive:true},{alive:true}], lookups=0, running=false, rr=0;
+  const elL=document.getElementById('statLookups'), elR=document.getElementById('statReg');
+  function ys(n){const a=[],top=42,bot=86;for(let i=0;i<n;i++)a.push(n===1?64:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(insts.length);
+    insts.forEach((s,i)=>{ s.y=y[i]; const el=document.createElement('div'); el.className='node abs vis inst in-'+i+(s.alive?'':' dead'); el.style.left='82%'; el.style.top=y[i]+'%'; el.innerHTML='<div class="box sm">🖥️</div><div class="lbl"><span class="k">svc:'+(1000+i)+'</span></div>'; wrap.appendChild(el); s.el=el; });
+    reg.innerHTML='📒 registry<br>'+insts.filter(s=>s.alive).map((_,i)=>'svc:'+(1000+i)).join(' · '); elR.textContent=insts.filter(s=>s.alive).length; }
+  function register(){ if(insts.length<5){ insts.push({alive:true}); render(); const el=insts[insts.length-1].el; if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),400);}
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='82%'; d.style.top=insts[insts.length-1].y+'%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s, top .4s';d.style.left='50%';d.style.top='24%';}); setTimeout(()=>d.remove(),460); } }
+  function lookup(){ if(document.hidden) return; lookups++; elL.textContent=lookups;
+    // client → registry → healthy instance
+    const live=insts.filter(s=>s.alive); if(!live.length) return; const s=live[rr++%live.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='60%'; scene.appendChild(d);
+    const leg=400*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='24%'; });
+    setTimeout(()=>{ reg.style.boxShadow='0 0 0 3px rgba(31,111,230,.18)'; setTimeout(()=>reg.style.boxShadow='',250);
+      d.style.left='82%'; d.style.top=s.y+'%'; setTimeout(()=>{ d.classList.add('done'); if(s.el){s.el.classList.add('active'); setTimeout(()=>s.el.classList.remove('active'),200);} setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; lookup(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actRegister').onclick=register;
+  document.getElementById('actLookup').onclick=lookup;
+  render(); running=true; loop();
+  return {register,lookup,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In a microservices system, instances come and go constantly — autoscaling, crashes, redeploys. Their addresses keep changing.", dur:4600},
+  {cap:"Hardcoding \"call svc at 10.0.1.5\" is doomed: that instance may be gone in five minutes. You need something dynamic.", dur:4600},
+  {cap:"<b>Service discovery</b> adds a <b>registry</b> (like Consul or etcd) — a live phone book of which instances exist and are healthy.", dur:4600},
+  {cap:"When an instance starts, it <b>registers itself</b> with the registry: \"I'm svc:1002, here's my address, I'm healthy.\"", dur:4600, on(){SIM.register();}},
+  {cap:"When a client needs the service, it <b>asks the registry</b> for a current, healthy address — instead of guessing.", dur:4600, on(){SIM.lookup();}},
+  {cap:"The registry hands back a live instance, and the client connects. Watch a new instance get discovered automatically.", dur:4600, on(){SIM.register();SIM.lookup();}},
+  {cap:"The registry also <b>health-checks</b> instances and drops dead ones, so clients are never sent to a stale address.", dur:4600, on(){SIM.lookup();}},
+  {cap:"This is what lets a system scale and self-heal: new instances join the pool and start receiving traffic with zero manual config.", dur:4600},
+  {cap:"Your turn 👉 <b>➕ Register instances</b> and <b>🔎 look them up</b> to watch addresses resolve dynamically.", dur:5200},
+  {cap:"Service discovery replaces hardcoded addresses with a live registry: instances register, clients look up healthy ones on demand.", dur:4800}
+]});
+
+</script>
+</body></html>

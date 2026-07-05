@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCP Handshake — A Phone Call Greeting · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.msg{position:absolute; font-family:var(--fmono); font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; z-index:5; opacity:0; transition:.2s; white-space:nowrap}
+.msg.on{opacity:1}
+.state{position:absolute; left:50%; top:16%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:5}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">TCP Handshake — A Phone Call Greeting</h1>
+  <p class="subtitle">You don't start talking the instant a call connects. You say "Hi"; they say "Hi, can you hear me?"; you say "Yes, go ahead." Only then does the real conversation begin. TCP opens every connection with that exact three-step greeting.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Calls connected</div><div class="stat-v accent" id="statConns">0</div></div>
+  <div class="stat"><div class="stat-k">State</div><div class="stat-v" id="statState">not connected</div></div>
+  <div class="stat"><div class="stat-k">Words exchanged</div><div class="stat-v" id="statData">0</div></div>
+</div>
+<div class="state" id="stateBadge">not connected</div>
+<div class="node abs" data-show="1" style="left:16%;top:52%"><div class="box client">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:52%"><div class="box server">🧑‍🦰</div><div class="lbl"><span class="k">Friend</span></div></div>
+<div class="msg" id="m0" style="left:35%;top:38%;color:var(--accent-d)">1 · "Hi!" →</div>
+<div class="msg" id="m1" style="left:35%;top:62%;color:var(--violet)">← 2 · "Hi, you there?"</div>
+<div class="msg" id="m2" style="left:35%;top:46%;color:var(--good)">3 · "Yes!" →</div>
+<div class="acts">
+  <button class="act ok" id="actConnect">📞 Start the call</button>
+  <button class="act" id="actData">💬 Talk</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let conns=0, data=0, established=false, busy=false, running=false;
+  const elC=document.getElementById('statConns'), elS=document.getElementById('statState'), elD=document.getElementById('statData'), badge=document.getElementById('stateBadge');
+  const ms=[document.getElementById('m0'),document.getElementById('m1'),document.getElementById('m2')];
+  function setState(s,cls){ elS.textContent=s; elS.className='stat-v '+(cls||''); badge.textContent=s; badge.style.color = s==='connected'?'var(--good)':s==='not connected'?'var(--muted)':'var(--warn)'; }
+  function fly(fromX,toX,y,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fromX+'%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),240); }, leg); }
+  function connect(){ if(busy) return; busy=true; established=false; ms.forEach(m=>m.classList.remove('on'));
+    setState('saying hi…','warn'); ms[0].classList.add('on');
+    fly(16,84,38,'',()=>{ setState('they reply…','warn'); ms[1].classList.add('on');
+      fly(84,16,62,'',()=>{ ms[2].classList.add('on');
+        fly(16,84,46,'done',()=>{ established=true; conns++; elC.textContent=conns; setState('connected','good'); busy=false; }); }); });
+  }
+  function send(){ if(!established){ return; } if(document.hidden) return; fly(16,84,52,'done',()=>{ data++; elD.textContent=data; }); }
+  function loop(){ if(!running)return; if(!established && !busy){ connect(); } else if(established){ send(); } setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actConnect').onclick=connect;
+  document.getElementById('actData').onclick=send;
+  setState('not connected'); running=true; loop();
+  return {connect,send};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"When a call first connects, nobody launches straight into the story. There's a little ritual first — and TCP copies it exactly.", dur:4600},
+  {cap:"<b>Step 1:</b> you open with <b>\"Hi!\"</b> — TCP calls this SYN, a request to start talking.", dur:4600, on(){SIM.connect();}},
+  {cap:"<b>Step 2:</b> your friend replies <b>\"Hi, can you hear me?\"</b> — that's SYN-ACK: I heard you, and are you there?", dur:4800},
+  {cap:"<b>Step 3:</b> you confirm <b>\"Yes, go ahead!\"</b> — the ACK. Three little messages, both sides confirmed.", dur:4600},
+  {cap:"Now the line is <span class='hl-good'>connected</span> — and only now does the real conversation begin.", dur:4400},
+  {cap:"Why all three? So <em>both</em> people know they can be heard <b>and</b> can hear — no awkward one-way calls.", dur:4600, on(){SIM.send();}},
+  {cap:"With the call open, words flow freely back and forth. The greeting happened once, up front.", dur:4400, on(){SIM.send();}},
+  {cap:"That setup ritual takes a moment — which is why making lots of tiny separate calls is wasteful. Better to keep one open.", dur:4600},
+  {cap:"Your turn 👉 <b>📞 Start the call</b> to watch the three-step greeting, then <b>💬 Talk</b> once connected.", dur:5200},
+  {cap:"TCP's three-way handshake is just a polite phone greeting: hi, hi-can-you-hear-me, yes — then the real conversation flows.", dur:4600}
+]});
+
+</script>
+</body></html>

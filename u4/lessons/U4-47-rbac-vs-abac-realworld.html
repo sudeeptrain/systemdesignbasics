@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RBAC vs ABAC — Job Title vs House Rules · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gate{position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:700; padding:7px 12px; border-radius:8px; border:2px solid var(--accent); color:var(--accent-d); background:#eaf2fe; z-index:5; transition:.3s}
+.ctx{position:absolute; left:18%; top:72%; transform:translateX(-50%); font-family:var(--fmono); font-size:10px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">RBAC vs ABAC — Job Title vs House Rules</h1>
+  <p class="subtitle">"Managers can sign off expenses" decides by job title alone — simple, but blunt. "Sign-off allowed under $5k, in work hours, for your own team" decides by the whole situation — powerful, but more rules to keep. RBAC is the job title; ABAC is the house rules.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests judged</div><div class="stat-v accent" id="statChecks">0</div></div>
+  <div class="stat"><div class="stat-k">Rule</div><div class="stat-v" id="statMode">By job title</div></div>
+  <div class="stat"><div class="stat-k">Refused</div><div class="stat-v" id="statDenied">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:40%"><div class="box">🧑</div><div class="lbl"><span class="k" id="userlbl">title: manager</span></div></div>
+<div class="gate" id="gate">🛂 check</div>
+<div class="node abs" data-show="1" style="left:84%;top:40%"><div class="box sm">💰</div><div class="lbl"><span class="k">Sign off expense</span></div></div>
+<div class="ctx" id="ctx">situation: $3k · 2pm · own team</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Job title / House rules</button>
+  <button class="act ok" id="actAccess">🛂 Ask to sign off</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='rbac', checks=0, denied=0, running=false, i=0;
+  const elC=document.getElementById('statChecks'), elM=document.getElementById('statMode'), elD=document.getElementById('statDenied'), gate=document.getElementById('gate'), ctx=document.getElementById('ctx');
+  const scenarios=[{amt:3,hr:14,dept:true,ok:true},{amt:8,hr:14,dept:true,ok:false},{amt:2,hr:23,dept:true,ok:false},{amt:1,hr:10,dept:false,ok:false}];
+  function access(){ if(document.hidden) return; checks++; elC.textContent=checks; const s=scenarios[i++%scenarios.length];
+    ctx.textContent='situation: $'+s.amt+'k · '+s.hr+':00 · '+(s.dept?'own team':'other team');
+    let allowed; if(mode==='rbac') allowed=true; else allowed=s.ok;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='30%'; });
+    setTimeout(()=>{ gate.style.borderColor=allowed?'var(--good)':'var(--bad)'; gate.style.color=allowed?'var(--good)':'var(--bad)'; setTimeout(()=>{gate.style.borderColor='var(--accent)';gate.style.color='var(--accent-d)';},500);
+      if(allowed){ d.classList.add('done'); d.style.left='84%'; d.style.top='40%'; setTimeout(()=>d.remove(),leg); }
+      else { d.classList.add('fail'); denied++; elD.textContent=denied; elD.className='stat-v bad'; setTimeout(()=>d.remove(),360); } }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='rbac'?'By job title':'By house rules'; elM.className='stat-v '+(m==='rbac'?'accent':'good'); }
+  function loop(){ if(!running)return; access(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='rbac'?'abac':'rbac');
+  document.getElementById('actAccess').onclick=access;
+  setMode('rbac'); running=true; loop();
+  return {access,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Once you know who someone is, you decide what they may do. Two everyday styles: by <b>job title</b>, or by the <b>full house rules.</b>", dur:4400},
+  {cap:"<b>By job title</b> (RBAC): \"managers may sign off expenses.\" If your title says manager, you're allowed. Simple and clear.", dur:4600, on(){SIM.access();}},
+  {cap:"And you're allowed <em>regardless</em> of the amount, the hour, or whose team it is — title alone decides. Easy to run, but blunt.", dur:4800, on(){SIM.access();}},
+  {cap:"That bluntness is the limit: a job title alone can't say \"only up to $5k, only in work hours, only your own team.\"", dur:4600},
+  {cap:"<b>By house rules</b> (ABAC): the decision weighs the <b>whole situation</b>, not just the title. Switch over.", dur:4000, on(){SIM.setMode('abac');}},
+  {cap:"Now the check reads the details: a $3k expense at 2pm for your own team → <span class='hl-good'>allowed.</span>", dur:4600, on(){SIM.access();}},
+  {cap:"But $8k, or 11pm, or another team's budget → <span class='hl-bad'>refused.</span> Same person, different situation, different answer.", dur:4800, on(){SIM.access();}},
+  {cap:"House rules are far more precise and flexible — at the cost of more rules to write down and keep straight.", dur:4600, on(){SIM.access();}},
+  {cap:"Your turn 👉 flip <b>🔀 Job title / House rules</b> and <b>🛂 ask to sign off</b> to compare title-only with situation-aware decisions.", dur:5200, on(){SIM.setMode('rbac');}},
+  {cap:"RBAC = decide by job title (simple, blunt). ABAC = decide by the whole situation (precise, flexible). Many places use both together.", dur:4800}
+]});
+
+</script>
+</body></html>

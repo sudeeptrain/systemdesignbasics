@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WAF (Web Application Firewall) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.waf{position:absolute; left:50%; top:18%; bottom:30%; width:12px; transform:translateX(-50%); background:linear-gradient(180deg,#6a4fe0,#1f6fe6); border-radius:5px; z-index:2; opacity:.35; transition:.3s}
+.waf.on{opacity:1}
+.waflbl{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">WAF (Web Application Firewall)</h1>
+  <p class="subtitle">A network firewall filters by IP and port; a WAF works one layer higher — it reads the actual HTTP request. It inspects URLs, headers, and bodies for attack patterns (SQL injection, XSS, bad bots) and blocks malicious requests before they reach your app.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">WAF</div><div class="stat-v bad" id="statWaf">off</div></div>
+  <div class="stat"><div class="stat-k">Attacks blocked</div><div class="stat-v" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box">🌍</div><div class="lbl"><span class="k">Internet</span></div></div>
+<div class="waf" id="waf"></div>
+<div class="node abs" data-show="1" style="left:84%;top:46%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Web app</span></div></div>
+<div class="waflbl" id="waflbl">🧱 WAF off — requests pass unchecked</div>
+<div class="acts">
+  <button class="act bad" id="actAttack">💉 Send a malicious request</button>
+  <button class="act ok" id="actMode">🧱 Toggle WAF</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, blocked=0, on=false, running=false;
+  const elR=document.getElementById('statReqs'), elW=document.getElementById('statWaf'), elB=document.getElementById('statBlock'), waf=document.getElementById('waf'), waflbl=document.getElementById('waflbl');
+  function send(bad){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const d=document.createElement('div'); d.className='dot'+(bad?' fail':''); d.style.left='16%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(bad && on){ d.classList.add('fail'); blocked++; elB.textContent=blocked; elB.className='stat-v good'; waf.style.boxShadow='0 0 0 4px rgba(106,79,224,.25)'; setTimeout(()=>waf.style.boxShadow='',300); setTimeout(()=>d.remove(),320); return; }
+      d.style.left='84%'; setTimeout(()=>{ if(bad){ d.classList.add('fail'); const s=scene.querySelector('.server'); if(s){s.classList.add('crash'); setTimeout(()=>s.classList.remove('crash'),400);} } else d.classList.add('done'); setTimeout(()=>d.remove(),300); }, leg); }, leg);
+  }
+  function toggle(){ on=!on; waf.classList.toggle('on',on); elW.textContent=on?'on':'off'; elW.className='stat-v '+(on?'good':'bad'); waflbl.textContent=on?'🧱 WAF on — inspecting every request':'🧱 WAF off — requests pass unchecked'; }
+  function loop(){ if(!running)return; send(Math.random()<0.35); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actAttack').onclick=()=>send(true);
+  document.getElementById('actMode').onclick=toggle;
+  running=true; loop();
+  return {send,toggle};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A network firewall asks \"which port?\" A <b>WAF</b> asks a deeper question: \"what's actually <em>in</em> this HTTP request?\"", dur:4600},
+  {cap:"It sits at <b>layer 7</b>, reading each request's URL, headers, and body — looking for the fingerprints of an attack.", dur:4600, on(){SIM.send(false);}},
+  {cap:"With the <b>WAF off</b>, a malicious request — say a SQL-injection payload — sails straight through to your app.", dur:4600, on(){SIM.send(true);}},
+  {cap:"That reaches the application, where the attack might succeed. Your last line of defense is the app's own code.", dur:4400},
+  {cap:"Now <b>turn the WAF on.</b>", dur:3400, on(){SIM.toggle();}},
+  {cap:"The same malicious request matches a known attack pattern and is <span class='hl-good'>blocked at the WAF</span> — it never reaches the app.", dur:4800, on(){SIM.send(true);}},
+  {cap:"Meanwhile legitimate requests pass right through. The WAF only stops what looks dangerous: SQLi, XSS, bad bots, scanners.", dur:4600, on(){SIM.send(false);}},
+  {cap:"WAFs use rule sets (like the OWASP Core Rule Set) plus rate limiting and bot detection — and are often part of a CDN/DDoS service.", dur:4600},
+  {cap:"Your turn 👉 <b>💉 Send malicious requests</b> and <b>🧱 toggle the WAF</b> to watch attacks get filtered out.", dur:5200, on(){SIM.toggle();}},
+  {cap:"A WAF inspects HTTP at layer 7 and blocks attack patterns before they hit your app — defense in depth, not a replacement for secure code.", dur:4800}
+]});
+
+</script>
+</body></html>

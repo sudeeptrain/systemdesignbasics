@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forward vs Reverse Proxy — Personal Shopper vs Receptionist · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.proxy .box{border-style:dashed}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Forward vs Reverse Proxy — Personal Shopper vs Receptionist</h1>
+  <p class="subtitle">A personal shopper goes out to the shops on your behalf — the shops only ever see the shopper, not you. A company receptionist faces the public and quietly routes callers to whichever staff member is free — callers never see the team behind. Same middleman idea, opposite sides.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Errands run</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Middleman</div><div class="stat-v" id="statMode">Personal shopper</div></div>
+  <div class="stat"><div class="stat-k">Hides</div><div class="stat-v good" id="statHide">the customers</div></div>
+</div>
+<div id="left"></div>
+<div class="node abs proxy" data-show="1" style="left:50%;top:50%"><div class="box">🔁</div><div class="lbl"><span class="k" id="pxlbl">Personal shopper</span></div></div>
+<div id="right"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Shopper / Receptionist</button>
+  <button class="act ok" id="actRequest">📨 Send a request</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const leftWrap=document.getElementById('left'), rightWrap=document.getElementById('right');
+  let mode='forward', reqs=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elH=document.getElementById('statHide'), pxlbl=document.getElementById('pxlbl');
+  function render(){ leftWrap.innerHTML=''; rightWrap.innerHTML='';
+    if(mode==='forward'){ // many customers on left, one marketplace on right
+      [20,50,80].forEach((y,i)=>{ const el=document.createElement('div'); el.className='node abs vis l-'+i; el.style.left='14%'; el.style.top=y+'%'; el.innerHTML='<div class="box sm">🧑</div><div class="lbl"><span class="k">Customer</span></div>'; leftWrap.appendChild(el); });
+      const r=document.createElement('div'); r.className='node abs vis r-0'; r.style.left='86%'; r.style.top='50%'; r.innerHTML='<div class="box sm">🏬</div><div class="lbl"><span class="k">The shops</span></div>'; rightWrap.appendChild(r);
+    } else { // one caller on left, many staff on right
+      const l=document.createElement('div'); l.className='node abs vis l-0'; l.style.left='14%'; l.style.top='50%'; l.innerHTML='<div class="box sm">📞</div><div class="lbl"><span class="k">Caller</span></div>'; leftWrap.appendChild(l);
+      [20,50,80].forEach((y,i)=>{ const el=document.createElement('div'); el.className='node abs vis r-'+i; el.style.left='86%'; el.style.top=y+'%'; el.innerHTML='<div class="box sm">🧑‍💼</div><div class="lbl"><span class="k">Staff</span></div>'; rightWrap.appendChild(el); });
+    }
+  }
+  function req(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const fromY = mode==='forward'? [20,50,80][rr%3] : 50; const toY = mode==='forward'? 50 : [20,50,80][rr%3]; rr++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='50%'; });
+    setTimeout(()=>{ const px=scene.querySelector('.proxy'); if(px){px.classList.add('active'); setTimeout(()=>px.classList.remove('active'),200);}
+      d.style.left='86%'; d.style.top=toY+'%'; setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function setMode(m){ mode=m; render(); elM.textContent=m==='forward'?'Personal shopper':'Receptionist'; elM.className='stat-v '+(m==='forward'?'accent':'good');
+    elH.textContent=m==='forward'?'the customers':'the staff'; pxlbl.textContent=m==='forward'?'Personal shopper':'Receptionist'; }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='forward'?'reverse':'forward');
+  document.getElementById('actRequest').onclick=req;
+  setMode('forward'); running=true; loop();
+  return {req,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A proxy is just a middleman who relays things on someone's behalf. There are two kinds — and which side they stand on changes their whole job.", dur:4400},
+  {cap:"A <b>forward proxy</b> is like a <b>personal shopper.</b> Customers send their errands <em>through</em> the shopper out to the shops.", dur:4600, on(){SIM.req();}},
+  {cap:"The shops only ever see the <b>shopper</b> at the till — never the real customers. So it <b>hides who's actually buying</b> (like a corporate proxy or VPN).", dur:4800, on(){SIM.req();}},
+  {cap:"The shopper can also enforce rules on the way out — skip certain stores, reuse a receipt, keep the buyers anonymous.", dur:4400},
+  {cap:"Now flip to a <b>reverse proxy</b> — like a company <b>receptionist</b> who faces the public instead.", dur:4000, on(){SIM.setMode('reverse');}},
+  {cap:"A caller thinks they're talking to one company, but the receptionist quietly <b>routes them to whichever staff member is free</b> in the back.", dur:4800, on(){SIM.req();}},
+  {cap:"It <b>hides the staff</b> and handles the front-of-house work: balancing the calls, taking messages, screening, one phone number for everyone.", dur:4800, on(){SIM.req();}},
+  {cap:"Quick test — who's hidden? Personal shopper → the customers. Receptionist → the staff. Same middleman, opposite job.", dur:4400},
+  {cap:"Your turn 👉 flip <b>🔀 Shopper / Receptionist</b> and <b>📨 send requests</b> to see which side each one protects.", dur:5200, on(){SIM.setMode('forward');}},
+  {cap:"Forward proxy fronts the customers (outbound, hides users); reverse proxy fronts the staff (inbound, hides the backend and balances load).", dur:4800}
+]});
+
+</script>
+</body></html>

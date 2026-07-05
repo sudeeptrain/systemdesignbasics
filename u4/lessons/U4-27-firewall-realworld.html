@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firewall — A Gated Community Guard · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.wall{position:absolute; left:50%; top:18%; bottom:30%; width:10px; transform:translateX(-50%); background:repeating-linear-gradient(0deg,#c0392b 0 10px,#e74c3c 10px 20px); border-radius:4px; z-index:2}
+.rulebox{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Firewall — A Gated Community Guard</h1>
+  <p class="subtitle">A guard at a gated community checks everyone against an approved list: residents and expected deliveries get waved in, everyone else is turned away. Nobody's on the list by default — you're only let in if there's a specific reason. That's a firewall.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Arrivals</div><div class="stat-v accent" id="statPackets">0</div></div>
+  <div class="stat"><div class="stat-k">Let in</div><div class="stat-v good" id="statAllow">0</div></div>
+  <div class="stat"><div class="stat-k">Turned away</div><div class="stat-v" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box">🌍</div><div class="lbl"><span class="k">Outside world</span></div></div>
+<div class="wall"></div>
+<div class="node abs" data-show="1" style="left:84%;top:46%"><div class="box">🏘️</div><div class="lbl"><span class="k">The community</span></div></div>
+<div class="rulebox" id="rulebox">list: residents · expected deliveries</div>
+<div class="acts">
+  <button class="act ok" id="actSend">🚗 A mix of arrivals</button>
+  <button class="act" id="actRule">⚙️ Add 'contractor' pass</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let packets=0, allow=0, block=0, sshAllowed=false, running=false;
+  const elP=document.getElementById('statPackets'), elA=document.getElementById('statAllow'), elB=document.getElementById('statBlock'), rulebox=document.getElementById('rulebox');
+  const ports=[{p:'resident',ok:true,y:30},{p:'delivery',ok:true,y:42},{p:'contractor',ok:'ssh',y:54},{p:'stranger',ok:false,y:66},{p:'door-knocker',ok:false,y:54}];
+  function send1(){ if(document.hidden) return; packets++; elP.textContent=packets; const pk=ports[Math.floor(Math.random()*ports.length)];
+    const allowed = pk.ok===true || (pk.ok==='ssh' && sshAllowed);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top=pk.y+'%'; scene.appendChild(d); d.title=pk.p;
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(allowed){ d.style.left='84%'; setTimeout(()=>{ d.classList.add('done'); allow++; elA.textContent=allow; setTimeout(()=>d.remove(),leg); }, leg); }
+      else { d.classList.add('fail'); block++; elB.textContent=block; elB.className='stat-v warn'; setTimeout(()=>d.remove(),320); } }, leg);
+  }
+  function burst(){ for(let k=0;k<5;k++) setTimeout(send1, k*150*simRate()); }
+  function toggleRule(){ sshAllowed=!sshAllowed; rulebox.textContent='list: residents · expected deliveries'+(sshAllowed?' · contractors':''); }
+  function loop(){ if(!running)return; send1(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actSend').onclick=burst;
+  document.getElementById('actRule').onclick=toggleRule;
+  running=true; loop();
+  return {send1,burst,toggleRule};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Between the open road and a gated community stands a <b>guard</b> at the gate — checking everyone who tries to come in. That's a firewall.", dur:4600},
+  {cap:"The guard works from an <b>approved list:</b> residents and expected deliveries may enter; anyone not on it is turned away.", dur:4600, on(){SIM.send1();}},
+  {cap:"People <b>on the list</b> are waved straight through to the houses inside. That's your normal, expected traffic.", dur:4400, on(){SIM.burst();}},
+  {cap:"But a random stranger or an uninvited door-knocker <span class='hl-bad'>matches no entry on the list</span> — so the guard turns them away.", dur:4800, on(){SIM.burst();}},
+  {cap:"The key principle is <b>default-deny:</b> nobody gets in unless there's a specific reason. Start closed, then add only what's needed.", dur:4800},
+  {cap:"Need a contractor to come fix something? <b>Add them to the list</b> (ideally just for the day, and only that contractor).", dur:4600, on(){SIM.toggleRule();}},
+  {cap:"Now contractors pass too — because there's an explicit entry for them. Remove it and they're turned away again.", dur:4400, on(){SIM.burst();}},
+  {cap:"Guards can screen by who you are, where you're from, and which direction you're heading — and you can post one at the main gate <em>and</em> each door.", dur:4600},
+  {cap:"Your turn 👉 send <b>🚗 a mix of arrivals</b> and <b>⚙️ add the contractor pass</b> to watch the guard admit and turn away.", dur:5200},
+  {cap:"A firewall is the gate guard: default-deny, admit only who's on the list, turn the rest away. Your network's front gate.", dur:4800}
+]});
+
+</script>
+</body></html>

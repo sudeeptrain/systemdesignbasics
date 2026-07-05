@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Container Orchestration (Kubernetes) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pod{position:absolute; width:46px; height:46px; border-radius:10px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:18px;
+  background:linear-gradient(180deg,#fff,#eaf1fa); border:1.5px solid var(--good); z-index:3; transition:.3s; opacity:0}
+.pod.on{opacity:1} .pod.dead{border-color:var(--bad); opacity:.4}
+.desired{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Container Orchestration (Kubernetes)</h1>
+  <p class="subtitle">Running one container is easy; running hundreds across many machines is not. Kubernetes lets you declare a desired state — "I want 3 replicas running" — and a controller constantly works to make reality match: restarting crashed pods, rescheduling, and scaling on command.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Desired replicas</div><div class="stat-v" id="statWant">3</div></div>
+  <div class="stat"><div class="stat-k">Running pods</div><div class="stat-v good" id="statRun">3</div></div>
+</div>
+<div class="desired" id="desired">🧭 desired state: 3 pods running</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box sm">📱</div><div class="lbl"><span class="k">Traffic</span></div></div>
+<div id="pods"></div>
+<div class="acts">
+  <button class="act ok" id="actScale">➕ Scale to more replicas</button>
+  <button class="act bad" id="actKill">💥 Kill a pod</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('pods');
+  let want=3, pods=[], reqs=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elW=document.getElementById('statWant'), elRun=document.getElementById('statRun'), desired=document.getElementById('desired');
+  function alive(){ return pods.filter(p=>p.alive); }
+  function layout(){ const n=pods.length; pods.forEach((p,i)=>{ const cols=Math.min(4,n); const x=46+ (i%cols)*12; const y=30+Math.floor(i/cols)*26; p.x=x; p.y=y; if(p.el){ p.el.style.left=x+'%'; p.el.style.top=y+'%'; } }); }
+  function render(){ wrap.innerHTML=''; pods.forEach((p,i)=>{ const el=document.createElement('div'); el.className='pod'+(p.alive?'':' dead'); el.textContent='📦'; wrap.appendChild(el); p.el=el; requestAnimationFrame(()=>el.classList.add('on')); }); layout();
+    elW.textContent=want; const n=alive().length; elRun.textContent=n; elRun.className='stat-v '+(n>=want?'good':'warn'); desired.textContent='🧭 desired state: '+want+' pods running'; }
+  function reconcile(){ // controller maintains desired count
+    while(alive().length < want){ pods.push({alive:true}); }
+    pods = pods.filter(p=>p.alive); if(pods.length>want) pods=pods.slice(0,want); render(); }
+  function req(){ if(document.hidden) return; const lv=alive(); if(!lv.length) return; const p=lv[rr++%lv.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=p.x+'%'; d.style.top=p.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(p.el){p.el.classList.add('healthy'); setTimeout(()=>p.el.classList.remove('healthy'),200);} reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function scale(){ want=Math.min(8,want+1); reconcile(); }
+  function kill(){ const p=alive()[0]; if(p){ p.alive=false; if(p.el)p.el.classList.add('dead');
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left=p.x+'%'; d.style.top=p.y+'%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate());
+    render(); setTimeout(()=>{ reconcile(); }, 1400*simRate()); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actScale').onclick=scale;
+  document.getElementById('actKill').onclick=kill;
+  pods=[{alive:true},{alive:true},{alive:true}]; render(); running=true; loop();
+  return {req,scale,kill,reconcile,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Containers are great — but running hundreds of them across a fleet of machines, keeping them healthy, is a huge job. Enter <b>Kubernetes.</b>", dur:4800},
+  {cap:"The key idea is <b>declarative.</b> You don't issue step-by-step commands; you declare a <b>desired state:</b> \"run 3 replicas of my app.\"", dur:4800},
+  {cap:"A <b>controller</b> constantly compares reality to that goal and acts to close the gap. Right now: 3 desired, 3 running. ✓", dur:4600, on(){SIM.req();}},
+  {cap:"Traffic is spread across the healthy <b>pods</b> (a pod wraps your container). All good.", dur:4200, on(){SIM.req();}},
+  {cap:"Now the real magic — <span class='hl-bad'>kill a pod.</span>", dur:3600, on(){SIM.kill();}},
+  {cap:"Reality now says 2, but you asked for 3. The controller notices the gap and <span class='hl-good'>automatically starts a replacement.</span> Self-healing.", dur:4800},
+  {cap:"You never told it <em>how</em> to recover — you only said how many you want. Kubernetes figures out the steps.", dur:4400, on(){SIM.req();}},
+  {cap:"Need more capacity? <b>Scale up</b> the desired count and the controller spins up new pods to match.", dur:4400, on(){SIM.scale();}},
+  {cap:"Your turn 👉 <b>➕ Scale replicas</b> and <b>💥 kill pods</b> to watch Kubernetes keep reality matching your desired state.", dur:5200, on(){SIM.render();}},
+  {cap:"Kubernetes is desired-state automation for containers: declare what you want, and it self-heals, schedules, and scales to deliver it.", dur:4800}
+]});
+
+</script>
+</body></html>

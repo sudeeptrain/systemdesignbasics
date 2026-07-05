@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Checks — A Shift Manager's Roll-Call · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bk.sick .box{border-color:var(--bad); opacity:.5}
+.hb{position:absolute; font-family:var(--fmono); font-size:10px; z-index:4; opacity:0; transition:.2s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Health Checks — A Shift Manager's Roll-Call</h1>
+  <p class="subtitle">A shift manager doesn't assign customers to a cashier who's gone home sick. They do a regular roll-call: anyone not responding is taken off the rota; when they're back and well, they're quietly put back on. A load balancer health-checks its servers exactly this way.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Customers served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">On the rota</div><div class="stat-v good" id="statUp">3 / 3</div></div>
+  <div class="stat"><div class="stat-k">Roll-call misses</div><div class="stat-v" id="statFail">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box">🧑‍💼</div><div class="lbl"><span class="k">Shift manager</span></div></div>
+<div class="node abs bk b-0" data-show="1" style="left:74%;top:22%"><div class="box sm">🧑‍🍳</div><div class="lbl"><span class="k">Staff 1</span></div></div>
+<div class="node abs bk b-1" data-show="1" style="left:74%;top:50%"><div class="box sm">🧑‍🍳</div><div class="lbl"><span class="k">Staff 2</span></div></div>
+<div class="node abs bk b-2" data-show="1" style="left:74%;top:78%"><div class="box sm">🧑‍🍳</div><div class="lbl"><span class="k">Staff 3</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actSick">🤒 A staffer falls ill</button>
+  <button class="act ok" id="actHeal">💊 They recover</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const bk=[{x:74,y:22},{x:74,y:50},{x:74,y:78}].map((p,i)=>({...p,healthy:true,el:scene.querySelector('.b-'+i)}));
+  let reqs=0, fails=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elU=document.getElementById('statUp'), elF=document.getElementById('statFail');
+  function up(){ return bk.filter(b=>b.healthy); }
+  function fmt(){ elU.textContent=up().length+' / 3'; elU.className='stat-v '+(up().length===3?'good':up().length?'warn':'bad'); }
+  function check(){ // manager calls each name
+    bk.forEach(b=>{ const d=document.createElement('div'); d.className='dot'+(b.healthy?'':' fail'); d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=b.x+'%'; d.style.top=b.y+'%'; });
+      setTimeout(()=>{ if(!b.healthy){ fails++; elF.textContent=fails; elF.className='stat-v warn'; } d.classList.add(b.healthy?'done':'fail'); setTimeout(()=>d.remove(),240); }, leg); }); }
+  function serve(){ const lv=up(); if(!lv.length) return; const b=lv[rr++%lv.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=b.x+'%'; d.style.top=b.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function sick(){ const b=up()[0]; if(b){ b.healthy=false; if(b.el)b.el.classList.add('sick'); check(); fmt(); } }
+  function heal(){ const b=bk.find(x=>!x.healthy); if(b){ b.healthy=true; if(b.el)b.el.classList.remove('sick'); check(); fmt(); } }
+  function loop(){ if(!running)return; serve(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actSick').onclick=sick;
+  document.getElementById('actHeal').onclick=heal;
+  fmt(); running=true; loop(); setInterval(check, 2600);
+  return {serve,sick,heal,check,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A shift manager assigns customers to staff — but must never send one to a cashier who's gone home sick. How do they keep track?", dur:4800},
+  {cap:"They do a regular <b>roll-call:</b> every so often they call each name — \"you good to keep going?\" That's a health check.", dur:4600, on(){SIM.check();}},
+  {cap:"Everyone who answers is <span class='hl-good'>on the rota</span> and keeps sharing the customers fairly.", dur:4400, on(){SIM.serve();}},
+  {cap:"Now one staffer <b>falls ill</b> mid-shift — they're not up to serving anyone.", dur:3600, on(){SIM.sick();}},
+  {cap:"At the next roll-call they <span class='hl-bad'>don't answer.</span> The manager immediately <b>takes them off the rota</b> — no customer is sent their way.", dur:4800, on(){SIM.serve();}},
+  {cap:"Customers keep flowing smoothly to the staff who are well. Most people never even notice someone stepped out.", dur:4400, on(){SIM.serve();}},
+  {cap:"Once the staffer <b>recovers</b> and answers roll-call again, the manager quietly <b>puts them back on</b> the rota.", dur:4400, on(){SIM.heal();}},
+  {cap:"A good roll-call checks real readiness — not just \"are you here?\" but \"can you actually serve right now?\" (tills working, stocked up).", dur:4600, on(){SIM.check();}},
+  {cap:"Your turn 👉 make <b>🤒 a staffer fall ill</b> and let them <b>💊 recover</b> to watch them leave and rejoin the rota.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Health checks are the load balancer's roll-call: ping constantly, drop the sick, restore the recovered — automatic, continuous resilience.", dur:4800}
+]});
+
+</script>
+</body></html>

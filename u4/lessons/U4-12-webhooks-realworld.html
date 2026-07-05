@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webhooks — A Doorbell, Not a Peephole · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.evlbl{position:absolute; left:84%; top:24%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Webhooks — A Doorbell, Not a Peephole</h1>
+  <p class="subtitle">Waiting for a delivery by checking the peephole every minute is exhausting and you still miss the moment. A doorbell flips it: you do nothing until the courier presses it, then you know instantly. A webhook is that doorbell — the other service calls you when something happens.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Deliveries caught</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Checking peephole</div></div>
+  <div class="stat"><div class="stat-k">Wasted peeks</div><div class="stat-v" id="statWaste">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box yourapp">🧑</div><div class="lbl"><span class="k">You (at home)</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box prov">📦</div><div class="lbl"><span class="k">Courier</span></div></div>
+<div class="evlbl" id="evlbl">event: parcel arrives</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Peephole / Doorbell</button>
+  <button class="act ok" id="actEvent">📦 A parcel arrives</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='poll', events=0, waste=0, running=false;
+  const elE=document.getElementById('statEvents'), elM=document.getElementById('statMode'), elW=document.getElementById('statWaste');
+  const prov=scene.querySelector('.prov'), app=scene.querySelector('.yourapp');
+  function poll(){ if(mode!=='poll'||document.hidden) return; // you peek, usually nobody there
+    const got=Math.random()<0.2;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ d.style.left='16%'; d.classList.add(got?'done':'fail'); if(got){ events++; elE.textContent=events; } else { waste++; elW.textContent=waste; elW.className='stat-v warn'; } setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function event(){ if(document.hidden) return; if(prov){prov.classList.add('active'); setTimeout(()=>prov.classList.remove('active'),250);}
+    if(mode==='webhook'){ // courier rings your bell
+      const d=document.createElement('div'); d.className='dot'; d.style.left='84%'; d.style.top='56%'; scene.appendChild(d);
+      const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='16%'; });
+      setTimeout(()=>{ d.classList.add('done'); if(app){app.classList.add('active'); setTimeout(()=>app.classList.remove('active'),250);} events++; elE.textContent=events; setTimeout(()=>d.remove(),240); }, leg);
+    } // peephole mode: the parcel just sits there until your next peek
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='poll'?'Checking peephole':'Doorbell'; elM.className='stat-v '+(m==='poll'?'warn':'good'); }
+  function loop(){ if(!running)return; if(mode==='poll') poll(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='poll'?'webhook':'poll');
+  document.getElementById('actEvent').onclick=event;
+  setMode('poll'); running=true; loop();
+  return {poll,event,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're expecting a parcel. How do you find out the moment it arrives at your door?", dur:4400},
+  {cap:"The tiring way is <b>checking the peephole</b> over and over — \"here yet? …now? …now?\" That's polling.", dur:4600, on(){SIM.poll();}},
+  {cap:"Almost every peek shows <span class='hl-warn'>an empty hallway</span> — wasted effort, and you still find out late, between checks.", dur:4800, on(){SIM.poll();}},
+  {cap:"A <b>doorbell</b> flips it. You tell the courier: \"don't make me watch — just ring this bell when you arrive.\" That's registering a webhook.", dur:4800, on(){SIM.setMode('webhook');}},
+  {cap:"Now when the parcel actually shows up, the <b>courier rings your bell</b> and hands it straight to you — details and all.", dur:4600, on(){SIM.event();}},
+  {cap:"No more peeking — you're <span class='hl-good'>alerted the instant it happens.</span> Zero wasted checks, no delay.", dur:4600, on(){SIM.event();}},
+  {cap:"It's the classic line: <b>\"Don't call us — we'll call you.\"</b> The service reaches out to you, not the other way around.", dur:4400},
+  {cap:"The catches: your doorbell must be reachable from outside, you should check the ringer is really your courier (a signature), and expect the odd re-ring (retries).", dur:4800},
+  {cap:"Your turn 👉 flip <b>🔀 Peephole / Doorbell</b> and trigger <b>📦 a parcel</b> to compare constant checking with being notified.", dur:5200, on(){SIM.setMode('poll');}},
+  {cap:"Webhooks swap 'keep checking' for 'get told': register a doorbell, and the other service rings it the instant something happens.", dur:4800}
+]});
+
+</script>
+</body></html>

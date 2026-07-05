@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encryption at Rest &amp; in Transit · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.disk{position:absolute; left:84%; top:74%; transform:translate(-50%,-50%); width:74px; text-align:center; font-family:var(--fmono); font-size:11px; padding:8px; border-radius:9px; border:2px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.disk.enc{border-color:var(--good); background:#e7f7ef}
+.eye{position:absolute; left:50%; top:30%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Encryption at Rest &amp; in Transit</h1>
+  <p class="subtitle">Data is vulnerable in two places: moving across the network, and sitting on disk. Encryption in transit (TLS) scrambles it on the wire; encryption at rest scrambles it in storage. You need both — a wiretap and a stolen disk are different threats.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Data written</div><div class="stat-v accent" id="statData">0</div></div>
+  <div class="stat"><div class="stat-k">In transit</div><div class="stat-v bad" id="statTransit">plaintext</div></div>
+  <div class="stat"><div class="stat-k">At rest</div><div class="stat-v bad" id="statRest">plaintext</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:46%"><div class="box">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="eye" id="eye">👁️ wiretap sees: data</div>
+<div class="node abs" data-show="1" style="left:58%;top:46%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="disk" id="disk">💽 disk:<br>data</div>
+<div class="acts">
+  <button class="act ok" id="actTransit">🔒 Encrypt in transit (TLS)</button>
+  <button class="act ok" id="actRest">🔐 Encrypt at rest</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let data=0, transit=false, rest=false, running=false;
+  const elD=document.getElementById('statData'), elT=document.getElementById('statTransit'), elR=document.getElementById('statRest');
+  const disk=document.getElementById('disk'), eye=document.getElementById('eye');
+  function write(){ if(document.hidden) return; data++; elD.textContent=data;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='58%'; });
+    eye.textContent= transit? '👁️ wiretap sees: 🔒 scrambled' : '👁️ wiretap sees: "password123"'; eye.style.color=transit?'var(--good)':'var(--bad)';
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='84%'; d.style.top='74%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function fmt(){ elT.textContent=transit?'encrypted 🔒':'plaintext'; elT.className='stat-v '+(transit?'good':'bad');
+    elR.textContent=rest?'encrypted 🔐':'plaintext'; elR.className='stat-v '+(rest?'good':'bad');
+    disk.classList.toggle('enc',rest); disk.innerHTML= rest? '💽 disk:<br>🔐 ◼◻◼◻' : '💽 disk:<br>data'; }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actTransit').onclick=()=>{ transit=!transit; fmt(); };
+  document.getElementById('actRest').onclick=()=>{ rest=!rest; fmt(); };
+  fmt(); running=true; loop();
+  return {write,fmt,setTransit:(b)=>{transit=b;fmt();},setRest:(b)=>{rest=b;fmt();}};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Sensitive data faces danger in two distinct places: <b>while it travels</b> the network, and <b>while it sits</b> in storage.", dur:4600},
+  {cap:"With no protection, a request travels as <b>plaintext.</b> Anyone tapping the wire reads it — passwords and all.", dur:4600, on(){SIM.write();}},
+  {cap:"And it lands on disk as plaintext too. Steal that disk (or dump the database) and everything's exposed.", dur:4400, on(){SIM.write();}},
+  {cap:"Defense one: <b>encryption in transit</b> — TLS. Turn it on.", dur:3600, on(){SIM.setTransit(true);}},
+  {cap:"Now the wiretap sees only <span class='hl-good'>scrambled bytes.</span> Data is safe <em>on the wire</em> — but still plaintext on disk.", dur:4600, on(){SIM.write();}},
+  {cap:"Defense two: <b>encryption at rest</b> — the storage itself is encrypted with keys. Enable it.", dur:3800, on(){SIM.setRest(true);}},
+  {cap:"Now even a stolen disk yields only <span class='hl-good'>ciphertext.</span> Without the keys, the data is useless.", dur:4600, on(){SIM.write();}},
+  {cap:"You need <b>both</b>: they defend different threats — a network eavesdropper versus a stolen drive or breached database.", dur:4600},
+  {cap:"Your turn 👉 toggle <b>🔒 in transit</b> and <b>🔐 at rest</b> to watch the wiretap and the disk each go dark.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Encrypt in transit (TLS) and at rest (storage keys). Two layers, two threats — together they keep data unreadable to attackers.", dur:4800}
+]});
+
+</script>
+</body></html>

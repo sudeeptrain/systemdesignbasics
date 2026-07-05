@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JWT Flow · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.jwt{position:absolute; left:50%; top:78%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; z-index:4}
+.jwt .h{color:var(--accent-d)} .jwt .p{color:var(--good)} .jwt .s{color:var(--violet)}
+.jwt.bad .p{color:var(--bad); text-decoration:line-through} .jwt.bad .s{color:var(--bad)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">JWT Flow</h1>
+  <p class="subtitle">A JWT is a self-contained token: header.payload.signature. The server signs it at login; the client sends it on every request. The server just verifies the signature — no session lookup needed. Tamper with the payload and the signature breaks, so it's rejected.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Verified requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Server state</div><div class="stat-v good" id="statState">none (stateless)</div></div>
+  <div class="stat"><div class="stat-k">Rejected</div><div class="stat-v" id="statRej">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:44%"><div class="box">📱</div><div class="lbl"><span class="k">Client<br>holds JWT</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:44%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server<br>verifies signature</span></div></div>
+<div class="jwt" id="jwt"><span class="h">header</span>.<span class="p">payload</span>.<span class="s">signature</span></div>
+<div class="acts">
+  <button class="act ok" id="actRequest">📨 Request with JWT</button>
+  <button class="act bad" id="actTamper">✏️ Tamper with payload</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, rej=0, tampered=false, running=false;
+  const elR=document.getElementById('statReqs'), elRej=document.getElementById('statRej'), jwt=document.getElementById('jwt');
+  const srv=scene.querySelector('.server');
+  function request(){ if(document.hidden) return; const bad=tampered;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='82%'; });
+    setTimeout(()=>{ if(srv){srv.classList.add(bad?'crash':'healthy'); setTimeout(()=>srv.classList.remove('crash','healthy'),400);}
+      if(bad){ d.classList.add('fail'); rej++; elRej.textContent=rej; elRej.className='stat-v bad'; setTimeout(()=>d.remove(),320); }
+      else { d.classList.add('done'); reqs++; elR.textContent=reqs; const r=document.createElement('div'); r.className='dot done'; r.style.left='82%'; r.style.top='56%'; scene.appendChild(r); requestAnimationFrame(()=>{r.style.transition='left '+leg+'ms';r.style.left='18%';}); setTimeout(()=>r.remove(),leg); setTimeout(()=>d.remove(),300); }
+    }, leg);
+  }
+  function tamper(){ tampered=true; jwt.classList.add('bad'); jwt.innerHTML='<span class="h">header</span>.<span class="p">payload(role:admin!)</span>.<span class="s">signature ✗</span>'; }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actRequest').onclick=request;
+  document.getElementById('actTamper').onclick=tamper;
+  running=true; loop();
+  return {request,tamper};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Old-school sessions store who-you-are on the <em>server</em>, so every request needs a lookup. A <b>JWT</b> takes a different approach.", dur:4800},
+  {cap:"A JWT has three parts joined by dots: <b>header</b> . <b>payload</b> (your id, role, expiry) . <b>signature.</b>", dur:4600},
+  {cap:"At login the server <b>signs</b> the token with a secret key, producing the signature, and hands the whole thing to the client.", dur:4600},
+  {cap:"From then on, the client sends the JWT on <b>every request.</b> The server just <b>verifies the signature</b> — no database lookup.", dur:4800, on(){SIM.request();}},
+  {cap:"That's the big win: the server holds <b>no session state.</b> Any server with the key can verify any token — easy to scale out.", dur:4800, on(){SIM.request();}},
+  {cap:"But the payload is readable by anyone — so what stops a user editing it to say <b>role: admin?</b> Watch.", dur:4400, on(){SIM.tamper();}},
+  {cap:"Change the payload and the <span class='hl-bad'>signature no longer matches</span> the secret. The server detects it and rejects the token.", dur:4800, on(){SIM.request();}},
+  {cap:"So JWTs are tamper-evident, not secret. Don't put sensitive data in them, keep them short-lived, and always verify on the server.", dur:4800},
+  {cap:"Your turn 👉 <b>📨 Send requests</b> with a valid JWT, then <b>✏️ tamper</b> with it to watch verification fail.", dur:5200},
+  {cap:"A JWT is a signed, self-contained identity token: stateless to verify, tamper-evident by design — the modern way to carry auth.", dur:4800}
+]});
+
+</script>
+</body></html>

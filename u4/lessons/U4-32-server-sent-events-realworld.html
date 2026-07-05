@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSE — A Live Radio Broadcast · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pipe{position:absolute; left:30%; width:40%; top:50%; height:6px; transform:translateY(-50%); border-radius:4px; background:var(--good); z-index:1; transition:.3s}
+.pipe.broken{background:repeating-linear-gradient(90deg,var(--bad) 0 8px,transparent 8px 16px)}
+.arrow{position:absolute; left:50%; top:38%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--accent-d); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">SSE — A Live Radio Broadcast</h1>
+  <p class="subtitle">Tune your radio to a station and you just listen — the broadcaster talks, you receive, one direction only. Lose the signal in a tunnel and the radio re-tunes itself when you come out. SSE is that broadcast: the server streams updates and the browser simply listens.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Bulletins heard</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Signal</div><div class="stat-v good" id="statConn">tuned in</div></div>
+  <div class="stat"><div class="stat-k">Direction</div><div class="stat-v" id="statDir">station → listener</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">📻</div><div class="lbl"><span class="k">Listener</span></div></div>
+<div class="pipe" id="pipe"></div>
+<div class="arrow">one-way broadcast →</div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box server">🗼</div><div class="lbl"><span class="k">Radio station</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actPush">📡 Station airs a bulletin</button>
+  <button class="act" id="actReconnect">🔌 Lose signal &amp; re-tune</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let events=0, open=true, running=false;
+  const elE=document.getElementById('statEvents'), elC=document.getElementById('statConn'), pipe=document.getElementById('pipe');
+  function push(){ if(document.hidden||!open) return; const srv=scene.querySelector('.server'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),200);}
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='84%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='16%'; });
+    setTimeout(()=>{ events++; elE.textContent=events; setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function reconnect(){ open=false; pipe.classList.add('broken'); elC.textContent='re-tuning…'; elC.className='stat-v warn';
+    setTimeout(()=>{ open=true; pipe.classList.remove('broken'); elC.textContent='tuned in'; elC.className='stat-v good'; push(); }, 1200*simRate()); }
+  function loop(){ if(!running)return; push(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actPush').onclick=push;
+  document.getElementById('actReconnect').onclick=reconnect;
+  running=true; loop();
+  return {push,reconnect};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You want a steady stream of live updates in the browser — scores, prices, notifications. <b>SSE</b> works just like tuning into a <b>radio station.</b>", dur:4600},
+  {cap:"You tune in <b>once</b> and then simply <b>listen.</b> No special equipment, no calling back — just an open signal.", dur:4600},
+  {cap:"The station <b>airs bulletins whenever it has them</b>, and your radio receives each one as it goes out.", dur:4600, on(){SIM.push();}},
+  {cap:"It's genuinely live, with none of the wasteful \"any news yet?\" of polling. The signal just stays on.", dur:4400, on(){SIM.push();}},
+  {cap:"The catch is the direction: it's <b>station → listener only.</b> You can't talk back to the DJ through your radio.", dur:4600},
+  {cap:"So it's ideal when only the station has things to announce — news feeds, live scores, dashboards, streaming text.", dur:4400, on(){SIM.push();}},
+  {cap:"A lovely built-in: drive into a tunnel and <b>lose the signal</b>, and the radio <b>re-tunes itself</b> the moment you're back — picking up where it left off.", dur:4600, on(){SIM.reconnect();}},
+  {cap:"Compared to a two-way phone call (WebSocket), a broadcast is simpler — but one-way only. Use a call when you need to talk back.", dur:4600},
+  {cap:"Your turn 👉 <b>📡 Air bulletins</b> down the signal and <b>🔌 lose the signal</b> to watch the radio re-tune itself.", dur:5200},
+  {cap:"SSE = a simple, self-re-tuning, one-way broadcast from server to browser. The easy choice for live feeds.", dur:4800}
+]});
+
+</script>
+</body></html>

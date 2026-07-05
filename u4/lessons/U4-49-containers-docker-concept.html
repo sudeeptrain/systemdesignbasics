@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Containers (Docker) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.img{position:absolute; left:46%; top:46%; transform:translate(-50%,-50%); width:96px; text-align:center; font-family:var(--fmono); font-size:11px; padding:10px; border-radius:10px; border:2px solid var(--accent); background:#eaf2fe; color:var(--accent-d); z-index:3; opacity:.3; transition:.3s}
+.img.on{opacity:1}
+.host .box{transition:.3s}
+.host.ok .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Containers (Docker)</h1>
+  <p class="subtitle">"It works on my machine" fails because every machine differs. A container packages your app with its exact dependencies, libraries, and config into one image — so it runs identically on your laptop, a teammate's, or production. Build once, run anywhere.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Successful runs</div><div class="stat-v accent" id="statRuns">0</div></div>
+  <div class="stat"><div class="stat-k">Image</div><div class="stat-v bad" id="statImg">not built</div></div>
+  <div class="stat"><div class="stat-k">Runs the same?</div><div class="stat-v good" id="statSame">everywhere ✓</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:46%"><div class="box sm">📦</div><div class="lbl"><span class="k">App + deps<br>+ config</span></div></div>
+<div class="img" id="img">🐳<br>container<br>image</div>
+<div class="node abs host h-0" data-show="1" style="left:82%;top:22%"><div class="box sm">💻</div><div class="lbl"><span class="k">Laptop</span></div></div>
+<div class="node abs host h-1" data-show="1" style="left:82%;top:50%"><div class="box sm">🧑‍💻</div><div class="lbl"><span class="k">Teammate</span></div></div>
+<div class="node abs host h-2" data-show="1" style="left:82%;top:78%"><div class="box sm">☁️</div><div class="lbl"><span class="k">Production</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actBuild">🔨 Build the image</button>
+  <button class="act" id="actRun">▶️ Run it on a host</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const hosts=[{x:82,y:22},{x:82,y:50},{x:82,y:78}];
+  let runs=0, built=false, running=false, rr=0;
+  const elR=document.getElementById('statRuns'), elI=document.getElementById('statImg');
+  const img=document.getElementById('img');
+  function build(){ built=true; img.classList.add('on'); elI.textContent='🐳 built ✓'; elI.className='stat-v good';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='46%'; }); setTimeout(()=>{d.classList.add('done'); d.remove();},leg); }
+  function run(){ if(!built||document.hidden) return; const h=hosts[rr++%3]; const hostEl=scene.querySelector('.h-'+((rr-1)%3));
+    const d=document.createElement('div'); d.className='dot'; d.style.left='46%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=h.x+'%'; d.style.top=h.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(hostEl){hostEl.classList.add('ok'); } runs++; elR.textContent=runs; setTimeout(()=>d.remove(),260); }, leg);
+  }
+  function loop(){ if(!running)return; if(!built) build(); else run(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actBuild').onclick=build;
+  document.getElementById('actRun').onclick=run;
+  running=true; loop();
+  return {build,run};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The oldest excuse in software: <b>\"but it works on my machine!\"</b> It breaks elsewhere because every machine is subtly different.", dur:4800},
+  {cap:"Different OS, missing library, wrong version, different config — any of these can sink an app on a new computer.", dur:4400},
+  {cap:"A <b>container</b> solves it. You package the app <em>with</em> its exact dependencies, libraries, and config into one <b>image.</b>", dur:4800, on(){SIM.build();}},
+  {cap:"That image is a sealed, self-contained box — everything the app needs to run is inside it. <b>Build it once.</b>", dur:4600},
+  {cap:"Now <b>run that same image</b> on your laptop. It just works.", dur:4000, on(){SIM.run();}},
+  {cap:"Run the <em>identical</em> image on a teammate's machine — <span class='hl-good'>works exactly the same.</span> Nothing to install or configure.", dur:4600, on(){SIM.run();}},
+  {cap:"And on <b>production</b> in the cloud — same image, same behaviour. <b>Build once, run anywhere.</b>", dur:4400, on(){SIM.run();}},
+  {cap:"Containers are also lightweight: they share the host's OS kernel, so they start in milliseconds — far leaner than full virtual machines.", dur:4800},
+  {cap:"Your turn 👉 <b>🔨 Build the image</b> and <b>▶️ run it</b> on each host to watch it behave identically everywhere.", dur:5200},
+  {cap:"Docker containers package an app and its environment together, killing \"works on my machine\" — the foundation of modern deployment.", dur:4800}
+]});
+
+</script>
+</body></html>

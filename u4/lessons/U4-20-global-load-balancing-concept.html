@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global Load Balancing · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.region.down .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Global Load Balancing</h1>
+  <p class="subtitle">With servers in regions worldwide, you route each user to the nearest one — usually via geo-aware DNS or anycast. That cuts latency and spreads load. And if an entire region goes down, traffic automatically fails over to the next-closest one.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests routed</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Regions up</div><div class="stat-v good" id="statUp">3 / 3</div></div>
+  <div class="stat"><div class="stat-k">Failovers</div><div class="stat-v" id="statFO">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:28%"><div class="box sm">🧑</div><div class="lbl"><span class="k">EU user</span></div></div>
+<div class="node abs" data-show="1" style="left:12%;top:72%"><div class="box sm">🧑</div><div class="lbl"><span class="k">US user</span></div></div>
+<div class="node abs region r-0" data-show="1" style="left:80%;top:22%"><div class="box sm">🇪🇺</div><div class="lbl"><span class="k">EU region</span></div></div>
+<div class="node abs region r-1" data-show="1" style="left:80%;top:50%"><div class="box sm">🇺🇸</div><div class="lbl"><span class="k">US region</span></div></div>
+<div class="node abs region r-2" data-show="1" style="left:80%;top:78%"><div class="box sm">🇸🇬</div><div class="lbl"><span class="k">Asia region</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actRegionDown">🔥 Take a region down</button>
+  <button class="act ok" id="actRecover">♻️ Recover region</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const regions=[{x:80,y:22},{x:80,y:50},{x:80,y:78}].map((p,i)=>({...p,up:true,el:scene.querySelector('.r-'+i)}));
+  const users=[{y:28,home:0},{y:72,home:1}];
+  let reqs=0, fo=0, running=false, u=0;
+  const elR=document.getElementById('statReqs'), elU=document.getElementById('statUp'), elF=document.getElementById('statFO');
+  function up(){ return regions.filter(r=>r.up); }
+  function fmt(){ elU.textContent=up().length+' / 3'; elU.className='stat-v '+(up().length===3?'good':up().length?'warn':'bad'); }
+  function nearest(home){ if(regions[home].up) return {r:regions[home],failover:false}; const alt=up()[0]; return {r:alt,failover:true}; }
+  function req(){ if(document.hidden) return; const user=users[u++%2]; const sel=nearest(user.home); if(!sel.r) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top=user.y+'%'; scene.appendChild(d);
+    const leg=(sel.failover?640:420)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='80%'; d.style.top=sel.r.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(sel.failover){ fo++; elF.textContent=fo; elF.className='stat-v warn'; } if(sel.r.el){sel.r.el.classList.add('active'); setTimeout(()=>sel.r.el.classList.remove('active'),200);} reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function down(){ const r=up()[0]; if(r){ r.up=false; if(r.el)r.el.classList.add('down'); const d=document.createElement('div'); d.className='dot fail'; d.style.left='80%'; d.style.top=r.y+'%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate()); fmt(); } }
+  function recover(){ const r=regions.find(x=>!x.up); if(r){ r.up=true; if(r.el)r.el.classList.remove('down'); fmt(); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actRegionDown').onclick=down;
+  document.getElementById('actRecover').onclick=recover;
+  fmt(); running=true; loop();
+  return {req,down,recover,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your app runs in regions around the world — EU, US, Asia. <b>Global load balancing</b> decides which region each user hits.", dur:4600},
+  {cap:"The goal is <b>proximity:</b> route each user to the <b>nearest</b> region so their requests travel the shortest distance.", dur:4600, on(){SIM.req();}},
+  {cap:"The EU user goes to the EU region; the US user to the US region. Lower latency, and load is spread across the globe.", dur:4600, on(){SIM.req();}},
+  {cap:"This routing is usually done by <b>geo-aware DNS</b> or <b>anycast</b> — the same address resolves to the closest data centre.", dur:4600},
+  {cap:"Now disaster: an <b>entire region goes down.</b>", dur:3600, on(){SIM.down();}},
+  {cap:"Its users can't be served locally — so global balancing <b>fails them over</b> to the next-closest healthy region.", dur:4800, on(){SIM.req();}},
+  {cap:"They get a bit more latency (a farther region), but they stay <span class='hl-good'>served.</span> No outage, just graceful rerouting.", dur:4600, on(){SIM.req();}},
+  {cap:"When the region <b>recovers</b>, traffic shifts back to it automatically. Self-healing at the planet scale.", dur:4400, on(){SIM.recover();}},
+  {cap:"Your turn 👉 <b>🔥 Take a region down</b> to trigger failover, then <b>♻️ recover</b> it.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Global load balancing routes users to the nearest region for speed, and reroutes around regional failures for resilience.", dur:4800}
+]});
+
+</script>
+</body></html>

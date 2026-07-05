@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes — A Stage Manager with Understudies · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pod{position:absolute; width:46px; height:46px; border-radius:10px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:18px;
+  background:linear-gradient(180deg,#fff,#eaf1fa); border:1.5px solid var(--good); z-index:3; transition:.3s; opacity:0}
+.pod.on{opacity:1} .pod.dead{border-color:var(--bad); opacity:.4}
+.desired{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Kubernetes — A Stage Manager with Understudies</h1>
+  <p class="subtitle">A director says "keep three performers on stage." The stage manager makes it so — and if one walks off, an understudy is sent on without anyone in the audience asking. Need a bigger scene? Call more performers. Kubernetes is that stage manager for your containers.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Cues performed</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Performers wanted</div><div class="stat-v" id="statWant">3</div></div>
+  <div class="stat"><div class="stat-k">On stage now</div><div class="stat-v good" id="statRun">3</div></div>
+</div>
+<div class="desired" id="desired">🧭 director's call: 3 performers on stage</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box sm">🎬</div><div class="lbl"><span class="k">Cues</span></div></div>
+<div id="pods"></div>
+<div class="acts">
+  <button class="act ok" id="actScale">➕ Call more performers</button>
+  <button class="act bad" id="actKill">💥 A performer walks off</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('pods');
+  let want=3, pods=[], reqs=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elW=document.getElementById('statWant'), elRun=document.getElementById('statRun'), desired=document.getElementById('desired');
+  function alive(){ return pods.filter(p=>p.alive); }
+  function layout(){ const n=pods.length; pods.forEach((p,i)=>{ const cols=Math.min(4,n); const x=46+ (i%cols)*12; const y=30+Math.floor(i/cols)*26; p.x=x; p.y=y; if(p.el){ p.el.style.left=x+'%'; p.el.style.top=y+'%'; } }); }
+  function render(){ wrap.innerHTML=''; pods.forEach((p,i)=>{ const el=document.createElement('div'); el.className='pod'+(p.alive?'':' dead'); el.textContent='🎭'; wrap.appendChild(el); p.el=el; requestAnimationFrame(()=>el.classList.add('on')); }); layout();
+    elW.textContent=want; const n=alive().length; elRun.textContent=n; elRun.className='stat-v '+(n>=want?'good':'warn'); desired.textContent='🧭 director\'s call: '+want+' performers on stage'; }
+  function reconcile(){ // stage manager maintains the headcount
+    while(alive().length < want){ pods.push({alive:true}); }
+    pods = pods.filter(p=>p.alive); if(pods.length>want) pods=pods.slice(0,want); render(); }
+  function req(){ if(document.hidden) return; const lv=alive(); if(!lv.length) return; const p=lv[rr++%lv.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=p.x+'%'; d.style.top=p.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(p.el){p.el.classList.add('healthy'); setTimeout(()=>p.el.classList.remove('healthy'),200);} reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function scale(){ want=Math.min(8,want+1); reconcile(); }
+  function kill(){ const p=alive()[0]; if(p){ p.alive=false; if(p.el)p.el.classList.add('dead');
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left=p.x+'%'; d.style.top=p.y+'%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate());
+    render(); setTimeout(()=>{ reconcile(); }, 1400*simRate()); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actScale').onclick=scale;
+  document.getElementById('actKill').onclick=kill;
+  pods=[{alive:true},{alive:true},{alive:true}]; render(); running=true; loop();
+  return {req,scale,kill,reconcile,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Containers are like performers — easy to manage one, but a whole show with dozens, kept running flawlessly, is a real job. That's <b>Kubernetes.</b>", dur:4800},
+  {cap:"The director doesn't micromanage every move. They just state a <b>goal:</b> \"keep three performers on stage.\" That's declaring a desired state.", dur:4800},
+  {cap:"The <b>stage manager</b> constantly compares the stage to that goal and acts to match it. Right now: 3 wanted, 3 on stage. ✓", dur:4600, on(){SIM.req();}},
+  {cap:"The spotlight's cues are handled across whoever's on stage (each performer wraps your container). The show runs smoothly.", dur:4200, on(){SIM.req();}},
+  {cap:"Now the magic — <span class='hl-bad'>a performer walks off</span> mid-scene.", dur:3600, on(){SIM.kill();}},
+  {cap:"The stage now has 2, but the call was 3. The stage manager spots the gap and <span class='hl-good'>sends an understudy on automatically.</span> Self-healing.", dur:4800},
+  {cap:"Nobody told them <em>how</em> to fix it — only how many to keep on stage. The stage manager works out the steps.", dur:4400, on(){SIM.req();}},
+  {cap:"Bigger scene coming? <b>Raise the call</b> and the stage manager brings on more performers to match.", dur:4400, on(){SIM.scale();}},
+  {cap:"Your turn 👉 <b>➕ Call more performers</b> and <b>💥 send one off</b> to watch the stage always match the director's number.", dur:5200, on(){SIM.render();}},
+  {cap:"Kubernetes is a stage manager for containers: declare the headcount you want, and it heals, schedules, and scales to keep it true.", dur:4800}
+]});
+
+</script>
+</body></html>

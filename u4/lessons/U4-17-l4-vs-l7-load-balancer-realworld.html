@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L4 vs L7 — Sorting Mail by Zip vs by Reading It · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.peek{position:absolute; left:38%; top:24%; font-family:var(--fmono); font-size:10px; color:var(--accent-d); z-index:4; opacity:0; transition:.3s}
+.peek.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">L4 vs L7 — Sorting Mail by Zip vs by Reading It</h1>
+  <p class="subtitle">One mail sorter just reads the zip code on the outside and flings each letter to a region — blazing fast, but it never knows what's inside. Another opens and reads each letter to route it to exactly the right department. L4 is the first sorter; L7 is the second.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Letters sorted</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Sorter</div><div class="stat-v" id="statMode">By zip (L4)</div></div>
+  <div class="stat"><div class="stat-k">Routes by</div><div class="stat-v good" id="statBy">zip on envelope</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">📨</div><div class="lbl"><span class="k">Incoming mail</span></div></div>
+<div class="node abs lb" data-show="1" style="left:40%;top:50%"><div class="box">🗂️</div><div class="lbl"><span class="k">Sorter</span></div></div>
+<div class="peek" id="peek">reads: "re: a photo order"</div>
+<div class="node abs" data-show="1" style="left:74%;top:24%"><div class="box sm s-0">🖼️</div><div class="lbl"><span class="k">Photos dept</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:52%"><div class="box sm s-1">🔧</div><div class="lbl"><span class="k">Support dept</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:80%"><div class="box sm s-2">🎬</div><div class="lbl"><span class="k">Video dept</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 By zip / By reading</button>
+  <button class="act ok" id="actRequest">✉️ Sort a letter</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const svc=[{x:74,y:24,k:'img'},{x:74,y:52,k:'api'},{x:74,y:80,k:'vid'}];
+  let reqs=0, mode='l4', running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elB=document.getElementById('statBy');
+  const peek=document.getElementById('peek');
+  const kinds=[{k:'img',p:'"re: a photo order"'},{k:'api',p:'"re: a support issue"'},{k:'vid',p:'"re: a video upload"'}];
+  function req(){ if(document.hidden) return;
+    const want=kinds[rr++%3];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='40%'; d.style.top='50%'; });
+    setTimeout(()=>{ let target;
+      if(mode==='l7'){ peek.textContent='reads: '+want.p; peek.classList.add('on'); setTimeout(()=>peek.classList.remove('on'),600); target=svc.find(s=>s.k===want.k); }
+      else { target=svc[Math.floor(Math.random()*3)]; } // by-zip: blind to contents
+      d.style.left=target.x+'%'; d.style.top=target.y+'%'; setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg);
+    }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='l4'?'By zip (L4)':'By reading (L7)'; elM.className='stat-v '+(m==='l4'?'accent':'good');
+    elB.textContent=m==='l4'?'zip on envelope':'the letter\'s contents'; }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='l4'?'l7':'l4');
+  document.getElementById('actRequest').onclick=req;
+  setMode('l4'); running=true; loop();
+  return {req,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A load balancer spreads work across servers — but <em>how</em> it decides where each request goes splits it into two kinds, just like two mail sorters.", dur:4800},
+  {cap:"The first sorter (<b>L4</b>) reads only the <b>zip code on the envelope</b> — the address and slot — never what's inside.", dur:4600, on(){SIM.req();}},
+  {cap:"So it flings letters to a region blindly but <b>incredibly fast</b> — barely a glance per letter. Cheap and high-volume.", dur:4600, on(){SIM.req();}},
+  {cap:"The limit: it can't tell a photo order from a support complaint — it just tosses each to <em>some</em> department.", dur:4400},
+  {cap:"Switch to the second sorter (<b>L7</b>). Now it actually <b>opens and reads each letter</b> — the subject, the details, who it's from.", dur:4600, on(){SIM.setMode('l7');}},
+  {cap:"It routes by meaning: <b>photo orders</b> to the photos desk, <b>support issues</b> to support, <b>uploads</b> to video. Smart delivery.", dur:4800, on(){SIM.req();}},
+  {cap:"Reading the contents unlocks more: send regulars to the same clerk, redirect by topic, even split a trial batch to a new desk.", dur:4600, on(){SIM.req();}},
+  {cap:"The trade: opening and reading every letter takes a little more effort than just glancing at the zip code.", dur:4400},
+  {cap:"Your turn 👉 flip <b>🔀 By zip / By reading</b> and <b>✉️ sort letters</b> to compare blind speed with content-aware routing.", dur:5200, on(){SIM.setMode('l4');}},
+  {cap:"L4 sorts by the envelope (fast, blind); L7 reads the letter (smart, content-aware). Big systems stack an L4 in front of an L7 for both.", dur:4800}
+]});
+
+</script>
+</body></html>

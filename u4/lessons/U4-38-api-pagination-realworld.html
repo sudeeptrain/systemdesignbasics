@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagination — Page Numbers vs a Bookmark · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rowlist{position:absolute; right:8%; top:18%; width:34%; display:flex; flex-direction:column; gap:4px; z-index:2}
+.lr{font-family:var(--fmono); font-size:11px; padding:4px 8px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); transition:.2s}
+.lr.page{border-color:var(--accent); background:#eaf2fe}
+.lr.dupe{border-color:var(--bad); background:#fdeceb}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Pagination — Page Numbers vs a Bookmark</h1>
+  <p class="subtitle">Find your place in a book by page number and someone inserts pages — your "page 30" now lands somewhere else, and you re-read a bit. Use a bookmark tucked after a specific paragraph and it always points to the right spot, no matter what's added. Offset is the page number; cursor is the bookmark.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Pages turned</div><div class="stat-v accent" id="statPages">0</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statMode">Page number</div></div>
+  <div class="stat"><div class="stat-k">If pages inserted</div><div class="stat-v" id="statShift">may skip/repeat</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:48%"><div class="box">🧑</div><div class="lbl"><span class="k">Reader</span></div></div>
+<div class="rowlist" id="rows"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Page number / Bookmark</button>
+  <button class="act ok" id="actNext">⏭️ Next page</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const rowsEl=document.getElementById('rows');
+  let mode='offset', pages=0, offset=0, cursor=0, running=false, data=[];
+  const elP=document.getElementById('statPages'), elM=document.getElementById('statMode'), elS=document.getElementById('statShift');
+  for(let i=0;i<40;i++) data.push('line '+(i+1));
+  function render(start){ rowsEl.innerHTML=''; for(let i=start;i<start+5 && i<data.length;i++){ const r=document.createElement('div'); r.className='lr page'; r.textContent=data[i]; rowsEl.appendChild(r); } }
+  function next(){ if(document.hidden) return; pages++; elP.textContent=pages;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='60%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),240);
+      if(mode==='offset'){ if(pages%3===0){ data.unshift('NEW line'); const r=rowsEl.querySelector('.lr'); if(r){r.classList.remove('page'); r.classList.add('dupe');} }
+        offset+=5; render(offset);
+        if(pages%3===0){ const r=rowsEl.querySelector('.lr'); if(r)r.classList.add('dupe'); }
+      } else { cursor+=5; render(cursor); }
+    }, leg);
+  }
+  function setMode(m){ mode=m; offset=0; cursor=0; render(0); elM.textContent=m==='offset'?'Page number':'Bookmark'; elM.className='stat-v '+(m==='offset'?'warn':'good');
+    elS.textContent=m==='offset'?'may skip / repeat':'stays put ✓'; elS.className='stat-v '+(m==='offset'?'warn':'good'); }
+  function loop(){ if(!running)return; next(); setTimeout(loop, 1600*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='offset'?'cursor':'offset');
+  document.getElementById('actNext').onclick=next;
+  setMode('offset'); running=true; loop();
+  return {next,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A huge list — like a thousand-page book — is read a page at a time, not all at once. That's <b>pagination.</b> There are two ways to keep your place.", dur:4600},
+  {cap:"The simplest is by <b>page number:</b> \"skip to page 5.\" Easy, and you can jump anywhere. That's offset pagination.", dur:4600, on(){SIM.next();}},
+  {cap:"But to reach a <b>deep</b> page, you still have to count past every page before it — slow when you're far in.", dur:4600, on(){SIM.next();}},
+  {cap:"And here's the subtle bug: if someone <b>inserts new pages</b> near the front, everything after shifts down by one…", dur:4600, on(){SIM.next();}},
+  {cap:"…so when you turn to the next page by number, you <span class='hl-bad'>re-read a line you already saw</span> (or skip one). Page numbers drift when the book changes.", dur:4800},
+  {cap:"A <b>bookmark</b> fixes both. Switch over.", dur:3600, on(){SIM.setMode('cursor');}},
+  {cap:"Instead of a number, you tuck a bookmark <b>right after a specific line</b> — \"continue after this one.\" It marks a place, not a count.", dur:4800, on(){SIM.next();}},
+  {cap:"Now inserts don't matter — the bookmark still sits exactly where you left off. And finding it is <span class='hl-good'>quick even deep</span> in the book.", dur:4800, on(){SIM.next();}},
+  {cap:"Your turn 👉 flip <b>🔀 Page number / Bookmark</b> and hit <b>⏭️ Next page</b> to watch numbers drift while the bookmark holds.", dur:5200, on(){SIM.setMode('offset');}},
+  {cap:"Page numbers (offset): simple and jumpable, but slow deep and shaky when the list changes. Bookmarks (cursor): rock-steady for endless scrolling.", dur:4800}
+]});
+
+</script>
+</body></html>

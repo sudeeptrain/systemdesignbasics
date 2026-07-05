@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebSocket Connection · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pipe{position:absolute; left:30%; width:40%; top:50%; height:6px; transform:translateY(-50%); border-radius:4px; background:var(--line2); z-index:1; transition:.3s}
+.pipe.open{background:linear-gradient(90deg,var(--good),var(--accent))}
+.statelbl{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">WebSocket Connection</h1>
+  <p class="subtitle">Plain HTTP is one-shot: the client asks, the server answers, done. A WebSocket starts as an HTTP request that upgrades into a persistent, two-way pipe — so the server can push messages to the client the instant something happens, with no re-asking.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Messages</div><div class="stat-v accent" id="statMsgs">0</div></div>
+  <div class="stat"><div class="stat-k">Connection</div><div class="stat-v" id="statState">HTTP (one-shot)</div></div>
+  <div class="stat"><div class="stat-k">Direction</div><div class="stat-v good" id="statDir">both ways</div></div>
+</div>
+<div class="statelbl" id="statelbl">click "open" to upgrade</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">💻</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="pipe" id="pipe"></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actServerPush">📡 Server pushes (open + push)</button>
+  <button class="act" id="actClientSend">📤 Client sends</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let msgs=0, open=false, running=false;
+  const elM=document.getElementById('statMsgs'), elS=document.getElementById('statState'), pipe=document.getElementById('pipe'), badge=document.getElementById('statelbl');
+  function openConn(){ open=true; pipe.classList.add('open'); elS.textContent='WebSocket (open)'; elS.className='stat-v good'; badge.textContent='🔌 persistent connection — open'; badge.style.color='var(--good)'; }
+  function msg(fromX,toX,cls){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fromX+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; }); setTimeout(()=>{ d.classList.add('done'); msgs++; elM.textContent=msgs; setTimeout(()=>d.remove(),240); }, leg); }
+  function serverPush(){ if(!open) openConn(); if(document.hidden) return; const srv=scene.querySelector('.server'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),250);} msg(84,16); }
+  function clientSend(){ if(!open) openConn(); if(document.hidden) return; msg(16,84); }
+  function loop(){ if(!running)return; (Math.random()<0.5?serverPush:clientSend)(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actServerPush').onclick=serverPush;
+  document.getElementById('actClientSend').onclick=clientSend;
+  running=true; setTimeout(loop, 600);
+  return {serverPush,clientSend,openConn};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Ordinary <b>HTTP</b> is one-shot: the client asks a question, the server answers, and the line goes quiet. Great for fetching pages.", dur:4600},
+  {cap:"But what about a chat, a live score, a multiplayer game? The server needs to tell the client things <em>the moment they happen.</em>", dur:4800},
+  {cap:"Polling — re-asking \"anything new?\" every second — is wasteful and laggy. <b>WebSockets</b> solve it properly.", dur:4600},
+  {cap:"A WebSocket starts as a normal HTTP request with a special <b>\"upgrade\"</b> header, then morphs the connection into a persistent pipe.", dur:4800, on(){SIM.openConn();}},
+  {cap:"Once <b>open</b>, the pipe stays put — no re-connecting, no re-asking. And it's <b>two-way.</b>", dur:4400},
+  {cap:"The <b>server can push</b> a message to the client the instant something changes — a new chat, a price tick, a game move.", dur:4600, on(){SIM.serverPush();}},
+  {cap:"And the <b>client can send</b> at any time too, over the very same connection. Truly bidirectional, in real time.", dur:4600, on(){SIM.clientSend();}},
+  {cap:"Because the connection persists, latency is tiny — no handshake per message. Perfect for anything live.", dur:4400, on(){SIM.serverPush();}},
+  {cap:"Your turn 👉 <b>📡 Server pushes</b> and <b>📤 Client sends</b> over the open pipe to feel real-time, two-way messaging.", dur:5200},
+  {cap:"WebSockets upgrade a one-shot HTTP request into a lasting, bidirectional channel — the backbone of chat, live feeds, and games.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encryption — A Sealed Envelope and a Locked Diary · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.disk{position:absolute; left:84%; top:74%; transform:translate(-50%,-50%); width:74px; text-align:center; font-family:var(--fmono); font-size:11px; padding:8px; border-radius:9px; border:2px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.disk.enc{border-color:var(--good); background:#e7f7ef}
+.eye{position:absolute; left:50%; top:30%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Encryption — A Sealed Envelope and a Locked Diary</h1>
+  <p class="subtitle">A secret is exposed in two places: while it's being carried (a postcard anyone can read) and while it's stored (a diary left open on a desk). Seal it in an envelope for the journey, and lock the diary at home. You need both — a nosy courier and a burglar are different threats.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Letters sent</div><div class="stat-v accent" id="statData">0</div></div>
+  <div class="stat"><div class="stat-k">On the journey</div><div class="stat-v bad" id="statTransit">open postcard</div></div>
+  <div class="stat"><div class="stat-k">In storage</div><div class="stat-v bad" id="statRest">open diary</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:46%"><div class="box">🧑</div><div class="lbl"><span class="k">Sender</span></div></div>
+<div class="eye" id="eye">👁️ nosy courier reads: secret</div>
+<div class="node abs" data-show="1" style="left:58%;top:46%"><div class="box sm">🏠</div><div class="lbl"><span class="k">Recipient</span></div></div>
+<div class="disk" id="disk">📔 diary:<br>secret</div>
+<div class="acts">
+  <button class="act ok" id="actTransit">✉️ Seal the envelope (in transit)</button>
+  <button class="act ok" id="actRest">🔐 Lock the diary (at rest)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let data=0, transit=false, rest=false, running=false;
+  const elD=document.getElementById('statData'), elT=document.getElementById('statTransit'), elR=document.getElementById('statRest');
+  const disk=document.getElementById('disk'), eye=document.getElementById('eye');
+  function write(){ if(document.hidden) return; data++; elD.textContent=data;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='58%'; });
+    eye.textContent= transit? '👁️ nosy courier reads: ✉️ sealed' : '👁️ nosy courier reads: "password123"'; eye.style.color=transit?'var(--good)':'var(--bad)';
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='84%'; d.style.top='74%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function fmt(){ elT.textContent=transit?'sealed ✉️':'open postcard'; elT.className='stat-v '+(transit?'good':'bad');
+    elR.textContent=rest?'locked 🔐':'open diary'; elR.className='stat-v '+(rest?'good':'bad');
+    disk.classList.toggle('enc',rest); disk.innerHTML= rest? '📔 diary:<br>🔐 ◼◻◼◻' : '📔 diary:<br>secret'; }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actTransit').onclick=()=>{ transit=!transit; fmt(); };
+  document.getElementById('actRest').onclick=()=>{ rest=!rest; fmt(); };
+  fmt(); running=true; loop();
+  return {write,fmt,setTransit:(b)=>{transit=b;fmt();},setRest:(b)=>{rest=b;fmt();}};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A secret is in danger in two distinct places: <b>while it's being carried</b> across town, and <b>while it sits</b> at the destination.", dur:4600},
+  {cap:"With no protection, your message travels as an <b>open postcard.</b> Any nosy courier along the way reads it — password and all.", dur:4600, on(){SIM.write();}},
+  {cap:"And it's filed as an <b>open diary</b> on a desk. A burglar who breaks in (or steals the diary) reads everything.", dur:4400, on(){SIM.write();}},
+  {cap:"Defense one: <b>seal it in an envelope</b> for the journey — that's encryption in transit (TLS). Do it.", dur:3600, on(){SIM.setTransit(true);}},
+  {cap:"Now the courier sees only a <span class='hl-good'>sealed envelope.</span> Safe <em>on the road</em> — but still an open diary once it arrives.", dur:4600, on(){SIM.write();}},
+  {cap:"Defense two: <b>lock the diary</b> in storage with a key — that's encryption at rest. Enable it.", dur:3800, on(){SIM.setRest(true);}},
+  {cap:"Now even a burglar who grabs the diary finds only <span class='hl-good'>locked gibberish.</span> Without the key, it's useless.", dur:4600, on(){SIM.write();}},
+  {cap:"You need <b>both</b>: they guard different threats — a snooping courier on the way versus a burglar at the destination.", dur:4600},
+  {cap:"Your turn 👉 toggle <b>✉️ the sealed envelope</b> and <b>🔐 the locked diary</b> to watch the courier and the burglar each come up empty.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Encrypt in transit (sealed envelope) and at rest (locked diary). Two layers, two threats — together they keep secrets unreadable to anyone but you.", dur:4800}
+]});
+
+</script>
+</body></html>

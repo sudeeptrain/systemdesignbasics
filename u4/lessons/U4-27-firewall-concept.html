@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firewall · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.wall{position:absolute; left:50%; top:18%; bottom:30%; width:10px; transform:translateX(-50%); background:repeating-linear-gradient(0deg,#c0392b 0 10px,#e74c3c 10px 20px); border-radius:4px; z-index:2}
+.rulebox{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Firewall</h1>
+  <p class="subtitle">A firewall is a gatekeeper between your network and the outside world. It checks each packet against a set of rules — allow port 443, block everything else — and drops anything that doesn't match. Default-deny: only explicitly permitted traffic gets through.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Packets</div><div class="stat-v accent" id="statPackets">0</div></div>
+  <div class="stat"><div class="stat-k">Allowed through</div><div class="stat-v good" id="statAllow">0</div></div>
+  <div class="stat"><div class="stat-k">Blocked</div><div class="stat-v" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box">🌍</div><div class="lbl"><span class="k">Internet</span></div></div>
+<div class="wall"></div>
+<div class="node abs" data-show="1" style="left:84%;top:46%"><div class="box">🖥️</div><div class="lbl"><span class="k">Your server</span></div></div>
+<div class="rulebox" id="rulebox">rule: allow 443 · allow 80</div>
+<div class="acts">
+  <button class="act ok" id="actSend">📦 Send mixed packets</button>
+  <button class="act" id="actRule">⚙️ Toggle SSH (22) rule</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let packets=0, allow=0, block=0, sshAllowed=false, running=false;
+  const elP=document.getElementById('statPackets'), elA=document.getElementById('statAllow'), elB=document.getElementById('statBlock'), rulebox=document.getElementById('rulebox');
+  const ports=[{p:443,ok:true,y:30},{p:80,ok:true,y:42},{p:22,ok:'ssh',y:54},{p:3306,ok:false,y:66},{p:23,ok:false,y:54}];
+  function send1(){ if(document.hidden) return; packets++; elP.textContent=packets; const pk=ports[Math.floor(Math.random()*ports.length)];
+    const allowed = pk.ok===true || (pk.ok==='ssh' && sshAllowed);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top=pk.y+'%'; scene.appendChild(d); d.title='port '+pk.p;
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(allowed){ d.style.left='84%'; setTimeout(()=>{ d.classList.add('done'); allow++; elA.textContent=allow; setTimeout(()=>d.remove(),leg); }, leg); }
+      else { d.classList.add('fail'); block++; elB.textContent=block; elB.className='stat-v warn'; setTimeout(()=>d.remove(),320); } }, leg);
+  }
+  function burst(){ for(let k=0;k<5;k++) setTimeout(send1, k*150*simRate()); }
+  function toggleRule(){ sshAllowed=!sshAllowed; rulebox.textContent='rule: allow 443 · allow 80'+(sshAllowed?' · allow 22 (SSH)':''); }
+  function loop(){ if(!running)return; send1(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actSend').onclick=burst;
+  document.getElementById('actRule').onclick=toggleRule;
+  running=true; loop();
+  return {send1,burst,toggleRule};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Between the wild internet and your server stands a <b>firewall</b> — a gatekeeper that inspects every incoming packet.", dur:4600},
+  {cap:"It works from <b>rules.</b> A typical web rule: allow port 443 (HTTPS) and port 80 (HTTP) in; everything else, deny.", dur:4600, on(){SIM.send1();}},
+  {cap:"Packets aimed at <b>allowed ports</b> sail through to the server. That's your normal web traffic.", dur:4400, on(){SIM.burst();}},
+  {cap:"But a packet for, say, the database port (3306) or telnet (23) <span class='hl-bad'>matches no allow rule</span> — so the firewall drops it.", dur:4800, on(){SIM.burst();}},
+  {cap:"The key principle is <b>default-deny:</b> block everything, then open only the specific ports you actually need. Smaller attack surface.", dur:4800},
+  {cap:"Need remote admin access? <b>Add a rule</b> to allow SSH on port 22 (ideally only from trusted IPs).", dur:4600, on(){SIM.toggleRule();}},
+  {cap:"Now SSH packets pass too — because there's an explicit rule. Remove the rule and they're blocked again.", dur:4400, on(){SIM.burst();}},
+  {cap:"Firewalls can filter by port, IP, and direction — and live at the network edge, on the host, or both (defense in depth).", dur:4600},
+  {cap:"Your turn 👉 <b>📦 Send mixed packets</b> and <b>⚙️ toggle the SSH rule</b> to watch the gatekeeper allow and drop.", dur:5200},
+  {cap:"A firewall enforces who may talk to what: default-deny, open only needed ports, drop the rest. Your network's front gate.", dur:4800}
+]});
+
+</script>
+</body></html>

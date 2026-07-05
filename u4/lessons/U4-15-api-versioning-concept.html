@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Versioning · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.vbox .box{transition:.3s}
+.vbox.dead .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">API Versioning</h1>
+  <p class="subtitle">You can't change a public API overnight — other people's apps depend on it. Versioning lets old and new live side by side: existing clients keep calling /v1 while new ones use /v2, and you deprecate /v1 only once everyone has moved.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">API calls</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Client uses</div><div class="stat-v" id="statVer">v1</div></div>
+  <div class="stat"><div class="stat-k">v1 status</div><div class="stat-v good" id="statV1">live</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:30%"><div class="box sm">📟</div><div class="lbl"><span class="k">Old client</span></div></div>
+<div class="node abs" data-show="1" style="left:16%;top:70%"><div class="box sm">📱</div><div class="lbl"><span class="k">New client</span></div></div>
+<div class="node abs vbox v-0" data-show="1" style="left:80%;top:30%"><div class="box sm">🔌</div><div class="lbl"><span class="k">/v1</span></div></div>
+<div class="node abs vbox v-1" data-show="1" style="left:80%;top:70%"><div class="box sm">🔌</div><div class="lbl"><span class="k">/v2</span></div></div>
+<div class="acts">
+  <button class="act" id="actVersion">🔁 Client: v1 / v2</button>
+  <button class="act bad" id="actDeprecate">🗑️ Deprecate v1</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let calls=0, clientVer=1, v1live=true, running=false;
+  const elC=document.getElementById('statCalls'), elV=document.getElementById('statVer'), elV1=document.getElementById('statV1');
+  const v0=scene.querySelector('.v-0');
+  function call(){ if(document.hidden) return; calls++; elC.textContent=calls;
+    const useV1 = clientVer===1; const fromY = useV1?30:70; const toY = useV1?30:70;
+    const dead = useV1 && !v1live;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='80%'; d.style.top=toY+'%'; });
+    setTimeout(()=>{ if(dead){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; } d.classList.add('done'); const ep=scene.querySelector(useV1?'.v-0':'.v-1'); if(ep){ep.classList.add('active'); setTimeout(()=>ep.classList.remove('active'),200);} setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function toggleVer(){ clientVer=clientVer===1?2:1; elV.textContent='v'+clientVer; }
+  function deprecate(){ v1live=false; if(v0)v0.classList.add('dead'); elV1.textContent='deprecated'; elV1.className='stat-v bad'; }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actVersion').onclick=toggleVer;
+  document.getElementById('actDeprecate').onclick=deprecate;
+  running=true; loop();
+  return {call,toggleVer,deprecate};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your public API is used by other people's apps. Change its shape carelessly and you <b>break all of them.</b> Versioning prevents that.", dur:4800},
+  {cap:"You expose the API under a version, like <b>/v1</b>. Old clients call it and everything works.", dur:4400, on(){SIM.call();}},
+  {cap:"Now you need a breaking change. Instead of editing /v1, you ship a <b>new /v2</b> alongside it — both running at once.", dur:4600},
+  {cap:"<b>New clients</b> adopt /v2 and enjoy the improvements. Switch the client over and watch it hit the new endpoint.", dur:4600, on(){SIM.toggleVer();SIM.call();}},
+  {cap:"Meanwhile <b>old clients keep calling /v1</b>, completely undisturbed. Nothing breaks. Both versions coexist.", dur:4600, on(){SIM.toggleVer();SIM.call();}},
+  {cap:"Over time you nudge everyone to migrate — docs, warnings, a sunset date. Only <em>then</em> do you <b>deprecate /v1.</b>", dur:4600, on(){SIM.deprecate();}},
+  {cap:"After deprecation, lingering /v1 calls <span class='hl-bad'>fail</span> — but by now everyone has moved to /v2. Clean retirement.", dur:4600, on(){SIM.call();}},
+  {cap:"Versions can live in the URL (/v2/…), a header, or a media type — the principle is the same: never silently break callers.", dur:4600, on(){SIM.toggleVer();}},
+  {cap:"Your turn 👉 toggle the <b>🔁 client version</b> and <b>🗑️ deprecate v1</b> to watch old and new coexist, then retire.", dur:5200},
+  {cap:"API versioning lets you evolve without breaking anyone: run old and new together, migrate clients, then sunset the old. Stability first.", dur:4800}
+]});
+
+</script>
+</body></html>

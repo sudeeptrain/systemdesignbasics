@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLS Handshake · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.msg{position:absolute; font-family:var(--fmono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px; z-index:5; opacity:0; transition:.2s; white-space:nowrap}
+.msg.on{opacity:1}
+.lock{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-size:22px; z-index:5; opacity:.3; transition:.3s}
+.lock.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">TLS Handshake</h1>
+  <p class="subtitle">The 'S' in HTTPS comes from TLS. Before any data is sent, client and server do a handshake: the server proves its identity with a certificate, both agree on a shared secret key, and from then on everything is encrypted — so eavesdroppers see only scrambled bytes.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Secure sessions</div><div class="stat-v accent" id="statSessions">0</div></div>
+  <div class="stat"><div class="stat-k">State</div><div class="stat-v" id="statState">plaintext</div></div>
+  <div class="stat"><div class="stat-k">Eavesdropper sees</div><div class="stat-v" id="statEve">everything</div></div>
+</div>
+<div class="lock" id="lock">🔒</div>
+<div class="node abs" data-show="1" style="left:16%;top:54%"><div class="box">💻</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:54%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="msg" id="m0" style="left:36%;top:36%;color:var(--accent-d)">1 · ClientHello →</div>
+<div class="msg" id="m1" style="left:36%;top:46%;color:var(--violet)">← 2 · cert + key</div>
+<div class="msg" id="m2" style="left:36%;top:64%;color:var(--good)">3 · shared secret →</div>
+<div class="acts">
+  <button class="act ok" id="actHandshake">🤝 TLS handshake</button>
+  <button class="act" id="actData">🔐 Send encrypted data</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let sessions=0, secure=false, busy=false, running=false;
+  const elS=document.getElementById('statSessions'), elState=document.getElementById('statState'), elEve=document.getElementById('statEve'), lock=document.getElementById('lock');
+  const ms=[document.getElementById('m0'),document.getElementById('m1'),document.getElementById('m2')];
+  function fly(fx,tx,y,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=tx+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, leg); }
+  function handshake(){ if(busy) return; busy=true; secure=false; lock.classList.remove('on'); ms.forEach(m=>m.classList.remove('on'));
+    elState.textContent='handshaking…'; elState.className='stat-v warn'; ms[0].classList.add('on');
+    fly(16,84,36,'',()=>{ ms[1].classList.add('on'); fly(84,16,46,'',()=>{ ms[2].classList.add('on');
+      fly(16,84,64,'done',()=>{ secure=true; sessions++; elS.textContent=sessions; lock.classList.add('on'); elState.textContent='encrypted ✓'; elState.className='stat-v good'; elEve.textContent='only 🔒 scrambled'; elEve.className='stat-v good'; busy=false; }); }); });
+  }
+  function data(){ if(!secure||document.hidden) return; fly(16,84,54,'done',()=>{}); }
+  function loop(){ if(!running)return; if(!secure && !busy){ handshake(); } else if(secure){ data(); } setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actHandshake').onclick=handshake;
+  document.getElementById('actData').onclick=data;
+  elEve.className='stat-v bad'; running=true; loop();
+  return {handshake,data};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Type <b>https://</b> and before any page loads, a <b>TLS handshake</b> happens — it's what makes the connection secure.", dur:4600},
+  {cap:"It opens with <b>ClientHello:</b> the client says hi and lists the encryption methods it supports.", dur:4600, on(){SIM.handshake();}},
+  {cap:"The server replies with its <b>certificate</b> — a document, signed by a trusted authority, proving it really is who it claims.", dur:4800},
+  {cap:"The client checks that certificate. If it's valid, the two sides <b>agree on a shared secret key</b> using public-key cryptography.", dur:4800},
+  {cap:"Now both hold the same secret — but it was never sent in the open. From here, <b>everything is encrypted</b> with it.", dur:4600},
+  {cap:"The padlock 🔒 appears. The connection is now <span class='hl-good'>secure</span> — and only now does real data flow.", dur:4400, on(){SIM.data();}},
+  {cap:"An eavesdropper on the wire sees only <span class='hl-good'>scrambled bytes</span> — no passwords, no card numbers, no content.", dur:4600, on(){SIM.data();}},
+  {cap:"TLS gives three things at once: <b>encryption</b> (privacy), <b>authentication</b> (the cert), and <b>integrity</b> (tamper detection).", dur:4600},
+  {cap:"Your turn 👉 <b>🤝 Do the handshake</b> to establish the secret, then <b>🔐 send encrypted data.</b>", dur:5200},
+  {cap:"The TLS handshake proves identity and sets up a shared key up front — turning an open line into a private, tamper-proof channel.", dur:4800}
+]});
+
+</script>
+</body></html>

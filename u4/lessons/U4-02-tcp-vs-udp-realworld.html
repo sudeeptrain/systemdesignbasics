@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCP vs UDP — Registered Post vs Postcards · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.recv{position:absolute; right:9%; top:30%; bottom:30%; width:40px; border:1.5px solid var(--line2); border-radius:8px; background:#eef5fd; z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">TCP vs UDP — Registered Post vs Postcards</h1>
+  <p class="subtitle">Registered post is like TCP: every item is signed for, lost ones are re-sent, and they arrive in order — reliable, but slower. Tossing out postcards is like UDP: fast and cheap, but no tracking and some never arrive. You pick by what you can afford to lose.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Items sent</div><div class="stat-v accent" id="statSent">0</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statMode">Registered post</div></div>
+  <div class="stat"><div class="stat-k">Delivery</div><div class="stat-v good" id="statDel">tracked, in order</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">📮</div><div class="lbl"><span class="k">Sender</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box">🏠</div><div class="lbl"><span class="k">Recipient</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Registered / Postcards</button>
+  <button class="act ok" id="actSend">✉️ Send an item</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='tcp', sent=0, running=false;
+  const elS=document.getElementById('statSent'), elM=document.getElementById('statMode'), elD=document.getElementById('statDel');
+  function send(){ if(document.hidden) return; sent++; elS.textContent=sent;
+    const lost = (mode==='udp') && Math.random()<0.25;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=(mode==='tcp'?620:380)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='86%'; });
+    setTimeout(()=>{ if(lost){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      d.classList.add('done');
+      if(mode==='tcp'){ const a=document.createElement('div'); a.className='dot done'; a.style.left='86%'; a.style.top='62%'; scene.appendChild(a);
+        requestAnimationFrame(()=>{ a.style.transition='left '+leg+'ms'; a.style.left='14%'; }); setTimeout(()=>a.remove(),leg); }
+      setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='tcp'?'Registered post':'Postcards'; elM.className='stat-v '+(m==='tcp'?'accent':'warn');
+    elD.textContent=m==='tcp'?'tracked, in order':'fast, may go missing'; elD.className='stat-v '+(m==='tcp'?'good':'warn'); }
+  function loop(){ if(!running)return; send(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='tcp'?'udp':'tcp');
+  document.getElementById('actSend').onclick=send;
+  setMode('tcp'); running=true; loop();
+  return {send,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two ways to send things through the post — and they're exactly the two ways computers send data: <b>TCP</b> and <b>UDP.</b>", dur:4400},
+  {cap:"<b>Registered post</b> is TCP. You send an item and wait for a <b>signed delivery confirmation</b> to come back.", dur:4600, on(){SIM.send();}},
+  {cap:"See the receipt return for each one. If something's lost, you <b>re-send it</b> — and everything arrives <em>in order.</em>", dur:4800, on(){SIM.send();}},
+  {cap:"That reliability takes longer — all that tracking and confirming. Use it when every item must arrive: contracts, payments, files.", dur:4600},
+  {cap:"Now switch to <b>postcards</b> — that's UDP.", dur:3400, on(){SIM.setMode('udp');}},
+  {cap:"You just drop them in the box and walk away. Fast and cheap — but there's no tracking, and some simply <span class='hl-bad'>never arrive.</span>", dur:4800, on(){SIM.send();}},
+  {cap:"No waiting, no re-sending. Perfect when speed matters more than every single item: live video, voice calls, online games.", dur:4800, on(){SIM.send();}},
+  {cap:"A dropped video frame is fine — the next one's already here. A dropped contract is not. That's the whole choice.", dur:4400},
+  {cap:"Your turn 👉 flip <b>🔀 Registered / Postcards</b> and <b>✉️ send items</b> to compare tracked delivery with fire-and-forget.", dur:5200},
+  {cap:"TCP = registered post (reliable, ordered, slower). UDP = postcards (fast, lossy, lean). Choose by what you can't afford to lose.", dur:4800}
+]});
+
+</script>
+</body></html>

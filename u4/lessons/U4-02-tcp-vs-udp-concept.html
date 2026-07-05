@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCP vs UDP · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.recv{position:absolute; right:9%; top:30%; bottom:30%; width:40px; border:1.5px solid var(--line2); border-radius:8px; background:#eef5fd; z-index:1}
+.seqlbl{position:absolute; right:7%; top:22%; font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">TCP vs UDP</h1>
+  <p class="subtitle">TCP is the careful courier: every packet is acknowledged, lost ones are resent, and they arrive in order — reliable but with overhead. UDP just fires packets and forgets: no acks, no retries, no ordering — lightning fast, but some may vanish.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Packets sent</div><div class="stat-v accent" id="statSent">0</div></div>
+  <div class="stat"><div class="stat-k">Protocol</div><div class="stat-v" id="statMode">TCP</div></div>
+  <div class="stat"><div class="stat-k">Delivery</div><div class="stat-v good" id="statDel">reliable, in order</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">📤</div><div class="lbl"><span class="k">Sender</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box">📥</div><div class="lbl"><span class="k">Receiver</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 TCP / UDP</button>
+  <button class="act ok" id="actSend">📦 Send a packet</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='tcp', sent=0, seq=0, running=false;
+  const elS=document.getElementById('statSent'), elM=document.getElementById('statMode'), elD=document.getElementById('statDel');
+  function send(){ if(document.hidden) return; sent++; elS.textContent=sent; seq++; const n=seq;
+    const lost = (mode==='udp') && Math.random()<0.25;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d); d.textContent='';
+    const leg=(mode==='tcp'?620:380)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='86%'; });
+    setTimeout(()=>{ if(lost){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      d.classList.add('done');
+      if(mode==='tcp'){ // ack returns
+        const a=document.createElement('div'); a.className='dot done'; a.style.left='86%'; a.style.top='62%'; scene.appendChild(a);
+        requestAnimationFrame(()=>{ a.style.transition='left '+leg+'ms'; a.style.left='14%'; }); setTimeout(()=>a.remove(),leg); }
+      setTimeout(()=>d.remove(),300); }, leg);
+    if(lost){ // tcp would retransmit; udp drops. For udp show nothing more.
+    }
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='tcp'?'TCP':'UDP'; elM.className='stat-v '+(m==='tcp'?'accent':'warn');
+    elD.textContent=m==='tcp'?'reliable, in order':'fast, may drop'; elD.className='stat-v '+(m==='tcp'?'good':'warn'); }
+  function loop(){ if(!running)return; send(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='tcp'?'udp':'tcp');
+  document.getElementById('actSend').onclick=send;
+  setMode('tcp'); running=true; loop();
+  return {send,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two ways to send data across a network, with opposite priorities. Meet <b>TCP</b> and <b>UDP.</b>", dur:4400},
+  {cap:"<b>TCP</b> is the careful courier. It sends a packet and <b>waits for an acknowledgement</b> that it arrived.", dur:4600, on(){SIM.send();}},
+  {cap:"See the ack come back for each packet. If one is lost, TCP <b>resends it</b> — and it delivers everything <em>in order.</em>", dur:4800, on(){SIM.send();}},
+  {cap:"That reliability costs time: acks, retransmits, and ordering all add overhead. Rock-solid, but not the fastest.", dur:4600},
+  {cap:"TCP is the right choice when every byte matters: web pages, files, emails, payments.", dur:4400},
+  {cap:"Now switch to <b>UDP</b> — fire and forget.", dur:3600, on(){SIM.setMode('udp');}},
+  {cap:"UDP just <b>shoots packets out</b> with no acks and no retries. They're fast and lightweight — but some simply <span class='hl-bad'>vanish.</span>", dur:4800, on(){SIM.send();}},
+  {cap:"There's no waiting and no reordering, so it's perfect when <b>speed beats completeness</b>: live video, voice calls, games.", dur:4800, on(){SIM.send();}},
+  {cap:"Your turn 👉 flip <b>🔀 TCP / UDP</b> and <b>📦 send packets</b> to compare acked-and-ordered with fire-and-forget.", dur:5200},
+  {cap:"TCP = reliable, ordered, slower (use for correctness). UDP = fast, lossy, lean (use for real-time). Pick by what you can't lose.", dur:4800}
+]});
+
+</script>
+</body></html>

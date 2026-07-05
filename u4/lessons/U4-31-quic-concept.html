@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUIC · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.netlbl{position:absolute; left:16%; top:70%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">QUIC</h1>
+  <p class="subtitle">QUIC is the transport behind HTTP/3. Built on UDP, it folds the connection and TLS setup into one fast step (often 0-RTT on repeat visits), avoids TCP's head-of-line blocking, and can survive a network switch — your connection lives on as you move from Wi-Fi to cellular.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Connections</div><div class="stat-v accent" id="statConns">0</div></div>
+  <div class="stat"><div class="stat-k">Setup</div><div class="stat-v good" id="statSetup">1 step (UDP + TLS)</div></div>
+  <div class="stat"><div class="stat-k">On network switch</div><div class="stat-v good" id="statMig">survives ✓</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box client">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:46%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="netlbl" id="netlbl">📶 on Wi-Fi</div>
+<div class="acts">
+  <button class="act ok" id="actConnect">⚡ Connect (QUIC)</button>
+  <button class="act" id="actMigrate">📶→📡 Switch Wi-Fi → cellular</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const SVG=null; const scene=document.getElementById('scene');
+  let conns=0, established=false, net='Wi-Fi', running=false;
+  const elC=document.getElementById('statConns'), netlbl=document.getElementById('netlbl');
+  const client=scene.querySelector('.client'), server=scene.querySelector('.server');
+  function fly(fx,tx,y,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=tx+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, leg); }
+  function connect(){ // one combined setup step, then data
+    fly(16,84,40,'',()=>{ fly(84,16,52,'done',()=>{ established=true; conns++; elC.textContent=conns; data(); }); });
+  }
+  function data(){ if(!established||document.hidden) return; fly(16,84,46,'done',()=>{}); }
+  function migrate(){ net = net==='Wi-Fi'?'cellular':'Wi-Fi'; netlbl.textContent=(net==='Wi-Fi'?'📶 on Wi-Fi':'📡 on cellular');
+    if(client){client.classList.add('healthy'); setTimeout(()=>client.classList.remove('healthy'),400);}
+    // connection survives — keep sending data without re-handshake
+    if(established) data(); }
+  function loop(){ if(!running)return; if(!established){ connect(); } else { data(); } setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actConnect').onclick=()=>{ if(!established) connect(); else data(); };
+  document.getElementById('actMigrate').onclick=migrate;
+  running=true; loop();
+  return {connect,migrate,data};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>QUIC</b> is the modern transport under HTTP/3. It was designed to fix the things that slow TCP down.", dur:4600},
+  {cap:"With old TCP+TLS, opening a secure connection takes <em>two</em> round trips: first the TCP handshake, then the TLS handshake.", dur:4600},
+  {cap:"QUIC, built on <b>UDP</b>, folds connection setup and encryption into <b>one step</b> — and on repeat visits, often <b>0-RTT.</b>", dur:4800, on(){SIM.connect();}},
+  {cap:"So data starts flowing almost immediately. Faster first paint, especially on high-latency mobile networks.", dur:4400, on(){SIM.data();}},
+  {cap:"QUIC also carries <b>independent streams</b>, so one lost packet only stalls its own stream — no TCP-style head-of-line blocking.", dur:4600, on(){SIM.data();}},
+  {cap:"Now the standout trick. You walk out the door and your phone switches from <b>Wi-Fi to cellular.</b>", dur:4400, on(){SIM.migrate();}},
+  {cap:"On TCP that would drop the connection. QUIC uses a <b>connection ID</b>, not the IP address, so the <span class='hl-good'>connection survives</span> the switch.", dur:4800, on(){SIM.data();}},
+  {cap:"Your download or call just keeps going — no reconnect, no stutter. That's connection migration.", dur:4400, on(){SIM.migrate();}},
+  {cap:"Your turn 👉 <b>⚡ Connect</b> with QUIC and <b>📶→📡 switch networks</b> to watch the connection live on.", dur:5200},
+  {cap:"QUIC = faster setup, no head-of-line blocking, and connections that survive network changes. The transport powering HTTP/3.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Checks · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bk.sick .box{border-color:var(--bad); opacity:.5}
+.hb{position:absolute; font-family:var(--fmono); font-size:10px; z-index:4; opacity:0; transition:.2s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Health Checks</h1>
+  <p class="subtitle">A load balancer must never send users to a dead server. So it pings each backend regularly with a health check. A server that fails is pulled from rotation; when it recovers and passes again, it's quietly added back — all automatically.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">In rotation</div><div class="stat-v good" id="statUp">3 / 3</div></div>
+  <div class="stat"><div class="stat-k">Failed checks</div><div class="stat-v" id="statFail">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box">⚖️</div><div class="lbl"><span class="k">Load balancer</span></div></div>
+<div class="node abs bk b-0" data-show="1" style="left:74%;top:22%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server 1</span></div></div>
+<div class="node abs bk b-1" data-show="1" style="left:74%;top:50%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server 2</span></div></div>
+<div class="node abs bk b-2" data-show="1" style="left:74%;top:78%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server 3</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actSick">🤒 Make a server unhealthy</button>
+  <button class="act ok" id="actHeal">💊 Recover it</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const bk=[{x:74,y:22},{x:74,y:50},{x:74,y:78}].map((p,i)=>({...p,healthy:true,el:scene.querySelector('.b-'+i)}));
+  let reqs=0, fails=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elU=document.getElementById('statUp'), elF=document.getElementById('statFail');
+  function up(){ return bk.filter(b=>b.healthy); }
+  function fmt(){ elU.textContent=up().length+' / 3'; elU.className='stat-v '+(up().length===3?'good':up().length?'warn':'bad'); }
+  function check(){ // LB pings each server
+    bk.forEach(b=>{ const d=document.createElement('div'); d.className='dot'+(b.healthy?'':' fail'); d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=b.x+'%'; d.style.top=b.y+'%'; });
+      setTimeout(()=>{ if(!b.healthy){ fails++; elF.textContent=fails; elF.className='stat-v warn'; } d.classList.add(b.healthy?'done':'fail'); setTimeout(()=>d.remove(),240); }, leg); }); }
+  function serve(){ const lv=up(); if(!lv.length) return; const b=lv[rr++%lv.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=b.x+'%'; d.style.top=b.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function sick(){ const b=up()[0]; if(b){ b.healthy=false; if(b.el)b.el.classList.add('sick'); check(); fmt(); } }
+  function heal(){ const b=bk.find(x=>!x.healthy); if(b){ b.healthy=true; if(b.el)b.el.classList.remove('sick'); check(); fmt(); } }
+  function loop(){ if(!running)return; serve(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actSick').onclick=sick;
+  document.getElementById('actHeal').onclick=heal;
+  fmt(); running=true; loop(); setInterval(check, 2600);
+  return {serve,sick,heal,check,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A load balancer spreads traffic across servers — but it must never hand a user to a <b>dead</b> one. How does it know which are alive?", dur:4800},
+  {cap:"It runs <b>health checks:</b> at a regular interval it pings each backend with a small request — \"are you OK?\"", dur:4600, on(){SIM.check();}},
+  {cap:"Servers that respond are <span class='hl-good'>healthy</span> and stay in rotation, sharing the live traffic.", dur:4400, on(){SIM.serve();}},
+  {cap:"Now one server <b>goes unhealthy</b> — it crashes or gets overloaded.", dur:3600, on(){SIM.sick();}},
+  {cap:"Its next health check <span class='hl-bad'>fails.</span> The load balancer immediately <b>pulls it from rotation</b> — no user is sent there.", dur:4800, on(){SIM.serve();}},
+  {cap:"Traffic keeps flowing smoothly to the remaining healthy servers. Most users never even notice the failure.", dur:4400, on(){SIM.serve();}},
+  {cap:"When the server <b>recovers</b> and starts passing checks again, the balancer quietly <b>adds it back</b> to the pool.", dur:4400, on(){SIM.heal();}},
+  {cap:"Good checks test real readiness — not just \"is the process up?\" but \"can it actually serve?\" (e.g., database reachable).", dur:4600, on(){SIM.check();}},
+  {cap:"Your turn 👉 <b>🤒 Make a server unhealthy</b> and <b>💊 recover it</b> to watch it leave and rejoin rotation.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Health checks are the load balancer's eyes: ping constantly, drop the sick, restore the healed — automatic, continuous resilience.", dur:4800}
+]});
+
+</script>
+</body></html>

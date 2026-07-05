@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUIC — A Courier Who Knows You, Not Your Address · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.netlbl{position:absolute; left:16%; top:70%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">QUIC — A Courier Who Knows You, Not Your Address</h1>
+  <p class="subtitle">A regular courier ties deliveries to your street address — move house mid-order and it's lost. A courier who recognizes YOU just keeps delivering wherever you've gone. QUIC works that way: it identifies the connection, not the network, so it survives you switching from Wi-Fi to cellular.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Deliveries set up</div><div class="stat-v accent" id="statConns">0</div></div>
+  <div class="stat"><div class="stat-k">Setup</div><div class="stat-v good" id="statSetup">1 quick step</div></div>
+  <div class="stat"><div class="stat-k">If you move</div><div class="stat-v good" id="statMig">keeps going ✓</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box client">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:46%"><div class="box server">🛵</div><div class="lbl"><span class="k">Courier</span></div></div>
+<div class="netlbl" id="netlbl">🏠 at home (Wi-Fi)</div>
+<div class="acts">
+  <button class="act ok" id="actConnect">⚡ Start deliveries</button>
+  <button class="act" id="actMigrate">🏠→🚶 Head out (Wi-Fi → cellular)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let conns=0, established=false, net='Wi-Fi', running=false;
+  const elC=document.getElementById('statConns'), netlbl=document.getElementById('netlbl');
+  const client=scene.querySelector('.client'), server=scene.querySelector('.server');
+  function fly(fx,tx,y,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=tx+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, leg); }
+  function connect(){ // one combined setup step, then deliveries
+    fly(16,84,40,'',()=>{ fly(84,16,52,'done',()=>{ established=true; conns++; elC.textContent=conns; data(); }); });
+  }
+  function data(){ if(!established||document.hidden) return; fly(84,16,46,'done',()=>{}); }
+  function migrate(){ net = net==='Wi-Fi'?'cellular':'Wi-Fi'; netlbl.textContent=(net==='Wi-Fi'?'🏠 at home (Wi-Fi)':'🚶 out and about (cellular)');
+    if(client){client.classList.add('healthy'); setTimeout(()=>client.classList.remove('healthy'),400);}
+    if(established) data(); }
+  function loop(){ if(!running)return; if(!established){ connect(); } else { data(); } setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actConnect').onclick=()=>{ if(!established) connect(); else data(); };
+  document.getElementById('actMigrate').onclick=migrate;
+  running=true; loop();
+  return {connect,migrate,data};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>QUIC</b> is the modern delivery service behind HTTP/3 — built to fix the slow, fragile bits of the old way of connecting.", dur:4600},
+  {cap:"The old way (TCP + TLS) is like setting up a delivery in <em>two</em> separate visits: first confirm the address, then arrange security. Two trips before anything arrives.", dur:4800},
+  {cap:"QUIC folds both into <b>one quick step</b> — and for a courier who's served you before, it can start almost <b>instantly.</b>", dur:4800, on(){SIM.connect();}},
+  {cap:"So packages start arriving right away. Much snappier — especially over slow mobile connections.", dur:4400, on(){SIM.data();}},
+  {cap:"QUIC also sends parcels on <b>independent runs</b>, so one delayed package doesn't hold up all the others behind it.", dur:4600, on(){SIM.data();}},
+  {cap:"Now the standout trick. You leave the house, and your phone hops from <b>home Wi-Fi to cellular.</b>", dur:4400, on(){SIM.migrate();}},
+  {cap:"An old courier tied to your <em>address</em> would lose you. But this courier recognizes <b>you</b>, not your location — so the <span class='hl-good'>deliveries keep coming.</span>", dur:4800, on(){SIM.data();}},
+  {cap:"Your download or video call just carries on — no reconnect, no stutter. That's connection migration.", dur:4400, on(){SIM.migrate();}},
+  {cap:"Your turn 👉 <b>⚡ Start deliveries</b> and <b>🏠→🚶 head out</b> to watch them follow you across networks.", dur:5200},
+  {cap:"QUIC = faster setup, no pile-ups, and connections that follow you when the network changes. The transport powering HTTP/3.", dur:4800}
+]});
+
+</script>
+</body></html>

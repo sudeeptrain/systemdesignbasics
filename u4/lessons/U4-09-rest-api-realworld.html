@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REST — A Standard Restaurant Menu · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.coll{position:absolute; right:8%; top:22%; width:30%; z-index:2}
+.rrow{font-family:var(--fmono); font-size:11px; padding:5px 9px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px; transition:.3s}
+.rrow.flash{border-color:var(--accent); box-shadow:0 0 0 3px rgba(31,111,230,.16)}
+.verb{position:absolute; left:36%; top:42%; font-family:var(--fmono); font-size:13px; font-weight:700; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">REST — A Standard Restaurant Menu</h1>
+  <p class="subtitle">Every restaurant works the same way: items on a menu (the nouns) and a fixed set of actions you can take — order one, ask for the bill, send a dish back. Once you know the routine, any restaurant feels familiar. REST gives APIs that same predictable grammar.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests made</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Action</div><div class="stat-v" id="statVerb">See menu</div></div>
+  <div class="stat"><div class="stat-k">The table's order</div><div class="stat-v good" id="statRes">/orders</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:48%"><div class="box">🧑</div><div class="lbl"><span class="k">Diner</span></div></div>
+<div class="verb" id="verb">See menu → /orders</div>
+<div class="nlbl" style="left:80%;top:13%">📋 The table's order</div>
+<div class="coll" id="coll"></div>
+<div class="acts">
+  <button class="act" id="actVerb">🔁 Change action</button>
+  <button class="act ok" id="actCall">🙋 Ask the waiter</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const coll=document.getElementById('coll'), verb=document.getElementById('verb');
+  const verbs=['GET','POST','PUT','DELETE'];
+  const label={GET:'See menu',POST:'Order a dish',PUT:'Change an order',DELETE:'Send it back'};
+  const colors={GET:'var(--accent-d)',POST:'var(--good)',PUT:'var(--warn)',DELETE:'var(--bad)'};
+  let calls=0, vi=0, running=false; let items=['🍲 Soup','🥗 Salad','🍝 Pasta'];
+  const elC=document.getElementById('statCalls'), elV=document.getElementById('statVerb'), elR=document.getElementById('statRes');
+  function render(){ coll.innerHTML=''; items.forEach(it=>{ const r=document.createElement('div'); r.className='rrow'; r.textContent=it; coll.appendChild(r); }); }
+  function setVerb(){ const v=verbs[vi]; elV.textContent=label[v]; elV.style.color=colors[v]; const path=(v==='GET'||v==='POST')?'/orders':'/orders/2'; verb.textContent=label[v]+' → '+path; verb.style.color=colors[v]; elR.textContent=path; }
+  function call(){ if(document.hidden) return; calls++; elC.textContent=calls; const v=verbs[vi];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done');
+      if(v==='POST'){ items.push('🍰 Dessert'); }
+      else if(v==='DELETE'){ if(items.length) items.pop(); }
+      render(); const rows=[...coll.children]; const t = v==='POST'? rows[rows.length-1] : rows[Math.floor(Math.random()*Math.max(1,rows.length))]; if(t){t.classList.add('flash'); setTimeout(()=>t.classList.remove('flash'),400);}
+      setTimeout(()=>d.remove(),260); }, leg);
+  }
+  function nextVerb(){ vi=(vi+1)%verbs.length; setVerb(); }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actVerb').onclick=nextVerb;
+  document.getElementById('actCall').onclick=call;
+  render(); setVerb(); running=true; loop();
+  return {call,nextVerb};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Walk into any restaurant and the routine is the same: there's a <b>menu</b> of items, and a fixed set of <b>actions</b> you can take. REST gives APIs that same routine.", dur:4800},
+  {cap:"The nouns are <b>things</b> at clear addresses — \"the table's order,\" like the URL /orders. The actions are a small, standard set.", dur:4600, on(){SIM.call();}},
+  {cap:"<b>\"See the menu\"</b> is GET — you look without changing anything.", dur:4200},
+  {cap:"<b>\"Order a dish\"</b> is POST — it <b>adds</b> something new. Watch a dish appear on the table's order.", dur:4400, on(){SIM.nextVerb();SIM.call();}},
+  {cap:"<b>\"Change an order\"</b> is PUT — it <b>updates</b> one specific item you already placed.", dur:4400, on(){SIM.nextVerb();SIM.call();}},
+  {cap:"<b>\"Send it back\"</b> is DELETE — it <b>removes</b> a dish. Same order, four standard actions: look, add, change, remove.", dur:4600, on(){SIM.nextVerb();SIM.call();}},
+  {cap:"That sameness is the whole point: once you know the routine, <b>every</b> restaurant — every API — feels instantly familiar.", dur:4600},
+  {cap:"The waiter also confirms how it went (\"served,\" \"sorry, sold out\" — status codes), and each request stands on its own.", dur:4600},
+  {cap:"Your turn 👉 <b>🔁 Change the action</b> and <b>🙋 ask the waiter</b> to look, add, change, and remove items.", dur:5200},
+  {cap:"REST = things at addresses + a small set of standard actions. Predictable and uniform — the common language of web APIs.", dur:4600}
+]});
+
+</script>
+</body></html>

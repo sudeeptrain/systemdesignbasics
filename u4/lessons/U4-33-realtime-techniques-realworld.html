@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting News — Four Ways to Stay Updated · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.modelbl{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:4}
+.pipe{position:absolute; left:32%; width:36%; top:50%; height:5px; transform:translateY(-50%); border-radius:3px; background:var(--line2); z-index:1; transition:.3s}
+.pipe.open{background:linear-gradient(90deg,var(--good),var(--accent))}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Getting News — Four Ways to Stay Updated</h1>
+  <p class="subtitle">Waiting on big news from a friend? You could keep texting "any update?"; or call and stay on the line until they have news; or subscribe to their one-way announcement channel; or just keep an open phone call going. Those are short poll, long poll, SSE, and WebSocket.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Real updates</div><div class="stat-v accent" id="statMsgs">0</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statMode">Keep texting</div></div>
+  <div class="stat"><div class="stat-k">Wasted texts</div><div class="stat-v" id="statWaste">0</div></div>
+</div>
+<div class="modelbl" id="modelbl">Keep texting</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="pipe" id="pipe"></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box server">🧑‍🦰</div><div class="lbl"><span class="k">Friend</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Cycle the method</button>
+  <button class="act ok" id="actEvent">⚡ Friend gets news</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const modes=['Keep texting','Call &amp; hold','Announcement channel','Open phone call'];
+  let mode=0, msgs=0, waste=0, running=false;
+  const elM=document.getElementById('statMsgs'), elMode=document.getElementById('statMode'), elW=document.getElementById('statWaste'), modelbl=document.getElementById('modelbl'), pipe=document.getElementById('pipe');
+  function ask(){ const got=Math.random()<0.25; const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ d.style.left='16%'; d.classList.add(got?'done':'fail'); if(got){msgs++;elM.textContent=msgs;} else {waste++;elW.textContent=waste;elW.className='stat-v warn';} setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function push(fromX,toX,topF){ const d=document.createElement('div'); d.className='dot done'; d.style.left=fromX+'%'; d.style.top=topF+'%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; }); setTimeout(()=>{ msgs++; elM.textContent=msgs; setTimeout(()=>d.remove(),240); }, leg); }
+  function event(){ if(document.hidden) return; const srv=scene.querySelector('.server'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),200);}
+    if(mode===2||mode===3){ push(84,16,50); }
+    else if(mode===1){ push(84,16,50); }
+  }
+  function setMode(m){ mode=m; elMode.innerHTML=modes[m]; modelbl.innerHTML=modes[m]; const open=(m>=2); pipe.classList.toggle('open',open);
+    elMode.className='stat-v '+(m===0?'bad':m===1?'warn':'good'); }
+  function loop(){ if(!running)return; if(mode===0) ask(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode((mode+1)%4);
+  document.getElementById('actEvent').onclick=event;
+  setMode(0); running=true; loop();
+  return {ask,event,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're waiting on big news from a friend. There are four ways to stay in the loop — from clumsy to slick — and they map onto four web techniques.", dur:4600},
+  {cap:"<b>Keep texting</b> (short polling): you fire off \"any news yet?\" every few minutes, on repeat.", dur:4400, on(){SIM.ask();}},
+  {cap:"Most replies are just <span class='hl-bad'>\"nope, nothing\"</span> — wasted texts — and the real news still waits for your next check. Simple but wasteful.", dur:4800, on(){SIM.ask();}},
+  {cap:"<b>Call and hold</b> (long polling) is smarter: you call and <b>stay on the line</b>, silent, until your friend actually has something to say.", dur:4600, on(){SIM.setMode(1);SIM.event();}},
+  {cap:"Now you hear back <em>exactly when there's news</em> — far fewer pointless check-ins, though you redial each time after they answer.", dur:4600},
+  {cap:"<b>Announcement channel</b> (SSE): you subscribe once, and your friend <b>broadcasts updates one-way</b> to you as they happen.", dur:4600, on(){SIM.setMode(2);SIM.event();}},
+  {cap:"Great for a steady stream of updates — but it's <b>one-way.</b> You can't reply back over that channel.", dur:4400},
+  {cap:"<b>Open phone call</b> (WebSocket): one line stays open and <b>either of you can talk anytime.</b> Instant, two-way. Perfect for a real conversation.", dur:4800, on(){SIM.setMode(3);SIM.event();}},
+  {cap:"Your turn 👉 <b>🔀 Cycle the method</b> and trigger <b>⚡ news</b> to feel the jump from nagging texts to a live call.", dur:5200, on(){SIM.setMode(0);}},
+  {cap:"Keep texting (simple, wasteful) → call &amp; hold → one-way channel → open call. Pick the lightest method that fits how live you need to be.", dur:4800}
+]});
+
+</script>
+</body></html>

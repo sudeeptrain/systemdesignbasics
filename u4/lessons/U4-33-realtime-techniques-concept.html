@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Short Poll · Long Poll · SSE · WebSocket · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.modelbl{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:4}
+.pipe{position:absolute; left:32%; width:36%; top:50%; height:5px; transform:translateY(-50%); border-radius:3px; background:var(--line2); z-index:1; transition:.3s}
+.pipe.open{background:linear-gradient(90deg,var(--good),var(--accent))}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Short Poll · Long Poll · SSE · WebSocket</h1>
+  <p class="subtitle">Four ways to get fresh data to a browser. Short polling asks repeatedly. Long polling holds the request open until there's news. SSE is a one-way server→client stream. WebSocket is a full two-way pipe. Each trades simplicity for efficiency and power.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Useful messages</div><div class="stat-v accent" id="statMsgs">0</div></div>
+  <div class="stat"><div class="stat-k">Technique</div><div class="stat-v" id="statMode">Short polling</div></div>
+  <div class="stat"><div class="stat-k">Wasted asks</div><div class="stat-v" id="statWaste">0</div></div>
+</div>
+<div class="modelbl" id="modelbl">Short polling</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">💻</div><div class="lbl"><span class="k">Browser</span></div></div>
+<div class="pipe" id="pipe"></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Cycle technique</button>
+  <button class="act ok" id="actEvent">⚡ New data appears</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const modes=['Short polling','Long polling','SSE','WebSocket'];
+  let mode=0, msgs=0, waste=0, running=false;
+  const elM=document.getElementById('statMsgs'), elMode=document.getElementById('statMode'), elW=document.getElementById('statWaste'), modelbl=document.getElementById('modelbl'), pipe=document.getElementById('pipe');
+  function ask(){ // client asks, often nothing
+    const got=Math.random()<0.25; const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ d.style.left='16%'; d.classList.add(got?'done':'fail'); if(got){msgs++;elM.textContent=msgs;} else {waste++;elW.textContent=waste;elW.className='stat-v warn';} setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function push(fromX,toX,topF){ const d=document.createElement('div'); d.className='dot done'; d.style.left=fromX+'%'; d.style.top=topF+'%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; }); setTimeout(()=>{ msgs++; elM.textContent=msgs; setTimeout(()=>d.remove(),240); }, leg); }
+  function event(){ if(document.hidden) return; const srv=scene.querySelector('.server'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),200);}
+    if(mode===2||mode===3){ push(84,16,50); } // SSE / WS: server pushes immediately
+    else if(mode===1){ push(84,16,50); } // long poll: held request returns now
+    // short poll: event waits until next ask
+  }
+  function setMode(m){ mode=m; elMode.textContent=modes[m]; modelbl.textContent=modes[m]; const open=(m>=2); pipe.classList.toggle('open',open);
+    elMode.className='stat-v '+(m===0?'bad':m===1?'warn':'good'); }
+  function loop(){ if(!running)return; if(mode===0) ask(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode((mode+1)%4);
+  document.getElementById('actEvent').onclick=event;
+  setMode(0); running=true; loop();
+  return {ask,event,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A browser needs fresh data — a new message, a price tick. There are four classic techniques, from crude to slick.", dur:4600},
+  {cap:"<b>Short polling:</b> the browser asks \"anything new?\" on a fixed timer, over and over.", dur:4400, on(){SIM.ask();}},
+  {cap:"Most asks return <span class='hl-bad'>nothing</span> — wasted requests — and real news still waits until the next poll. Simple but inefficient.", dur:4800, on(){SIM.ask();}},
+  {cap:"<b>Long polling</b> is smarter: the browser asks, and the server <b>holds the request open</b> until it actually has something.", dur:4600, on(){SIM.setMode(1);SIM.event();}},
+  {cap:"Now the reply comes <em>when there's news</em> — far fewer empty round trips, though the connection is reopened each time.", dur:4600},
+  {cap:"<b>SSE</b> (Server-Sent Events) opens one long-lived connection and lets the <b>server stream updates one-way</b> to the browser.", dur:4600, on(){SIM.setMode(2);SIM.event();}},
+  {cap:"Perfect for feeds and notifications — but it's <b>server→client only.</b> The browser can't send back over it.", dur:4400},
+  {cap:"<b>WebSocket</b> is the full upgrade: one persistent, <b>two-way</b> pipe. Either side pushes instantly. Ideal for chat and games.", dur:4800, on(){SIM.setMode(3);SIM.event();}},
+  {cap:"Your turn 👉 <b>🔀 Cycle the technique</b> and fire <b>⚡ new data</b> to feel the jump from polling to real-time push.", dur:5200, on(){SIM.setMode(0);}},
+  {cap:"Short poll (simple, wasteful) → long poll (held) → SSE (one-way stream) → WebSocket (two-way). Pick the lightest that fits your need.", dur:4800}
+]});
+
+</script>
+</body></html>

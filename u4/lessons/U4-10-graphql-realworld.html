@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphQL — À La Carte vs a Set Plate · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.payload{position:absolute; right:7%; top:22%; width:34%; font-family:var(--fmono); font-size:11px; background:#fff; border:1.5px solid var(--line2); border-radius:9px; padding:9px; z-index:2; white-space:pre-wrap; transition:.3s}
+.payload .want{color:var(--good); font-weight:700}
+.payload .waste{color:var(--bad); text-decoration:line-through; opacity:.6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">GraphQL — À La Carte vs a Set Plate</h1>
+  <p class="subtitle">A set plate comes fixed: you wanted the rice and curry but it arrives loaded with sides you'll leave untouched — and if you also fancy dessert, that's a second trip. À la carte lets you name exactly the dishes you want and get just those, in one order. GraphQL is à la carte.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders</div><div class="stat-v accent" id="statQueries">0</div></div>
+  <div class="stat"><div class="stat-k">Style</div><div class="stat-v" id="statMode">Set plate</div></div>
+  <div class="stat"><div class="stat-k">Wasted dishes</div><div class="stat-v" id="statWaste">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:48%"><div class="box">🧑</div><div class="lbl"><span class="k">You<br>want: rice, curry</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:48%"><div class="box sm ep">🧑‍🍳</div><div class="lbl"><span class="k" id="eplbl">set-plate counter</span></div></div>
+<div class="payload" id="payload"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Set plate / À la carte</button>
+  <button class="act ok" id="actQuery">🍽️ Place your order</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const payload=document.getElementById('payload'), eplbl=document.getElementById('eplbl');
+  let mode='rest', queries=0, running=false;
+  const elQ=document.getElementById('statQueries'), elM=document.getElementById('statMode'), elW=document.getElementById('statWaste');
+  function fetchUser(){ if(document.hidden) return; queries++; elQ.textContent=queries;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ const ep=scene.querySelector('.ep'); if(ep){ep.classList.add('active'); setTimeout(()=>ep.classList.remove('active'),250);} d.classList.add('done'); d.style.left='14%'; setTimeout(()=>d.remove(),leg);
+      if(mode==='rest'){ payload.innerHTML='your tray:\n  <span class="want">🍚 rice</span>\n  <span class="want">🍛 curry</span>\n  <span class="waste">🥗 salad</span>\n  <span class="waste">🍞 bread</span>\n  <span class="waste">🥤 drink</span>\n  <span class="waste">🍮 pudding</span>';
+        elW.textContent='4 (left uneaten)'; elW.className='stat-v bad'; }
+      else { payload.innerHTML='your tray:\n  <span class="want">🍚 rice</span>\n  <span class="want">🍛 curry</span>'; elW.textContent='0 (exactly asked)'; elW.className='stat-v good'; }
+    }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='rest'?'Set plate':'À la carte'; elM.className='stat-v '+(m==='rest'?'warn':'good'); eplbl.textContent=m==='rest'?'set-plate counter':'à la carte counter'; payload.innerHTML=''; }
+  function loop(){ if(!running)return; fetchUser(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='rest'?'graphql':'rest');
+  document.getElementById('actQuery').onclick=fetchUser;
+  setMode('rest'); running=true; loop();
+  return {fetchUser,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Suppose all you want for lunch is <b>rice and curry</b> — just two dishes. Watch how a set plate and à la carte handle that.", dur:4800},
+  {cap:"At the <b>set-plate counter</b> (that's REST), you ask and get the <b>fixed tray</b> — the whole combo, no matter what you wanted.", dur:4600, on(){SIM.fetchUser();}},
+  {cap:"You wanted two things but got six — salad, bread, drink, pudding all pile on. Those untouched extras are <span class='hl-bad'>over-fetching.</span>", dur:4800, on(){SIM.fetchUser();}},
+  {cap:"And if you <em>also</em> wanted something not on the tray, you'd queue up for a <b>second order</b> — that's under-fetching in one trip.", dur:4800},
+  {cap:"<b>À la carte</b> (that's GraphQL) flips it. One counter, and <b>you name exactly the dishes you want.</b>", dur:4600, on(){SIM.setMode('graphql');}},
+  {cap:"Ask for just rice and curry, and your tray comes back with <span class='hl-good'>precisely that</span> — nothing wasted, in one order.", dur:4600, on(){SIM.fetchUser();}},
+  {cap:"Fancy dessert too? Add it to the <em>same</em> order. One trip brings exactly what you asked for — no waste, no second queue.", dur:4600, on(){SIM.fetchUser();}},
+  {cap:"The trade-off: the à la carte kitchen is more complex to run — a full menu of options and trickier to pre-prepare than fixed trays.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 Set plate / À la carte</b> and <b>🍽️ order</b> to compare fixed trays with picking exactly what you want.", dur:5200},
+  {cap:"REST hands you fixed trays per counter; GraphQL lets you order exactly the dishes you want from one counter. Convenience vs precision.", dur:4800}
+]});
+
+</script>
+</body></html>

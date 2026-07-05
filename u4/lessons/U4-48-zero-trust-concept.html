@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zero Trust Architecture · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.perim{position:absolute; left:46%; right:6%; top:16%; bottom:16%; border:2px dashed var(--line2); border-radius:14px; z-index:1; transition:.3s}
+.perimlbl{position:absolute; left:70%; top:10%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Zero Trust Architecture</h1>
+  <p class="subtitle">The old model trusted anything inside the network perimeter — once you were in, you roamed freely. Zero Trust drops that assumption: never trust, always verify. Every request is authenticated and authorized on its own, no matter where it comes from.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Model</div><div class="stat-v" id="statMode">Perimeter trust</div></div>
+  <div class="stat"><div class="stat-k">Bad actors stopped</div><div class="stat-v" id="statStop">0</div></div>
+</div>
+<div class="perimlbl">internal network</div>
+<div class="perim" id="perim"></div>
+<div class="node abs" data-show="1" style="left:14%;top:32%"><div class="box sm">🧑</div><div class="lbl"><span class="k">External user</span></div></div>
+<div class="node abs" data-show="1" style="left:60%;top:32%"><div class="box sm">🕵️</div><div class="lbl"><span class="k">Insider threat</span></div></div>
+<div class="node abs" data-show="1" style="left:80%;top:74%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Sensitive data</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Perimeter / Zero Trust</button>
+  <button class="act ok" id="actRequest">📨 Internal actor requests data</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const SVG=null; const scene=document.getElementById('scene');
+  let reqs=0, stop=0, zt=false, running=false;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elS=document.getElementById('statStop');
+  function req(insider){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const fromX = insider?60:14, fromY=32; const bad=insider; // insider = unverified bad actor
+    const d=document.createElement('div'); d.className='dot'; d.style.left=fromX+'%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=440*simRate();
+    if(zt){ // every request verified at the data, regardless of location
+      requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='72%'; d.style.top='60%'; });
+      setTimeout(()=>{ if(bad){ d.classList.add('fail'); stop++; elS.textContent=stop; elS.className='stat-v good'; setTimeout(()=>d.remove(),320); }
+        else { d.style.left='80%'; d.style.top='74%'; d.classList.add('done'); setTimeout(()=>d.remove(),leg); } }, leg);
+    } else { // perimeter: anything already inside is trusted → insider reaches data
+      requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='80%'; d.style.top='74%'; });
+      setTimeout(()=>{ d.classList.add(bad?'fail':'done'); if(bad){ const dt=scene.querySelector('.node[style*="80%"]'); } setTimeout(()=>d.remove(),300); }, leg);
+    }
+  }
+  function setMode(m){ zt=(m==='zt'); elM.textContent=zt?'Zero Trust':'Perimeter trust'; elM.className='stat-v '+(zt?'good':'bad'); const p=document.getElementById('perim'); p.style.borderColor=zt?'var(--good)':'var(--line2)'; }
+  function loop(){ if(!running)return; req(Math.random()<0.5); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(zt?'perim':'zt');
+  document.getElementById('actRequest').onclick=()=>req(true);
+  setMode('perim'); running=true; loop();
+  return {req,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The traditional security model is a <b>castle and moat:</b> a hard perimeter, but once you're <em>inside</em> the network, you're trusted.", dur:4800},
+  {cap:"Legitimate internal traffic flows freely to sensitive data — convenient, and fine if everyone inside is trustworthy.", dur:4600, on(){SIM.req(false);}},
+  {cap:"But what about an <b>insider threat</b> — a compromised laptop or a malicious employee already <em>inside</em> the perimeter?", dur:4600, on(){SIM.req(true);}},
+  {cap:"Under perimeter trust, that bad actor is treated as trusted simply for being inside — and <span class='hl-bad'>walks right up to the data.</span>", dur:4800, on(){SIM.req(true);}},
+  {cap:"<b>Zero Trust</b> throws out that assumption. Its motto: <b>never trust, always verify.</b> Switch to it.", dur:4200, on(){SIM.setMode('zt');}},
+  {cap:"Now <b>every</b> request is authenticated and authorized at the resource itself — location inside the network grants nothing.", dur:4600, on(){SIM.req(false);}},
+  {cap:"The same insider's request is now <span class='hl-good'>verified and rejected</span> — being 'inside' is no longer a free pass.", dur:4800, on(){SIM.req(true);}},
+  {cap:"Zero Trust leans on strong identity, least privilege, mTLS, and continuous checks — assume breach, verify everything, every time.", dur:4600, on(){SIM.req(true);}},
+  {cap:"Your turn 👉 flip <b>🔀 Perimeter / Zero Trust</b> and let an <b>📨 insider request data</b> to see trust-by-location fall away.", dur:5200, on(){SIM.setMode('perim');}},
+  {cap:"Zero Trust verifies every request regardless of where it originates — no implicit trust for being 'inside.' Assume breach; verify always.", dur:4800}
+]});
+
+</script>
+</body></html>

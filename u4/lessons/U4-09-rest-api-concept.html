@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REST API · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.coll{position:absolute; right:8%; top:22%; width:30%; z-index:2}
+.rrow{font-family:var(--fmono); font-size:11px; padding:5px 9px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px; transition:.3s}
+.rrow.flash{border-color:var(--accent); box-shadow:0 0 0 3px rgba(31,111,230,.16)}
+.verb{position:absolute; left:36%; top:42%; font-family:var(--fmono); font-size:13px; font-weight:700; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">REST API</h1>
+  <p class="subtitle">REST models your system as resources at URLs — /users, /users/42 — and uses HTTP verbs as the actions: GET to read, POST to create, PUT to update, DELETE to remove. One consistent, predictable grammar for talking to any resource.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">API calls</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Verb</div><div class="stat-v" id="statVerb">GET</div></div>
+  <div class="stat"><div class="stat-k">Resource</div><div class="stat-v good" id="statRes">/users</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:48%"><div class="box">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="verb" id="verb">GET /users</div>
+<div class="nlbl" style="left:80%;top:13%">📁 Resource: /users</div>
+<div class="coll" id="coll"></div>
+<div class="acts">
+  <button class="act" id="actVerb">🔁 Change verb</button>
+  <button class="act ok" id="actCall">📨 Make the call</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const coll=document.getElementById('coll'), verb=document.getElementById('verb');
+  const verbs=['GET','POST','PUT','DELETE'];
+  const meaning={GET:'read',POST:'create',PUT:'update',DELETE:'remove'};
+  const colors={GET:'var(--accent-d)',POST:'var(--good)',PUT:'var(--warn)',DELETE:'var(--bad)'};
+  let calls=0, vi=0, running=false; let items=['#1 Ann','#2 Ben','#3 Cara'];
+  const elC=document.getElementById('statCalls'), elV=document.getElementById('statVerb'), elR=document.getElementById('statRes');
+  function render(){ coll.innerHTML=''; items.forEach(it=>{ const r=document.createElement('div'); r.className='rrow'; r.textContent=it; coll.appendChild(r); }); }
+  function setVerb(){ const v=verbs[vi]; elV.textContent=v; elV.style.color=colors[v]; const path=(v==='GET'||v==='POST')?'/users':'/users/2'; verb.textContent=v+' '+path; verb.style.color=colors[v]; elR.textContent=path; }
+  function call(){ if(document.hidden) return; calls++; elC.textContent=calls; const v=verbs[vi];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done');
+      if(v==='POST'){ items.push('#'+(items.length+1)+' New'); }
+      else if(v==='DELETE'){ if(items.length) items.pop(); }
+      render(); const rows=[...coll.children]; const t = v==='POST'? rows[rows.length-1] : rows[Math.floor(Math.random()*Math.max(1,rows.length))]; if(t){t.classList.add('flash'); setTimeout(()=>t.classList.remove('flash'),400);}
+      setTimeout(()=>d.remove(),260); }, leg);
+  }
+  function nextVerb(){ vi=(vi+1)%verbs.length; setVerb(); }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actVerb').onclick=nextVerb;
+  document.getElementById('actCall').onclick=call;
+  render(); setVerb(); running=true; loop();
+  return {call,nextVerb};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>REST</b> gives APIs a clean, predictable grammar. The nouns are <b>resources</b> at URLs: /users, /users/42, /orders.", dur:4600},
+  {cap:"The verbs are standard <b>HTTP methods.</b> <b>GET</b> reads a resource without changing anything.", dur:4600, on(){SIM.call();}},
+  {cap:"<b>POST</b> to /users <b>creates</b> a new one. Watch a new record appear in the collection.", dur:4400, on(){SIM.nextVerb();SIM.call();}},
+  {cap:"<b>PUT</b> (or PATCH) to /users/42 <b>updates</b> that specific resource.", dur:4400, on(){SIM.nextVerb();SIM.call();}},
+  {cap:"<b>DELETE</b> to /users/42 <b>removes</b> it. Same noun, four standard verbs — read, create, update, remove.", dur:4600, on(){SIM.nextVerb();SIM.call();}},
+  {cap:"That uniformity is the magic: once you know REST, every API feels familiar. The URL is the thing; the verb is the action.", dur:4600},
+  {cap:"REST also leans on <b>status codes</b> (200, 201, 404) and is <b>stateless</b> — each call carries everything it needs.", dur:4600},
+  {cap:"It usually speaks <b>JSON</b>, is cacheable, and maps cleanly to CRUD — which is why it became the default for web APIs.", dur:4400},
+  {cap:"Your turn 👉 <b>🔁 Change the verb</b> and <b>📨 make calls</b> to read, create, update, and delete resources.", dur:5200},
+  {cap:"REST = resources as URLs + HTTP verbs as actions. Simple, uniform, and predictable — the lingua franca of web APIs.", dur:4600}
+]});
+
+</script>
+</body></html>

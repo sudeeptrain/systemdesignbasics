@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS Resolution · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.chain{position:absolute; font-family:var(--fmono); font-size:10.5px; color:var(--faint); text-align:center; transform:translateX(-50%); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">DNS Resolution</h1>
+  <p class="subtitle">Computers talk in IP addresses, but humans type names. DNS is the phone book that turns example.com into an IP — by asking a chain of servers: the resolver, a root server, the .com server, then the site's own. The answer is cached so next time is instant.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Lookups</div><div class="stat-v accent" id="statLookups">0</div></div>
+  <div class="stat"><div class="stat-k">Last lookup</div><div class="stat-v" id="statHops">—</div></div>
+  <div class="stat"><div class="stat-k">Cache</div><div class="stat-v bad" id="statCache">empty</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:10%;top:50%"><div class="box sm">🌐</div><div class="lbl"><span class="k">Browser</span></div></div>
+<div class="node abs" data-show="1" style="left:30%;top:50%"><div class="box sm resolver">🗂️</div><div class="lbl"><span class="k">Resolver</span></div></div>
+<div class="node abs" data-show="1" style="left:54%;top:24%"><div class="box sm r-0">🌳</div><div class="lbl"><span class="k">Root</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:24%"><div class="box sm r-1">🏢</div><div class="lbl"><span class="k">.com TLD</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:62%"><div class="box sm r-2">📒</div><div class="lbl"><span class="k">example.com<br>authoritative</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actResolve">🔎 Resolve example.com</button>
+  <button class="act" id="actCache">🗑️ Clear DNS cache</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const RES={x:30,y:50}, steps=[{x:54,y:24,n:'Root'},{x:74,y:24,n:'.com'},{x:88,y:62,n:'authoritative'}];
+  let lookups=0, cached=false, busy=false, running=false;
+  const elL=document.getElementById('statLookups'), elH=document.getElementById('statHops'), elCa=document.getElementById('statCache');
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),200); }, leg); }
+  function resolve(){ if(busy||document.hidden) return; busy=true; lookups++; elL.textContent=lookups;
+    if(cached){ // resolver already knows → instant
+      hop(10,50,RES.x,RES.y,'done',()=>{ const r=scene.querySelector('.resolver'); if(r){r.classList.add('active'); setTimeout(()=>r.classList.remove('active'),250);} hop(RES.x,RES.y,10,50,'done',()=>{ elH.textContent='1 (cache hit) ⚡'; elH.className='stat-v good'; busy=false; }); });
+      return;
+    }
+    // browser → resolver, then resolver walks the chain
+    hop(10,50,RES.x,RES.y,'',()=>{ let i=0;
+      (function walk(){ if(i>=steps.length){ // got the IP, cache it, return to browser
+          cached=true; elCa.textContent='example.com ✓'; elCa.className='stat-v good';
+          hop(RES.x,RES.y,10,50,'done',()=>{ elH.textContent='4 hops (full walk)'; elH.className='stat-v warn'; busy=false; }); return; }
+        const s=steps[i]; const el=scene.querySelector('.r-'+i);
+        hop(RES.x,RES.y,s.x,s.y,'',()=>{ if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),250);} hop(s.x,s.y,RES.x,RES.y,'done',()=>{ i++; walk(); }); });
+      })();
+    });
+  }
+  function clearCache(){ cached=false; elCa.textContent='empty'; elCa.className='stat-v bad'; }
+  function loop(){ if(!running)return; resolve(); setTimeout(loop, 3200*simRate()); }
+  document.getElementById('actResolve').onclick=resolve;
+  document.getElementById('actCache').onclick=clearCache;
+  running=true; loop();
+  return {resolve,clearCache};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You type <b>example.com</b>, but computers route by <b>IP address</b> (like 93.184.216.34). <b>DNS</b> is the phone book that translates.", dur:4800},
+  {cap:"Your browser asks a <b>resolver</b> — usually run by your ISP — to find the IP for the name.", dur:4600, on(){SIM.resolve();}},
+  {cap:"If the resolver doesn't know, it walks a chain. First it asks a <b>root server</b>: \"who handles .com?\"", dur:4600},
+  {cap:"The root points it to the <b>.com TLD server</b>, which knows who's responsible for example.com.", dur:4600},
+  {cap:"The TLD points to example.com's <b>authoritative server</b> — the one that finally hands back the real IP address.", dur:4800},
+  {cap:"That's the full walk: resolver → root → TLD → authoritative. Four hops just to translate one name.", dur:4400},
+  {cap:"So the resolver <b>caches</b> the answer. The next lookup for example.com skips the whole chain.", dur:4400, on(){SIM.resolve();}},
+  {cap:"Now it's a <span class='hl-good'>cache hit</span> — near-instant. Caching (with a TTL) is why DNS stays fast at internet scale.", dur:4600, on(){SIM.resolve();}},
+  {cap:"Your turn 👉 <b>🔎 Resolve</b> the name, then <b>🗑️ clear the cache</b> to force the full walk again.", dur:5200, on(){SIM.clearCache();}},
+  {cap:"DNS turns names into addresses through a hierarchy of servers — and caches aggressively so the lookup feels instant.", dur:4800}
+]});
+
+</script>
+</body></html>

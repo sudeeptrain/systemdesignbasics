@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idempotency Keys in APIs · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ledger{position:absolute; right:7%; top:22%; width:34%; font-family:var(--fmono); font-size:11px; z-index:2}
+.lrow{padding:5px 8px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px}
+.seen{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--accent-d); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Idempotency Keys in APIs</h1>
+  <p class="subtitle">Networks are flaky, so clients retry. But retrying "charge $50" could charge twice. An idempotency key fixes it: the client attaches a unique key to the request; the server remembers it, so a retry with the same key returns the original result instead of doing the work again.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests received</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Actual charges</div><div class="stat-v good" id="statCharges">0</div></div>
+  <div class="stat"><div class="stat-k">Duplicate retries</div><div class="stat-v" id="statDup">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:44%"><div class="box">📱</div><div class="lbl"><span class="k">Client<br>key: abc-123</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:44%"><div class="box sm srv">🛡️</div><div class="lbl"><span class="k">API</span></div></div>
+<div class="ledger" id="ledger"></div>
+<div class="seen" id="seen">seen keys: (none)</div>
+<div class="acts">
+  <button class="act ok" id="actSubmit">💳 Submit charge (new key)</button>
+  <button class="act" id="actRetry">🔁 Retry (same key)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ledger=document.getElementById('ledger'), seenEl=document.getElementById('seen');
+  let reqs=0, charges=0, dup=0, running=false, keyN=0, lastKey='abc-123', seen=new Set();
+  const elR=document.getElementById('statReqs'), elC=document.getElementById('statCharges'), elD=document.getElementById('statDup');
+  function render(){ ledger.innerHTML=''; [...seen].slice(-4).forEach(k=>{ const r=document.createElement('div'); r.className='lrow'; r.textContent='✅ charged · key '+k; ledger.appendChild(r); }); seenEl.textContent='seen keys: '+([...seen].slice(-3).join(', ')||'(none)'); }
+  function send(key,isRetry){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const dupHit = seen.has(key);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ const srv=scene.querySelector('.srv'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),200);}
+      if(dupHit){ // recognized retry → return cached result, no new charge
+        d.classList.add('fail'); dup++; elD.textContent=dup; elD.className='stat-v warn'; setTimeout(()=>d.remove(),320);
+      } else { seen.add(key); charges++; elC.textContent=charges; render(); d.classList.add('done'); d.style.left='84%'; setTimeout(()=>d.remove(),leg); }
+    }, leg);
+  }
+  function submit(){ keyN++; lastKey='key-'+(100+keyN); send(lastKey,false); }
+  function retry(){ send(lastKey,true); }
+  function demoDup(){ if(!seen.size) seen.add(lastKey); dup++; elD.textContent=dup; elD.className='stat-v warn';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; }); setTimeout(()=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),360); }, leg); }
+  function loop(){ if(!running)return; if(Math.random()<0.6) submit(); else retry(); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actSubmit').onclick=submit;
+  document.getElementById('actRetry').onclick=retry;
+  render(); running=true; loop();
+  return {submit,retry,demoDup,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You tap <b>Pay $50</b>, the network hiccups, and you don't see a confirmation. So your app <b>retries.</b> Did you just pay twice?", dur:4800},
+  {cap:"That's the danger of retries on actions that <em>change</em> things. The fix is an <b>idempotency key.</b>", dur:4600},
+  {cap:"The client generates a <b>unique key</b> for the operation and attaches it to the request. Submit the charge with key-101.", dur:4600, on(){SIM.submit();}},
+  {cap:"The server processes it, charges the card, and <b>records that key</b> as done — remembering the result.", dur:4600},
+  {cap:"Now the flaky network triggers a <b>retry — with the very same key.</b>", dur:4000, on(){SIM.retry();}},
+  {cap:"The server sees the key already <span class='hl-good'>handled</span>, so it skips the work and just returns the original result. <b>No double charge.</b>", dur:4800, on(){SIM.demoDup();}},
+  {cap:"A genuinely new payment uses a <b>new key</b> — and is processed normally. Watch a fresh key go through.", dur:4400, on(){SIM.submit();}},
+  {cap:"So safe-to-retry behavior is built in: same key = at most once; new key = a real new action. Retries become harmless.", dur:4600},
+  {cap:"Your turn 👉 <b>💳 Submit</b> new charges and <b>🔁 Retry</b> with the same key to watch duplicates get absorbed.", dur:5200, on(){SIM.render();}},
+  {cap:"Idempotency keys make write APIs retry-safe: the client supplies a unique key, the server dedupes — no accidental double actions.", dur:4800}
+]});
+
+</script>
+</body></html>

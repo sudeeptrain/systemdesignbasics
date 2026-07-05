@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client-Server Architecture · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.srvbox .box{transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Client-Server Architecture</h1>
+  <p class="subtitle">The web's foundational pattern: clients (browsers, apps) request, and a shared server responds. The client handles display and interaction; the server holds the data and business logic. One server serves many clients, each independent of the others.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Clients</div><div class="stat-v" id="statClients">2</div></div>
+  <div class="stat"><div class="stat-k">Data &amp; logic live</div><div class="stat-v good" id="statWhere">on the server</div></div>
+</div>
+<div id="clients"></div>
+<div class="node abs srvbox" data-show="1" style="left:82%;top:50%"><div class="box">🖥️</div><div class="lbl"><span class="k">Server<br>(data + logic)</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actRequest">📨 Client requests</button>
+  <button class="act" id="actAddClient">➕ Add a client</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('clients');
+  let clients=[{e:'💻'},{e:'📱'}], reqs=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elC=document.getElementById('statClients');
+  function ys(n){const a=[],top=22,bot=84;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(clients.length);
+    clients.forEach((c,i)=>{ c.y=y[i]; const el=document.createElement('div'); el.className='node abs vis c-'+i; el.style.left='16%'; el.style.top=y[i]+'%'; el.innerHTML='<div class="box sm">'+c.e+'</div><div class="lbl"><span class="k">Client</span></div>'; wrap.appendChild(el); c.el=el; }); elC.textContent=clients.length; }
+  function req(){ if(document.hidden) return; const c=clients[rr++%clients.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top=c.y+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='82%'; d.style.top='50%'; });
+    setTimeout(()=>{ const srv=scene.querySelector('.srvbox'); if(srv){srv.classList.add('busy'); setTimeout(()=>srv.classList.remove('busy'),200);}
+      d.classList.add('done'); d.style.left='16%'; d.style.top=c.y+'%'; setTimeout(()=>{ if(c.el){c.el.classList.add('active'); setTimeout(()=>c.el.classList.remove('active'),150);} reqs++; elR.textContent=reqs; d.remove(); }, leg); }, leg);
+  }
+  function addClient(){ const pool=['🖥️','⌚','📺','🤖']; if(clients.length<6){ clients.push({e:pool[(clients.length-2)%pool.length]}); render(); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 650*simRate()); }
+  document.getElementById('actRequest').onclick=req;
+  document.getElementById('actAddClient').onclick=addClient;
+  render(); running=true; loop();
+  return {req,addClient,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Almost everything online runs on one foundational shape: <b>client-server.</b> Let's see the division of labour.", dur:4400},
+  {cap:"A <b>client</b> — a browser, a phone app, a watch — is what the user touches. It handles <b>display and interaction.</b>", dur:4600},
+  {cap:"It doesn't hold the real data. To get anything done, it sends a <b>request</b> to the server.", dur:4400, on(){SIM.req();}},
+  {cap:"The <b>server</b> holds the <b>data and the business logic.</b> It processes the request and sends a <b>response</b> back.", dur:4600, on(){SIM.req();}},
+  {cap:"That split is the whole idea: the client presents, the server decides and stores. Each does what it's best at.", dur:4400},
+  {cap:"Crucially, <b>one server serves many clients</b> at once. Add another client and it talks to the same server independently.", dur:4600, on(){SIM.addClient();}},
+  {cap:"Clients don't talk to each other — they each go through the shared server, which is the single source of truth.", dur:4400, on(){SIM.req();}},
+  {cap:"This centralization is powerful (one place for data and rules) but also why the server must be scaled and protected.", dur:4400, on(){SIM.addClient();}},
+  {cap:"Your turn 👉 <b>📨 Send requests</b> and <b>➕ add clients</b> to watch many clients share one server.", dur:5200},
+  {cap:"Client-server: clients present and request; a shared server holds data and logic and responds. The base pattern of the web.", dur:4600}
+]});
+
+</script>
+</body></html>

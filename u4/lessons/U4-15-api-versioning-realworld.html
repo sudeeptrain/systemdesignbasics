@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Versioning — A New Edition of a Textbook · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.vbox .box{transition:.3s}
+.vbox.dead .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">API Versioning — A New Edition of a Textbook</h1>
+  <p class="subtitle">When a textbook gets a new edition, the old one doesn't vanish — classes mid-course keep using the 1st edition while new classes adopt the 2nd. The publisher keeps both in print, nudges everyone to switch, and only retires the old edition once nobody needs it.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Lessons taught</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Class uses</div><div class="stat-v" id="statVer">1st ed.</div></div>
+  <div class="stat"><div class="stat-k">1st edition</div><div class="stat-v good" id="statV1">in print</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:30%"><div class="box sm">👩‍🏫</div><div class="lbl"><span class="k">Old class</span></div></div>
+<div class="node abs" data-show="1" style="left:16%;top:70%"><div class="box sm">🧑‍🎓</div><div class="lbl"><span class="k">New class</span></div></div>
+<div class="node abs vbox v-0" data-show="1" style="left:80%;top:30%"><div class="box sm">📕</div><div class="lbl"><span class="k">1st edition</span></div></div>
+<div class="node abs vbox v-1" data-show="1" style="left:80%;top:70%"><div class="box sm">📗</div><div class="lbl"><span class="k">2nd edition</span></div></div>
+<div class="acts">
+  <button class="act" id="actVersion">🔁 Class: 1st / 2nd ed.</button>
+  <button class="act bad" id="actDeprecate">🗑️ Retire 1st edition</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let calls=0, clientVer=1, v1live=true, running=false;
+  const elC=document.getElementById('statCalls'), elV=document.getElementById('statVer'), elV1=document.getElementById('statV1');
+  const v0=scene.querySelector('.v-0');
+  function call(){ if(document.hidden) return; calls++; elC.textContent=calls;
+    const useV1 = clientVer===1; const fromY = useV1?30:70; const toY = useV1?30:70;
+    const dead = useV1 && !v1live;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='80%'; d.style.top=toY+'%'; });
+    setTimeout(()=>{ if(dead){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; } d.classList.add('done'); const ep=scene.querySelector(useV1?'.v-0':'.v-1'); if(ep){ep.classList.add('active'); setTimeout(()=>ep.classList.remove('active'),200);} setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function toggleVer(){ clientVer=clientVer===1?2:1; elV.textContent=clientVer===1?'1st ed.':'2nd ed.'; }
+  function deprecate(){ v1live=false; if(v0)v0.classList.add('dead'); elV1.textContent='out of print'; elV1.className='stat-v bad'; }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actVersion').onclick=toggleVer;
+  document.getElementById('actDeprecate').onclick=deprecate;
+  running=true; loop();
+  return {call,toggleVer,deprecate};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A public API is like a textbook other teachers build their courses around. Rewrite it overnight and you <b>derail every class.</b> Versioning prevents that.", dur:4800},
+  {cap:"You publish the book as the <b>1st edition.</b> Classes use it and everything lines up — page numbers, chapters, all matching.", dur:4400, on(){SIM.call();}},
+  {cap:"Now you need big changes. Instead of secretly editing the 1st edition, you publish a <b>2nd edition</b> alongside it — both in print at once.", dur:4600},
+  {cap:"<b>New classes</b> adopt the 2nd edition and get the improvements. Switch a class over and watch it use the new book.", dur:4600, on(){SIM.toggleVer();SIM.call();}},
+  {cap:"Meanwhile <b>classes mid-course keep using the 1st edition</b>, totally undisturbed. Nobody's lessons break. Both editions coexist.", dur:4600, on(){SIM.toggleVer();SIM.call();}},
+  {cap:"Over time you encourage everyone to move — update notes, a 'last printing' date. Only <em>then</em> do you <b>retire the 1st edition.</b>", dur:4600, on(){SIM.deprecate();}},
+  {cap:"After that, anyone still clutching the old book is <span class='hl-bad'>stuck</span> — but by now every class has moved to the 2nd edition. A clean retirement.", dur:4600, on(){SIM.call();}},
+  {cap:"You can label editions on the cover (/v2/…), on a slip inside, or by format — the principle's the same: never silently break readers.", dur:4600, on(){SIM.toggleVer();}},
+  {cap:"Your turn 👉 toggle the <b>🔁 class edition</b> and <b>🗑️ retire the 1st</b> to watch old and new coexist, then sunset.", dur:5200},
+  {cap:"API versioning lets you improve without breaking anyone: keep editions side by side, move readers over, then retire the old. Stability first.", dur:4800}
+]});
+
+</script>
+</body></html>

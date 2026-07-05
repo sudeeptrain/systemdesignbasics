@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebSocket — An Open Phone Line · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pipe{position:absolute; left:30%; width:40%; top:50%; height:6px; transform:translateY(-50%); border-radius:4px; background:var(--line2); z-index:1; transition:.3s}
+.pipe.open{background:linear-gradient(90deg,var(--good),var(--accent))}
+.statelbl{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">WebSocket — An Open Phone Line</h1>
+  <p class="subtitle">Texting back and forth means a fresh message each time. A phone call is different: once connected, the line stays open and either person can talk the instant they have something to say. A WebSocket upgrades a one-shot exchange into exactly that open, two-way line.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Things said</div><div class="stat-v accent" id="statMsgs">0</div></div>
+  <div class="stat"><div class="stat-k">Line</div><div class="stat-v" id="statState">texting (one-shot)</div></div>
+  <div class="stat"><div class="stat-k">Who can talk</div><div class="stat-v good" id="statDir">both</div></div>
+</div>
+<div class="statelbl" id="statelbl">press "call" to open the line</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="pipe" id="pipe"></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box server">🧑‍🦰</div><div class="lbl"><span class="k">Friend</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actServerPush">📞 They speak (call + talk)</button>
+  <button class="act" id="actClientSend">🗣️ You speak</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let msgs=0, open=false, running=false;
+  const elM=document.getElementById('statMsgs'), elS=document.getElementById('statState'), pipe=document.getElementById('pipe'), badge=document.getElementById('statelbl');
+  function openConn(){ open=true; pipe.classList.add('open'); elS.textContent='call (open line)'; elS.className='stat-v good'; badge.textContent='📞 line open — talk freely'; badge.style.color='var(--good)'; }
+  function msg(fromX,toX,cls){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fromX+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; }); setTimeout(()=>{ d.classList.add('done'); msgs++; elM.textContent=msgs; setTimeout(()=>d.remove(),240); }, leg); }
+  function serverPush(){ if(!open) openConn(); if(document.hidden) return; const srv=scene.querySelector('.server'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),250);} msg(84,16); }
+  function clientSend(){ if(!open) openConn(); if(document.hidden) return; msg(16,84); }
+  function loop(){ if(!running)return; (Math.random()<0.5?serverPush:clientSend)(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actServerPush').onclick=serverPush;
+  document.getElementById('actClientSend').onclick=clientSend;
+  running=true; setTimeout(loop, 600);
+  return {serverPush,clientSend,openConn};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Plain web requests are like <b>texting:</b> you send a message, you get a reply, and the conversation goes quiet until you text again.", dur:4600},
+  {cap:"Fine for asking one question. But for a live chat, a play-by-play score, or a game, you need news <em>the moment it happens.</em>", dur:4800},
+  {cap:"Texting \"anything new? anything new?\" every second is exhausting and slow. A <b>phone call</b> is the better idea — and that's a WebSocket.", dur:4600},
+  {cap:"It starts as a normal request that asks to <b>\"upgrade to a call,\"</b> then keeps the line open instead of hanging up.", dur:4800, on(){SIM.openConn();}},
+  {cap:"Once the <b>line is open</b>, it stays open — no redialing for every sentence. And crucially, it's <b>two-way.</b>", dur:4400},
+  {cap:"Your <b>friend can speak</b> the instant they have something to say — a new message, an update, a move. No prompting needed.", dur:4600, on(){SIM.serverPush();}},
+  {cap:"And <b>you can speak</b> any time too, on the same open line. A real back-and-forth conversation, in real time.", dur:4600, on(){SIM.clientSend();}},
+  {cap:"Because the line never drops, there's almost no delay — no \"dialing\" before each word. Perfect for anything live.", dur:4400, on(){SIM.serverPush();}},
+  {cap:"Your turn 👉 let <b>📞 them speak</b> and <b>🗣️ you speak</b> over the open line to feel real-time, two-way talk.", dur:5200},
+  {cap:"A WebSocket turns one-shot texting into an open phone call: a lasting, two-way line — the backbone of chat, live feeds, and games.", dur:4800}
+]});
+
+</script>
+</body></html>

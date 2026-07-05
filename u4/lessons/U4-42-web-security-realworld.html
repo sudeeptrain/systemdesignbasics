@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Security — Don't Trust Notes from Strangers · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gate{position:absolute; left:52%; top:42%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:700; padding:7px 12px; border-radius:8px; border:2px dashed var(--line2); color:var(--muted); z-index:5; transition:.3s}
+.gate.armed{border-style:solid; border-color:var(--good); color:var(--good)}
+.atklbl{position:absolute; left:18%; top:66%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--bad); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Web Security — Don't Trust Notes from Strangers</h1>
+  <p class="subtitle">Three classic cons all rely on a clerk blindly acting on what a stranger hands them. One sneaks instructions into a note to be read aloud; one forges a request using your authority; one hides extra orders inside a form. Each has a simple counter — and the rule is always: never trust what's handed in.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Cons attempted</div><div class="stat-v accent" id="statAttacks">0</div></div>
+  <div class="stat"><div class="stat-k">The trick</div><div class="stat-v bad" id="statType">Hidden note</div></div>
+  <div class="stat"><div class="stat-k">Got through</div><div class="stat-v" id="statBreach">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box">🦹</div><div class="lbl"><span class="k">Con artist</span></div></div>
+<div class="gate" id="gate">🛡️ clerk off guard</div>
+<div class="node abs" data-show="1" style="left:86%;top:42%"><div class="box server">🏦</div><div class="lbl"><span class="k">The office + records</span></div></div>
+<div class="atklbl" id="atklbl">a note: "read me aloud"</div>
+<div class="acts">
+  <button class="act bad" id="actAttack">🦹 Try the con</button>
+  <button class="act ok" id="actDefend">🛡️ Clerk stays sharp</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const types=[{n:'Hidden note',d:'a note: "read me aloud"',fix:'read as plain words'},{n:'Forged request',d:'"do this — signed, you"',fix:'secret passphrase'},{n:'Smuggled order',d:'extra orders in a form',fix:'treat blanks as data'}];
+  let attacks=0, breaches=0, ti=0, defended=false, running=false;
+  const elA=document.getElementById('statAttacks'), elT=document.getElementById('statType'), elB=document.getElementById('statBreach'), gate=document.getElementById('gate'), atklbl=document.getElementById('atklbl');
+  function attack(){ if(document.hidden) return; attacks++; elA.textContent=attacks; const t=types[ti];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='52%'; });
+    setTimeout(()=>{ if(defended){ d.classList.add('fail'); gate.style.borderColor='var(--good)'; setTimeout(()=>{ if(!defended)gate.style.borderColor=''; },300); setTimeout(()=>d.remove(),320); }
+      else { d.style.left='86%'; setTimeout(()=>{ d.classList.add('done'); const srv=scene.querySelector('.server'); if(srv){srv.classList.add('crash'); setTimeout(()=>srv.classList.remove('crash'),400);} breaches++; elB.textContent=breaches; elB.className='stat-v bad'; setTimeout(()=>d.remove(),300); }, leg); }
+    }, leg);
+  }
+  function nextType(){ ti=(ti+1)%3; const t=types[ti]; elT.textContent=t.n; atklbl.textContent=t.d; }
+  function defend(){ defended=!defended; gate.classList.toggle('armed',defended); gate.textContent=defended?('🛡️ '+types[ti].fix):'🛡️ clerk off guard'; }
+  function loop(){ if(!running)return; attack(); setTimeout(loop, 1800*simRate()); }
+  document.getElementById('actAttack').onclick=attack;
+  document.getElementById('actDefend').onclick=defend;
+  running=true; loop();
+  return {attack,nextType,defend};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Three classic web attacks all share one weakness: a clerk who <b>blindly acts on whatever a stranger hands them.</b> Let's meet the cons.", dur:4600},
+  {cap:"<b>Hidden note (XSS):</b> a stranger hands in a note that secretly says \"read me aloud to everyone.\" Read carelessly, it commands the whole room.", dur:4800, on(){SIM.attack();}},
+  {cap:"With the clerk off guard, the note's <span class='hl-bad'>hidden instructions get carried out</span> — and harm everyone in earshot. A real breach.", dur:4600, on(){SIM.attack();}},
+  {cap:"The counter: <b>read it as plain words</b>, never as a command. Tell the clerk to stay sharp.", dur:4600, on(){SIM.defend();}},
+  {cap:"Now the same note is <span class='hl-good'>read out literally</span> — harmless gibberish, not an order. Blocked.", dur:4400, on(){SIM.attack();}},
+  {cap:"Next, the <b>forged request (CSRF):</b> a con tricks the clerk into acting <em>in your name</em> — \"transfer the funds, signed by you\" — without your say-so.", dur:4800, on(){SIM.defend();SIM.nextType();SIM.attack();}},
+  {cap:"Counter: a <b>secret passphrase</b> only the real you would know, so forged requests fail the check. Switch it on to block them.", dur:4600, on(){SIM.defend();SIM.attack();}},
+  {cap:"Finally the <b>smuggled order (SQLi):</b> extra instructions hidden in a fill-in form. The fix: <b>treat every blank strictly as data</b> — never as a new order.", dur:4800, on(){SIM.defend();SIM.nextType();}},
+  {cap:"Your turn 👉 cycle the <b>🦹 cons</b> and toggle <b>🛡️ the sharp clerk</b> to watch each one turn from a breach into a block.", dur:5200, on(){SIM.defend();}},
+  {cap:"Hidden notes, forged requests, smuggled orders — all beaten by one discipline: never trust what's handed in. Read it plainly, verify it, keep data as data.", dur:4800}
+]});
+
+</script>
+</body></html>

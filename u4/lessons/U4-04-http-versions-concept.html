@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP/1 vs HTTP/2 vs HTTP/3 · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.res{position:absolute; right:8%; width:22%; height:16px; border-radius:5px; background:#eef5fd; border:1.5px solid var(--line2); overflow:hidden; z-index:2}
+.resf{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#6fb1ff,#1f6fe6); transition:width .2s}
+.reslbl{position:absolute; right:31%; font-family:var(--fmono); font-size:10px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">HTTP/1 vs HTTP/2 vs HTTP/3</h1>
+  <p class="subtitle">HTTP/1.1 sends one request at a time per connection, so a slow resource blocks the rest. HTTP/2 multiplexes many streams over one connection. HTTP/3 runs over QUIC (UDP), so a single lost packet no longer stalls every other stream.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Page loads</div><div class="stat-v accent" id="statLoads">0</div></div>
+  <div class="stat"><div class="stat-k">Version</div><div class="stat-v" id="statMode">HTTP/1.1</div></div>
+  <div class="stat"><div class="stat-k">Transfers</div><div class="stat-v" id="statPar">one at a time</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">🌐</div><div class="lbl"><span class="k">Browser</span></div></div>
+<div class="reslbl" style="top:20%">🖼️ img</div><div class="res r-0" style="top:22%"><div class="resf"></div></div>
+<div class="reslbl" style="top:38%">📄 css</div><div class="res r-1" style="top:40%"><div class="resf"></div></div>
+<div class="reslbl" style="top:56%">⚙️ js</div><div class="res r-2" style="top:58%"><div class="resf"></div></div>
+<div class="reslbl" style="top:74%">🔤 font</div><div class="res r-3" style="top:76%"><div class="resf"></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 HTTP/1 → /2 → /3</button>
+  <button class="act ok" id="actLoad">📥 Load the page</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const fills=[0,1,2,3].map(i=>scene.querySelector('.r-'+i+' .resf'));
+  let loads=0, mode=0, running=false; const names=['HTTP/1.1','HTTP/2','HTTP/3'];
+  const elL=document.getElementById('statLoads'), elM=document.getElementById('statMode'), elP=document.getElementById('statPar');
+  function load(){ if(document.hidden) return; loads++; elL.textContent=loads; fills.forEach(f=>f.style.width='0%');
+    if(mode===0){ // sequential, one after another (slow)
+      let i=0; const next=()=>{ if(i>=4) return; const f=fills[i]; let w=0; const t=setInterval(()=>{ w+=12; f.style.width=Math.min(100,w)+'%'; if(w>=100){ clearInterval(t); i++; next(); } }, 60*simRate()); }; next();
+    } else if(mode===1){ // parallel over one connection
+      fills.forEach((f,i)=>{ let w=0; const t=setInterval(()=>{ w+=10; f.style.width=Math.min(100,w)+'%'; if(w>=100) clearInterval(t); }, 70*simRate()); });
+    } else { // parallel, and one (js) hits packet loss but others unaffected
+      fills.forEach((f,i)=>{ let w=0; const stall = (i===2); const t=setInterval(()=>{ w+= (stall && w>40 && w<70)?2:10; f.style.width=Math.min(100,w)+'%'; if(w>=100) clearInterval(t); }, 70*simRate()); });
+    }
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s';d.style.left='70%';}); setTimeout(()=>d.remove(),600);
+  }
+  function setMode(m){ mode=m; elM.textContent=names[m]; elM.className='stat-v '+(m===0?'bad':m===1?'warn':'good');
+    elP.textContent=m===0?'one at a time 🐌':m===1?'multiplexed (1 conn)':'multiplexed + loss-resilient'; elP.className='stat-v '+(m===0?'bad':'good'); }
+  function loop(){ if(!running)return; load(); setTimeout(loop, 2600*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode((mode+1)%3);
+  document.getElementById('actLoad').onclick=load;
+  setMode(0); running=true; loop();
+  return {load,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A web page needs many files — images, CSS, JavaScript, fonts. How they're fetched is the story of HTTP's versions.", dur:4600},
+  {cap:"<b>HTTP/1.1</b> uses a connection for <b>one request at a time.</b> Each resource waits for the previous to finish.", dur:4600, on(){SIM.load();}},
+  {cap:"Watch them load <span class='hl-bad'>one after another.</span> A single slow file stalls everything behind it — head-of-line blocking.", dur:4800, on(){SIM.load();}},
+  {cap:"Browsers worked around this by opening several connections at once — but that's wasteful and still limited.", dur:4400},
+  {cap:"<b>HTTP/2</b> fixes it with <b>multiplexing</b>: many streams share <em>one</em> connection, all in flight together.", dur:4600, on(){SIM.setMode(1);}},
+  {cap:"Now all four resources download <span class='hl-good'>in parallel</span> over a single connection. Much faster page loads.", dur:4600, on(){SIM.load();}},
+  {cap:"But HTTP/2 still rides on TCP — and if <em>one</em> TCP packet is lost, <b>all</b> streams stall waiting for it. The blocking moved down a layer.", dur:4800, on(){SIM.setMode(2);}},
+  {cap:"<b>HTTP/3</b> runs over <b>QUIC</b> (built on UDP). Streams are independent, so one lost packet only delays <em>its</em> stream — the rest fly on.", dur:4800, on(){SIM.load();}},
+  {cap:"Your turn 👉 cycle <b>🔀 HTTP/1 → /2 → /3</b> and <b>📥 load the page</b> to compare sequential, multiplexed, and loss-resilient.", dur:5200, on(){SIM.setMode(0);}},
+  {cap:"Each version removed a bottleneck: serial requests → multiplexing → independent streams over QUIC. The web got faster each time.", dur:4800}
+]});
+
+</script>
+</body></html>

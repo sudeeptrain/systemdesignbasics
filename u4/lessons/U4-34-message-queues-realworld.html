@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Message Queues — A Deli Ticket Counter · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.qcol{position:absolute; left:50%; top:24%; width:50px; height:54%; transform:translateX(-50%); border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:1}
+.qfill{position:absolute; left:0; right:0; bottom:0; height:0%; background:linear-gradient(180deg,#6fb1ff,#1f6fe6); transition:height .3s}
+.qfill.full{background:linear-gradient(180deg,#f0c050,#b9730b)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Message Queues — A Deli Ticket Counter</h1>
+  <p class="subtitle">At a busy deli, you take a numbered ticket and wait; the staff call numbers at their own pace. Customers and counter never block each other, and a lunch rush just makes the line longer — nobody is turned away. That's a message queue.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Customers served</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Waiting in line</div><div class="stat-v" id="statDepth">0</div></div>
+  <div class="stat"><div class="stat-k">Counter</div><div class="stat-v good" id="statRate">steady</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box sm">🧑‍🤝‍🧑</div><div class="lbl"><span class="k">Customers</span></div></div>
+<div class="qcol"><div class="qfill" id="qfill"></div></div>
+<div class="nlbl" style="left:50%;top:82%">🎫 numbered ticket line</div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box sm consumer">🧑‍🍳</div><div class="lbl"><span class="k">Counter</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actBurst">📈 Lunch rush</button>
+  <button class="act" id="actSlow">🐢 Slow the counter</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let queue=0, done=0, consumeMs=700, running=false, busy=false;
+  const elD=document.getElementById('statDone'), elDepth=document.getElementById('statDepth'), elRate=document.getElementById('statRate'), qfill=document.getElementById('qfill');
+  const consumerEl=scene.querySelector('.consumer');
+  function setDepth(v){ queue=Math.max(0,v); elDepth.textContent=queue; const pct=Math.min(100,queue*9); qfill.style.height=pct+'%'; qfill.classList.toggle('full',pct>70);
+    elDepth.className='stat-v '+(queue>8?'bad':queue>3?'warn':'good'); }
+  function enqueue(){ if(document.hidden) return; setDepth(queue+1);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; }); setTimeout(()=>{ d.remove(); }, leg);
+  }
+  function consume(){ if(document.hidden||busy||queue<=0) return; busy=true; setDepth(queue-1);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=Math.max(280,consumeMs*0.6)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='86%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(consumerEl){consumerEl.classList.add('busy'); setTimeout(()=>consumerEl.classList.remove('busy'),200);} done++; elD.textContent=done; busy=false; setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function burst(){ for(let k=0;k<6;k++) setTimeout(enqueue, k*120*simRate()); }
+  function slow(){ consumeMs = consumeMs>900? 700 : 1500; elRate.textContent=consumeMs>900?'slow 🐢':'steady'; elRate.className='stat-v '+(consumeMs>900?'warn':'good'); }
+  function loop(){ if(!running)return; enqueue(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actBurst').onclick=burst;
+  document.getElementById('actSlow').onclick=slow;
+  setDepth(0); running=true; loop();
+  (function consumerLoop(){ consume(); setTimeout(consumerLoop, Math.max(280,consumeMs)*simRate()); })();
+  return {enqueue,consume,burst,slow};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A busy deli has more customers arriving than the counter can serve at once. How does it stay calm instead of chaotic?", dur:4800},
+  {cap:"Simple: you <b>take a numbered ticket</b> and step aside. You've handed off your request and you're free to wait.", dur:4600, on(){SIM.enqueue();}},
+  {cap:"The staff <b>call numbers one at a time</b>, serving at their own steady pace. That ticket line is the message queue.", dur:4600},
+  {cap:"Notice the <b>decoupling:</b> customers don't wait <em>on</em> the counter, and the counter is never mobbed. The line sits between them.", dur:4400},
+  {cap:"Now the <b>lunch rush</b> hits — a wave of customers all at once.", dur:3800, on(){SIM.burst();}},
+  {cap:"They simply <span class='hl-warn'>line up.</span> The queue soaks up the surge instead of overwhelming the staff — a shock absorber.", dur:4800, on(){SIM.burst();}},
+  {cap:"If the counter <b>slows down</b>, the line just grows — but nobody's lost; everyone still gets served as capacity returns.", dur:4600, on(){SIM.slow();}},
+  {cap:"And you can <b>open another counter</b> to clear the line faster — exactly like adding more consumers to a queue.", dur:4600},
+  {cap:"Your turn 👉 trigger a <b>📈 lunch rush</b> and <b>🐢 slow the counter</b> to watch the ticket line buffer everything.", dur:5200},
+  {cap:"A message queue is a deli ticket line: hand off work, get served at a steady pace, absorb the rush, lose nobody. The backbone of async systems.", dur:4800}
+]});
+
+</script>
+</body></html>

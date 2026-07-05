@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OAuth — A Valet Key for Your Car · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stepn{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--faint); transform:translateX(-50%); z-index:2}
+.tok{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; z-index:4; opacity:0; transition:.3s}
+.tok.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">OAuth — A Valet Key for Your Car</h1>
+  <p class="subtitle">A valet key starts the car and opens the door, but won't unlock the glovebox or the boot. You hand it over without giving away your master key. OAuth does the same online: an app gets a limited key to act for you — never your actual password.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Hand-offs</div><div class="stat-v accent" id="statLogins">0</div></div>
+  <div class="stat"><div class="stat-k">Valet sees master key?</div><div class="stat-v good" id="statPw">never</div></div>
+  <div class="stat"><div class="stat-k">Valet holds</div><div class="stat-v" id="statTok">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:36%"><div class="box sm">🧑</div><div class="lbl"><span class="k">You (owner)</span></div></div>
+<div class="node abs" data-show="1" style="left:16%;top:74%"><div class="box sm appn">🧑‍✈️</div><div class="lbl"><span class="k">The Valet (app)</span></div></div>
+<div class="node abs" data-show="1" style="left:64%;top:36%"><div class="box prov">🛎️</div><div class="lbl"><span class="k">Valet desk (provider)</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:74%"><div class="box sm res">🚗</div><div class="lbl"><span class="k">Your car</span></div></div>
+<div class="tok" id="tok">🔑 valet key</div>
+<div class="acts">
+  <button class="act ok" id="actLogin">🔓 Approve the valet key</button>
+  <button class="act bad" id="actDeny">🚫 Refuse</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let logins=0, busy=false, running=false;
+  const elL=document.getElementById('statLogins'), elT=document.getElementById('statTok'), tok=document.getElementById('tok');
+  const prov=scene.querySelector('.prov'), appn=scene.querySelector('.appn');
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, leg); }
+  function login(deny){ if(busy) return; busy=true; tok.classList.remove('on'); elT.textContent='—';
+    // valet sends you to the desk to authorize
+    hop(16,74,64,36,'',()=>{ if(prov){prov.classList.add('active'); setTimeout(()=>prov.classList.remove('active'),300);}
+      if(deny){ hop(64,36,16,74,'fail',()=>{ elT.textContent='nothing ✗'; elT.className='stat-v bad'; busy=false; }); return; }
+      // you approve → desk issues a claim ticket to the valet
+      hop(64,36,16,74,'done',()=>{ if(appn){appn.classList.add('active'); setTimeout(()=>appn.classList.remove('active'),250);}
+        // valet exchanges the ticket for the limited key
+        hop(16,74,64,36,'',()=>{ hop(64,36,50,80,'done',()=>{ tok.classList.add('on'); elT.textContent='🔑 valet key'; elT.className='stat-v good';
+          // valet uses the key to park the car
+          hop(16,74,88,74,'done',()=>{ logins++; elL.textContent=logins; busy=false; }); }); }); });
+    });
+  }
+  function loop(){ if(!running)return; if(!busy) login(false); setTimeout(loop, 4200*simRate()); }
+  function demoDeny(){ tok.classList.remove('on'); elT.textContent='nothing ✗'; elT.className='stat-v bad'; if(prov){prov.classList.add('crash'); setTimeout(()=>prov.classList.remove('crash'),500);}
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='64%'; d.style.top='36%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='16%'; d.style.top='74%'; }); setTimeout(()=>d.remove(), leg+200); }
+  document.getElementById('actLogin').onclick=()=>login(false);
+  document.getElementById('actDeny').onclick=()=>{ busy=false; demoDeny(); };
+  running=true; loop();
+  return {login:()=>login(false),deny:demoDeny};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You pull up to a hotel and a valet offers to park your car. Do you hand over your <b>master key</b> — house, garage, everything? Of course not. OAuth solves the same problem online.", dur:4800},
+  {cap:"You let the valet send you to the <b>valet desk</b> to sort it out — you don't just give them your keys directly. That's the app redirecting you to the provider.", dur:4800, on(){SIM.login();}},
+  {cap:"At the desk — not with the valet — <b>you decide what to allow:</b> \"this valet may start and park the car. Approve?\"", dur:4800},
+  {cap:"You <b>approve</b>, and the desk hands the valet a <b>claim ticket</b> — never your actual master key.", dur:4800},
+  {cap:"The valet swaps that ticket at the desk for a proper <b>valet key</b> — their working key for your car.", dur:4600},
+  {cap:"That valet key is <b>limited:</b> it starts the engine and opens the door, but <em>won't</em> unlock the glovebox or the boot. Only what you allowed.", dur:4800},
+  {cap:"Now the valet uses it to <span class='hl-good'>park the car</span> — nothing more. And you can cancel that key anytime, without changing your master key.", dur:4600},
+  {cap:"Had you <b>refused</b> at the desk, the valet would get <span class='hl-bad'>nothing</span> — no ticket, no key, no access. You stay in control.", dur:4600, on(){SIM.deny();}},
+  {cap:"Your turn 👉 <b>🔓 Approve the valet key</b> to follow the flow, or <b>🚫 Refuse</b> to block it.", dur:5200},
+  {cap:"OAuth = handing out a limited valet key, never your master key: redirect, approve, key. The standard behind every \"Log in with…\" button.", dur:4800}
+]});
+
+</script>
+</body></html>

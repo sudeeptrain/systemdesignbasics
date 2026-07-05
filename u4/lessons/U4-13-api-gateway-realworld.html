@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Gateway — A Building Reception Desk · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gw .box{transition:.3s}
+.gw.armed .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.tag{position:absolute; left:38%; top:24%; font-family:var(--fmono); font-size:10px; color:var(--good); z-index:4; opacity:0; transition:.3s}
+.tag.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">API Gateway — A Building Reception Desk</h1>
+  <p class="subtitle">Visitors don't wander a building knocking on every office. They check in at one reception desk, which verifies them, signs them in, and directs them to the right floor. An API gateway is that desk: one front door that authenticates, throttles, and routes every request.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Visitors directed</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Desk checks</div><div class="stat-v" id="statPol">off</div></div>
+  <div class="stat"><div class="stat-k">Stopped at desk</div><div class="stat-v good" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Visitors</span></div></div>
+<div class="node abs gw" data-show="1" style="left:40%;top:50%"><div class="box">🛎️</div><div class="lbl"><span class="k">Reception</span></div></div>
+<div class="tag" id="tag">ID check · sign-in ✓</div>
+<div class="node abs" data-show="1" style="left:74%;top:22%"><div class="box sm s-0">🧑‍💼</div><div class="lbl"><span class="k">HR floor</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:50%"><div class="box sm s-1">📦</div><div class="lbl"><span class="k">Sales floor</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:78%"><div class="box sm s-2">💰</div><div class="lbl"><span class="k">Finance floor</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actRequest">🚶 A visitor arrives</button>
+  <button class="act" id="actPolicy">🛂 Toggle desk checks</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const svc=[{x:74,y:22},{x:74,y:50},{x:74,y:78}];
+  let reqs=0, armed=false, blocked=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elP=document.getElementById('statPol'), elB=document.getElementById('statBlock');
+  const gw=scene.querySelector('.gw'), tag=document.getElementById('tag');
+  function req(){ if(document.hidden) return;
+    const bad = armed && Math.random()<0.25; // no appointment / no ID → stopped
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='40%'; d.style.top='50%'; });
+    setTimeout(()=>{ if(bad){ d.classList.add('fail'); blocked++; elB.textContent=blocked; elB.className='stat-v warn'; if(gw)gw.classList.add('armed'); setTimeout(()=>d.remove(),320); return; }
+      const s=svc[rr++%3]; d.style.left=s.x+'%'; d.style.top=s.y+'%'; setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function policy(){ armed=!armed; elP.textContent=armed?'ID + sign-in ✓':'off'; elP.className='stat-v '+(armed?'good':''); tag.classList.toggle('on',armed); if(gw)gw.classList.toggle('armed',armed); }
+  function demoBlock(){ const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ d.classList.add('fail'); blocked++; elB.textContent=blocked; elB.className='stat-v warn'; if(gw){gw.classList.add('armed');} setTimeout(()=>d.remove(),360); }, leg); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actRequest').onclick=req;
+  document.getElementById('actPolicy').onclick=policy;
+  running=true; loop();
+  return {req,policy,demoBlock};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A big office building has many floors. Should visitors roam around knocking on every office door? Of course not — that's chaos.", dur:4600},
+  {cap:"Everyone enters through <b>one reception desk.</b> Every visitor checks in here first. That desk is the API gateway.", dur:4600, on(){SIM.req();}},
+  {cap:"Its first job is <b>directing</b> people: figure out who they need and send them to the right floor — HR, Sales, or Finance.", dur:4600, on(){SIM.req();}},
+  {cap:"Visitors only need to know <b>one address</b> — the front entrance — and never have to learn the building's internal layout.", dur:4400},
+  {cap:"Now the real value — <b>switch on the desk checks.</b>", dur:3600, on(){SIM.policy();}},
+  {cap:"The desk verifies <b>ID and appointments</b> and signs everyone in — done once, at the door, for every floor behind it.", dur:4600, on(){SIM.req();}},
+  {cap:"Anyone without an appointment or ID is <span class='hl-warn'>stopped right at the desk</span> and never reaches the floors. Clean and central.", dur:4800, on(){SIM.demoBlock();}},
+  {cap:"This keeps shared concerns — security, sign-in logs, visitor limits — out of every individual office. The floors stay focused on their work.", dur:4400},
+  {cap:"Your turn 👉 send <b>🚶 visitors</b> and <b>🛂 toggle the desk checks</b> to watch directing and gatekeeping in action.", dur:5200, on(){SIM.policy();}},
+  {cap:"An API gateway is the building's reception desk: one front door that verifies, limits, and routes everyone — so each office stays simple.", dur:4800}
+]});
+
+</script>
+</body></html>

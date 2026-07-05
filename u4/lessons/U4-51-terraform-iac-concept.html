@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infrastructure as Code (Terraform) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.code{position:absolute; left:8%; top:22%; width:30%; font-family:var(--fmono); font-size:10.5px; background:#0d1b2a; color:#dbe8fb; border-radius:9px; padding:9px; white-space:pre; z-index:2; line-height:1.6}
+.res{position:absolute; right:8%; width:30%; z-index:2}
+.rr{font-family:var(--fmono); font-size:11px; padding:5px 8px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px; transition:.3s; opacity:0; transform:translateX(8px)}
+.rr.on{opacity:1; transform:none} .rr.changed{border-color:var(--warn); background:#fff7e9}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Infrastructure as Code (Terraform)</h1>
+  <p class="subtitle">Clicking around a cloud console to set up servers is slow and unrepeatable. Terraform lets you declare your infrastructure in code: it plans the diff between what exists and what you've declared, then applies it — versioned, reviewable, and reproducible.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Resources live</div><div class="stat-v accent" id="statResources">0</div></div>
+  <div class="stat"><div class="stat-k">Last action</div><div class="stat-v" id="statAct">—</div></div>
+  <div class="stat"><div class="stat-k">Reproducible?</div><div class="stat-v good" id="statRepro">yes — it's code</div></div>
+</div>
+<div class="code" id="code">resource "server" {
+  count = 2
+  size  = "small"
+}</div>
+<div class="nlbl" style="left:82%;top:13%">☁️ real cloud</div>
+<div class="res" id="res"></div>
+<div class="acts">
+  <button class="act ok" id="actApply">▶️ terraform apply</button>
+  <button class="act" id="actChange">✏️ Change the code</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const res=document.getElementById('res'), code=document.getElementById('code');
+  let live=0, desired=2, size='small', running=false;
+  const elR=document.getElementById('statResources'), elA=document.getElementById('statAct');
+  function render(changed){ res.innerHTML=''; for(let i=0;i<live;i++){ const r=document.createElement('div'); r.className='rr'+(changed?' changed':''); r.textContent='🖥️ server-'+(i+1)+' ('+size+')'; res.appendChild(r); requestAnimationFrame(()=>r.classList.add('on')); } elR.textContent=live; }
+  function apply(){ if(document.hidden) return; elA.textContent='apply'; elA.className='stat-v good';
+    // converge live → desired
+    const diff = desired-live; const steps=Math.abs(diff)||1; let n=0;
+    const t=setInterval(()=>{ if(live<desired){ live++; const d=document.createElement('div'); d.className='dot'; d.style.left='30%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='70%';}); setTimeout(()=>{d.classList.add('done'); d.remove();},420); }
+      else if(live>desired){ live--; }
+      render(false); n++; if(live===desired||n>6) clearInterval(t); }, 350*simRate());
+  }
+  function change(){ // edit the code → a diff to apply
+    if(size==='small'){ desired=4; size='large'; } else { desired=2; size='small'; }
+    code.textContent='resource "server" {\n  count = '+desired+'\n  size  = "'+size+'"\n}';
+    elA.textContent='plan: diff'; elA.className='stat-v warn'; render(true);
+  }
+  function loop(){ if(!running)return; if(live!==desired) apply(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actApply').onclick=apply;
+  document.getElementById('actChange').onclick=change;
+  render(false); running=true; loop();
+  return {apply,change,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Setting up cloud infrastructure by <b>clicking around a console</b> is slow, error-prone, and impossible to reproduce exactly. There's a better way.", dur:4800},
+  {cap:"<b>Infrastructure as Code</b> — Terraform — lets you <b>declare</b> what you want in a config file: \"2 small servers.\" Just like code.", dur:4800},
+  {cap:"You run <b>terraform apply</b>, and it provisions the real cloud resources to match your declaration.", dur:4400, on(){SIM.apply();}},
+  {cap:"The declaration is the <b>source of truth.</b> The two servers now exist exactly as specified — no manual clicking.", dur:4400},
+  {cap:"Need a change? You don't click — you <b>edit the code:</b> bump to 4 servers, size large.", dur:4400, on(){SIM.change();}},
+  {cap:"Terraform <b>plans the diff</b> first: it compares your code to reality and shows exactly what it will add, change, or destroy.", dur:4600},
+  {cap:"You review that plan, then apply — and it <b>converges</b> the live infrastructure to match the new declaration.", dur:4600, on(){SIM.apply();}},
+  {cap:"Because it's code, it's <b>versioned in Git, reviewed in pull requests, and reproducible</b> — spin up an identical environment anytime.", dur:4600},
+  {cap:"Your turn 👉 <b>✏️ Change the code</b> and <b>▶️ apply</b> to watch infrastructure converge to your declaration.", dur:5200, on(){SIM.render(false);}},
+  {cap:"Infrastructure as Code makes your servers a declarative, version-controlled artifact: plan the diff, apply, reproduce anywhere. No more click-ops.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OAuth 2.0 Login · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stepn{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--faint); transform:translateX(-50%); z-index:2}
+.tok{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; z-index:4; opacity:0; transition:.3s}
+.tok.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">OAuth 2.0 Login</h1>
+  <p class="subtitle">"Log in with Google" lets an app act on your behalf without ever seeing your password. OAuth redirects you to the provider, you consent, and the provider hands the app a limited access token — a valet key that opens only what you allowed.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Logins</div><div class="stat-v accent" id="statLogins">0</div></div>
+  <div class="stat"><div class="stat-k">App sees password?</div><div class="stat-v good" id="statPw">never</div></div>
+  <div class="stat"><div class="stat-k">App holds</div><div class="stat-v" id="statTok">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:36%"><div class="box sm">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:16%;top:74%"><div class="box sm appn">📱</div><div class="lbl"><span class="k">The App</span></div></div>
+<div class="node abs" data-show="1" style="left:64%;top:36%"><div class="box prov">🔐</div><div class="lbl"><span class="k">Google (provider)</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:74%"><div class="box sm res">🗄️</div><div class="lbl"><span class="k">Your data</span></div></div>
+<div class="tok" id="tok">🎟️ access token</div>
+<div class="acts">
+  <button class="act ok" id="actLogin">🔓 Log in with Google</button>
+  <button class="act bad" id="actDeny">🚫 Deny consent</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let logins=0, busy=false, running=false;
+  const elL=document.getElementById('statLogins'), elT=document.getElementById('statTok'), tok=document.getElementById('tok');
+  const prov=scene.querySelector('.prov'), appn=scene.querySelector('.appn');
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, leg); }
+  function login(deny){ if(busy) return; busy=true; tok.classList.remove('on'); elT.textContent='—';
+    // app redirects you to provider
+    hop(16,74,64,36,'',()=>{ if(prov){prov.classList.add('active'); setTimeout(()=>prov.classList.remove('active'),300);}
+      if(deny){ hop(64,36,16,74,'fail',()=>{ elT.textContent='nothing ✗'; elT.className='stat-v bad'; busy=false; }); return; }
+      // you consent → provider issues a code back to the app
+      hop(64,36,16,74,'done',()=>{ if(appn){appn.classList.add('active'); setTimeout(()=>appn.classList.remove('active'),250);}
+        // app exchanges code for a token
+        hop(16,74,64,36,'',()=>{ hop(64,36,50,80,'done',()=>{ tok.classList.add('on'); elT.textContent='🎟️ token'; elT.className='stat-v good';
+          // app uses token to access your data
+          hop(16,74,88,74,'done',()=>{ logins++; elL.textContent=logins; busy=false; }); }); }); });
+    });
+  }
+  function loop(){ if(!running)return; if(!busy) login(false); setTimeout(loop, 4200*simRate()); }
+  function demoDeny(){ tok.classList.remove('on'); elT.textContent='nothing ✗'; elT.className='stat-v bad'; if(prov){prov.classList.add('crash'); setTimeout(()=>prov.classList.remove('crash'),500);}
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='64%'; d.style.top='36%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='16%'; d.style.top='74%'; }); setTimeout(()=>d.remove(), leg+200); }
+  document.getElementById('actLogin').onclick=()=>login(false);
+  document.getElementById('actDeny').onclick=()=>{ busy=false; demoDeny(); };
+  running=true; loop();
+  return {login:()=>login(false),deny:demoDeny};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"An app wants to use your Google profile or calendar. The <em>worst</em> idea: hand the app your Google password. <b>OAuth</b> avoids that entirely.", dur:4800},
+  {cap:"You click <b>\"Log in with Google.\"</b> Instead of asking for your password, the app <b>redirects you to Google itself.</b>", dur:4800, on(){SIM.login();}},
+  {cap:"At Google — not the app — you log in and see a <b>consent screen:</b> \"This app wants to read your profile. Allow?\"", dur:4800},
+  {cap:"You <b>consent</b>, and Google sends a short-lived <b>authorization code</b> back to the app. The app never saw your password.", dur:4800},
+  {cap:"The app quietly <b>exchanges that code</b> with Google for an <b>access token</b> — its actual key to your data.", dur:4600},
+  {cap:"That token is like a <b>valet key:</b> it opens only what you approved (your profile), not everything (your email, your files).", dur:4800},
+  {cap:"Now the app uses the token to fetch <span class='hl-good'>just your profile.</span> You can revoke it anytime, without changing your password.", dur:4600},
+  {cap:"If you'd <b>denied consent</b>, the app would get <span class='hl-bad'>nothing</span> — no code, no token, no access. You stay in control.", dur:4600, on(){SIM.deny();}},
+  {cap:"Your turn 👉 <b>🔓 Log in with Google</b> to follow the flow, or <b>🚫 Deny consent</b> to block it.", dur:5200},
+  {cap:"OAuth 2.0 = delegated access without sharing passwords: redirect, consent, token. The standard behind every \"Log in with…\" button.", dur:4800}
+]});
+
+</script>
+</body></html>

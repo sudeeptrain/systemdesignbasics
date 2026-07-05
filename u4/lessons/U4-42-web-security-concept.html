@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Security: XSS, CSRF, SQLi · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gate{position:absolute; left:52%; top:42%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:700; padding:7px 12px; border-radius:8px; border:2px dashed var(--line2); color:var(--muted); z-index:5; transition:.3s}
+.gate.armed{border-style:solid; border-color:var(--good); color:var(--good)}
+.atklbl{position:absolute; left:18%; top:66%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--bad); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Web Security: XSS, CSRF, SQLi</h1>
+  <p class="subtitle">Three classic web attacks, all from trusting input: XSS injects malicious scripts into pages, CSRF tricks your browser into firing authenticated requests, and SQL injection smuggles commands into a query. Each has a standard defense — and the rule is always: never trust input.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Attacks attempted</div><div class="stat-v accent" id="statAttacks">0</div></div>
+  <div class="stat"><div class="stat-k">Attack type</div><div class="stat-v bad" id="statType">XSS</div></div>
+  <div class="stat"><div class="stat-k">Breaches</div><div class="stat-v" id="statBreach">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box">🦹</div><div class="lbl"><span class="k">Attacker</span></div></div>
+<div class="gate" id="gate">🛡️ defenses off</div>
+<div class="node abs" data-show="1" style="left:86%;top:42%"><div class="box server">🗄️</div><div class="lbl"><span class="k">App + data</span></div></div>
+<div class="atklbl" id="atklbl">&lt;script&gt; injection</div>
+<div class="acts">
+  <button class="act bad" id="actAttack">🦹 Launch attack</button>
+  <button class="act ok" id="actDefend">🛡️ Toggle defenses</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const types=[{n:'XSS',d:'<script> injection',fix:'escape output + CSP'},{n:'CSRF',d:'forged request',fix:'anti-CSRF token'},{n:'SQLi',d:"' OR 1=1 --",fix:'parameterized queries'}];
+  let attacks=0, breaches=0, ti=0, defended=false, running=false;
+  const elA=document.getElementById('statAttacks'), elT=document.getElementById('statType'), elB=document.getElementById('statBreach'), gate=document.getElementById('gate'), atklbl=document.getElementById('atklbl');
+  function attack(){ if(document.hidden) return; attacks++; elA.textContent=attacks; const t=types[ti];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='52%'; });
+    setTimeout(()=>{ if(defended){ d.classList.add('fail'); gate.style.borderColor='var(--good)'; setTimeout(()=>{ if(!defended)gate.style.borderColor=''; },300); setTimeout(()=>d.remove(),320); }
+      else { d.style.left='86%'; setTimeout(()=>{ d.classList.add('done'); const srv=scene.querySelector('.server'); if(srv){srv.classList.add('crash'); setTimeout(()=>srv.classList.remove('crash'),400);} breaches++; elB.textContent=breaches; elB.className='stat-v bad'; setTimeout(()=>d.remove(),300); }, leg); }
+    }, leg);
+  }
+  function nextType(){ ti=(ti+1)%3; const t=types[ti]; elT.textContent=t.n; atklbl.textContent=t.d; }
+  function defend(){ defended=!defended; gate.classList.toggle('armed',defended); gate.textContent=defended?('🛡️ '+types[ti].fix):'🛡️ defenses off'; }
+  function loop(){ if(!running)return; attack(); setTimeout(loop, 1800*simRate()); }
+  document.getElementById('actAttack').onclick=attack;
+  document.getElementById('actDefend').onclick=defend;
+  running=true; loop();
+  return {attack,nextType,defend};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Three of the most common web attacks all share one root cause: <b>trusting input you shouldn't.</b> Let's meet them.", dur:4600},
+  {cap:"<b>XSS</b> (cross-site scripting): an attacker sneaks a <b>&lt;script&gt;</b> into content. With no defense, it runs in <em>other</em> users' browsers.", dur:4800, on(){SIM.attack();}},
+  {cap:"Undefended, the malicious script <span class='hl-bad'>reaches the page</span> and steals cookies or hijacks the session. A real breach.", dur:4600, on(){SIM.attack();}},
+  {cap:"The fix: <b>escape output</b> so input is shown as text, not run as code, plus a Content-Security-Policy. Turn defenses on.", dur:4600, on(){SIM.defend();}},
+  {cap:"Now the same XSS attempt is <span class='hl-good'>neutralized</span> — the script is rendered harmlessly as text. Blocked.", dur:4400, on(){SIM.attack();}},
+  {cap:"Next, <b>CSRF:</b> a malicious page tricks <em>your</em> logged-in browser into firing a real request — \"transfer money\" — without your intent.", dur:4800, on(){SIM.defend();SIM.nextType();SIM.attack();}},
+  {cap:"Defense: an <b>anti-CSRF token</b> the attacker can't guess, so forged requests are rejected. Switch it on to block them.", dur:4600, on(){SIM.defend();SIM.attack();}},
+  {cap:"Finally <b>SQL injection:</b> input like <b>' OR 1=1 --</b> smuggled into a query. The fix is <b>parameterized queries</b> — data stays data, never code.", dur:4800, on(){SIM.defend();SIM.nextType();}},
+  {cap:"Your turn 👉 cycle <b>🦹 attacks</b> and <b>🛡️ toggle defenses</b> to watch each breach turn into a block.", dur:5200, on(){SIM.defend();}},
+  {cap:"XSS, CSRF, SQLi — all defeated by the same discipline: never trust input. Escape it, tokenize it, parameterize it.", dur:4800}
+]});
+
+</script>
+</body></html>

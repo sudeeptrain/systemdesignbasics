@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSO — One Conference Badge · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.idp .box{transition:.3s}
+.idp.lit .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.session{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; z-index:4; opacity:0; transition:.3s}
+.session.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">SSO — One Conference Badge</h1>
+  <p class="subtitle">You register once at the main desk and get a badge. After that, every talk, workshop, and hall just scans your badge — you never fill in a form again. They all trust the same registration desk. That's single sign-on.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Rooms entered</div><div class="stat-v accent" id="statApps">0</div></div>
+  <div class="stat"><div class="stat-k">Times registered</div><div class="stat-v good" id="statLogins">0</div></div>
+  <div class="stat"><div class="stat-k">Badge</div><div class="stat-v" id="statSess">none</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs idp" data-show="1" style="left:48%;top:50%"><div class="box">🪪</div><div class="lbl"><span class="k">Registration desk</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:22%"><div class="box sm a-0">🎤</div><div class="lbl"><span class="k">Keynote</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:50%"><div class="box sm a-1">🛠️</div><div class="lbl"><span class="k">Workshop</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:78%"><div class="box sm a-2">🍴</div><div class="lbl"><span class="k">Dining hall</span></div></div>
+<div class="session" id="session">🎫 registered (one badge)</div>
+<div class="acts">
+  <button class="act ok" id="actLogin">🔑 Register once</button>
+  <button class="act" id="actOpenApp">🚪 Enter a room</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const apps=[{x:82,y:22},{x:82,y:50},{x:82,y:78}];
+  let opened=0, loggedIn=false, running=false, ai=0;
+  const elA=document.getElementById('statApps'), elL=document.getElementById('statLogins'), elS=document.getElementById('statSess');
+  const idp=scene.querySelector('.idp'), session=document.getElementById('session');
+  function login(){ if(loggedIn) return; const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='48%'; });
+    setTimeout(()=>{ d.classList.add('done'); idp.classList.add('lit'); loggedIn=true; elL.textContent='1'; elS.textContent='have badge 🎫'; elS.className='stat-v good'; session.classList.add('on'); d.style.left='16%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function openApp(){ if(document.hidden) return; if(!loggedIn){ login(); return; } const a=apps[ai++%3];
+    // room scans badge against the desk (already registered) → instant entry
+    const d=document.createElement('div'); d.className='dot'; d.style.left='82%'; d.style.top=a.y+'%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='48%'; d.style.top='50%'; });
+    setTimeout(()=>{ idp.classList.add('lit'); d.style.left='82%'; d.style.top=a.y+'%'; setTimeout(()=>{ d.classList.add('done'); opened++; elA.textContent=opened; setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; if(!loggedIn) login(); else openApp(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actLogin').onclick=login;
+  document.getElementById('actOpenApp').onclick=openApp;
+  running=true; loop();
+  return {login,openApp};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"At a big conference you'll pop into many sessions all day. Filling in a registration form at <em>every</em> door would be miserable. <b>SSO</b> fixes that.", dur:4600},
+  {cap:"With single sign-on, you register <b>once</b> at the central <b>registration desk</b> — not at each room.", dur:4600, on(){SIM.login();}},
+  {cap:"That sign-up gives you <b>one badge</b>, and every room at the venue agrees to trust it.", dur:4400},
+  {cap:"Now walk up to the <b>keynote.</b> Instead of asking you to register, the door just <b>scans your badge</b>…", dur:4400, on(){SIM.openApp();}},
+  {cap:"…sees you're already registered, and waves you in. <span class='hl-good'>No second form.</span>", dur:4400, on(){SIM.openApp();}},
+  {cap:"Head to the <b>workshop</b>, then the <b>dining hall</b> — same scan, same instant entry. Notice 'times registered' stays at 1.", dur:4600, on(){SIM.openApp();}},
+  {cap:"Behind the scenes this is real protocols (<b>SAML</b>, <b>OpenID Connect</b>) that let each room securely confirm your badge with the desk.", dur:4600},
+  {cap:"The bonus: one desk to enforce a proper check (and add a second ID step), and one place to <b>instantly cancel a badge</b> for the whole venue.", dur:4800},
+  {cap:"Your turn 👉 <b>🔑 Register once</b>, then <b>🚪 enter rooms</b> — watch them all admit you without re-asking.", dur:5200},
+  {cap:"SSO = one trusted sign-up, many doors. Easy for you, and far simpler and safer for organizers to control from one desk.", dur:4800}
+]});
+
+</script>
+</body></html>

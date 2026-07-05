@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WAF — A Bouncer Who Checks Your Bag · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.waf{position:absolute; left:50%; top:18%; bottom:30%; width:12px; transform:translateX(-50%); background:linear-gradient(180deg,#6a4fe0,#1f6fe6); border-radius:5px; z-index:2; opacity:.35; transition:.3s}
+.waf.on{opacity:1}
+.waflbl{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">WAF — A Bouncer Who Checks Your Bag</h1>
+  <p class="subtitle">A gate guard checks if you're on the list. A venue bouncer goes further — they look inside your bag for anything dangerous before letting you in. A WAF is that bag-checking bouncer: it reads the actual contents of each request and blocks the harmful ones before they reach your app.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">People entering</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Bag check</div><div class="stat-v bad" id="statWaf">off</div></div>
+  <div class="stat"><div class="stat-k">Threats caught</div><div class="stat-v" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box">🌍</div><div class="lbl"><span class="k">The crowd</span></div></div>
+<div class="waf" id="waf"></div>
+<div class="node abs" data-show="1" style="left:84%;top:46%"><div class="box server">🎤</div><div class="lbl"><span class="k">The venue</span></div></div>
+<div class="waflbl" id="waflbl">🧱 no bag check — everyone walks in</div>
+<div class="acts">
+  <button class="act bad" id="actAttack">🎒 Someone with a hidden weapon</button>
+  <button class="act ok" id="actMode">🧱 Toggle bag check</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, blocked=0, on=false, running=false;
+  const elR=document.getElementById('statReqs'), elW=document.getElementById('statWaf'), elB=document.getElementById('statBlock'), waf=document.getElementById('waf'), waflbl=document.getElementById('waflbl');
+  function send(bad){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const d=document.createElement('div'); d.className='dot'+(bad?' fail':''); d.style.left='16%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(bad && on){ d.classList.add('fail'); blocked++; elB.textContent=blocked; elB.className='stat-v good'; waf.style.boxShadow='0 0 0 4px rgba(106,79,224,.25)'; setTimeout(()=>waf.style.boxShadow='',300); setTimeout(()=>d.remove(),320); return; }
+      d.style.left='84%'; setTimeout(()=>{ if(bad){ d.classList.add('fail'); const s=scene.querySelector('.server'); if(s){s.classList.add('crash'); setTimeout(()=>s.classList.remove('crash'),400);} } else d.classList.add('done'); setTimeout(()=>d.remove(),300); }, leg); }, leg);
+  }
+  function toggle(){ on=!on; waf.classList.toggle('on',on); elW.textContent=on?'on':'off'; elW.className='stat-v '+(on?'good':'bad'); waflbl.textContent=on?'🧱 bag check on — every bag inspected':'🧱 no bag check — everyone walks in'; }
+  function loop(){ if(!running)return; send(Math.random()<0.35); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actAttack').onclick=()=>send(true);
+  document.getElementById('actMode').onclick=toggle;
+  running=true; loop();
+  return {send,toggle};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A gate guard just checks if you're on the list. A venue <b>bouncer</b> asks a deeper question: \"what have you actually got <em>in that bag?</em>\" A WAF is that bouncer.", dur:4800},
+  {cap:"They stand at the door and <b>look inside what each person is carrying</b> — searching for anything dangerous, not just checking a ticket.", dur:4600, on(){SIM.send(false);}},
+  {cap:"With <b>no bag check</b>, someone carrying a hidden weapon strolls straight in among the harmless crowd.", dur:4600, on(){SIM.send(true);}},
+  {cap:"They reach the floor, where they can do real harm. Your only hope left is the venue's own internal security.", dur:4400},
+  {cap:"Now <b>turn the bag check on.</b>", dur:3400, on(){SIM.toggle();}},
+  {cap:"The same person's hidden weapon is <span class='hl-good'>spotted and stopped at the door</span> — they never get inside.", dur:4800, on(){SIM.send(true);}},
+  {cap:"Meanwhile ordinary guests walk through fine. The bouncer only stops what looks dangerous — known tricks, troublemakers, and gatecrashers.", dur:4600, on(){SIM.send(false);}},
+  {cap:"Real bouncers work from a list of known threats, plus crowd limits and ID checks — and are often part of the venue's wider security team.", dur:4600},
+  {cap:"Your turn 👉 send <b>🎒 someone with a hidden weapon</b> and <b>🧱 toggle the bag check</b> to watch threats get caught.", dur:5200, on(){SIM.toggle();}},
+  {cap:"A WAF is a bag-checking bouncer: it reads what's inside each request and blocks the dangerous ones — defense in depth, not a replacement for a safe venue.", dur:4800}
+]});
+
+</script>
+</body></html>

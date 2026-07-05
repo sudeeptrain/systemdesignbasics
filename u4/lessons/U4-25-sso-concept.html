@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSO (Single Sign-On) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.idp .box{transition:.3s}
+.idp.lit .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.session{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; z-index:4; opacity:0; transition:.3s}
+.session.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">SSO (Single Sign-On)</h1>
+  <p class="subtitle">With SSO you log in once at a central identity provider, and every connected app trusts that login. Open Gmail, Docs, and Calendar and none ask for a password again — they all check with the same identity provider behind the scenes.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Apps opened</div><div class="stat-v accent" id="statApps">0</div></div>
+  <div class="stat"><div class="stat-k">Logins typed</div><div class="stat-v good" id="statLogins">0</div></div>
+  <div class="stat"><div class="stat-k">SSO session</div><div class="stat-v" id="statSess">none</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs idp" data-show="1" style="left:48%;top:50%"><div class="box">🪪</div><div class="lbl"><span class="k">Identity provider</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:22%"><div class="box sm a-0">📧</div><div class="lbl"><span class="k">Mail</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:50%"><div class="box sm a-1">📄</div><div class="lbl"><span class="k">Docs</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:78%"><div class="box sm a-2">📅</div><div class="lbl"><span class="k">Calendar</span></div></div>
+<div class="session" id="session">🎫 signed in (one session)</div>
+<div class="acts">
+  <button class="act ok" id="actLogin">🔑 Sign in once</button>
+  <button class="act" id="actOpenApp">📂 Open an app</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const apps=[{x:82,y:22},{x:82,y:50},{x:82,y:78}];
+  let opened=0, loggedIn=false, running=false, ai=0;
+  const elA=document.getElementById('statApps'), elL=document.getElementById('statLogins'), elS=document.getElementById('statSess');
+  const idp=scene.querySelector('.idp'), session=document.getElementById('session');
+  function login(){ if(loggedIn) return; const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='48%'; });
+    setTimeout(()=>{ d.classList.add('done'); idp.classList.add('lit'); loggedIn=true; elL.textContent='1'; elS.textContent='active 🎫'; elS.className='stat-v good'; session.classList.add('on'); d.style.left='16%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function openApp(){ if(document.hidden) return; if(!loggedIn){ login(); return; } const a=apps[ai++%3];
+    // app checks with IdP (already logged in) → instant access, no password
+    const d=document.createElement('div'); d.className='dot'; d.style.left='82%'; d.style.top=a.y+'%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='48%'; d.style.top='50%'; });
+    setTimeout(()=>{ idp.classList.add('lit'); d.style.left='82%'; d.style.top=a.y+'%'; setTimeout(()=>{ d.classList.add('done'); opened++; elA.textContent=opened; setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; if(!loggedIn) login(); else openApp(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actLogin').onclick=login;
+  document.getElementById('actOpenApp').onclick=openApp;
+  running=true; loop();
+  return {login,openApp};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You use Mail, Docs, and Calendar all day. Typing your password into each, separately, would be miserable. <b>SSO</b> fixes that.", dur:4600},
+  {cap:"With Single Sign-On, you authenticate <b>once</b> at a central <b>identity provider</b> — not at each app.", dur:4600, on(){SIM.login();}},
+  {cap:"That login creates one <b>SSO session</b> with the identity provider, which all connected apps agree to trust.", dur:4400},
+  {cap:"Now open <b>Mail.</b> Instead of asking for a password, it quietly checks with the identity provider…", dur:4400, on(){SIM.openApp();}},
+  {cap:"…sees you're already signed in, and lets you straight in. <span class='hl-good'>No second login.</span>", dur:4400, on(){SIM.openApp();}},
+  {cap:"Open <b>Docs</b>, then <b>Calendar</b> — same story. One sign-in unlocked them all. Notice 'logins typed' stays at 1.", dur:4600, on(){SIM.openApp();}},
+  {cap:"This is built on protocols like <b>SAML</b> or <b>OpenID Connect</b> (which sits on OAuth) to pass trusted identity between apps.", dur:4600},
+  {cap:"The bonus: one place to enforce strong passwords and MFA, and one place to <b>instantly revoke</b> access to everything when someone leaves.", dur:4800},
+  {cap:"Your turn 👉 <b>🔑 Sign in once</b>, then <b>📂 open apps</b> — watch them all let you in without re-asking.", dur:5200},
+  {cap:"SSO = one trusted login, many apps. Convenient for users, and far easier and safer for admins to control centrally.", dur:4800}
+]});
+
+</script>
+</body></html>

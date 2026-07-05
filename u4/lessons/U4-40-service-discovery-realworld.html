@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service Discovery — A Taxi Dispatch Board · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.reg{position:absolute; left:50%; top:24%; transform:translate(-50%,-50%); width:120px; text-align:center; font-family:var(--fmono); font-size:11px; padding:8px; border-radius:9px; border:1.5px solid var(--accent); background:#eef4ff; color:var(--accent-d); z-index:3; min-height:30px}
+.inst.dead .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Service Discovery — A Taxi Dispatch Board</h1>
+  <p class="subtitle">Riders don't memorize drivers' phone numbers — those change constantly. They call dispatch. Drivers check in as available, dispatch keeps a live board, and when a rider calls it sends a free, nearby driver. Service discovery is that dispatch board for your services.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Rides requested</div><div class="stat-v accent" id="statLookups">0</div></div>
+  <div class="stat"><div class="stat-k">Drivers available</div><div class="stat-v" id="statReg">2</div></div>
+  <div class="stat"><div class="stat-k">Sent to a no-show</div><div class="stat-v good" id="statStale">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:60%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Rider</span></div></div>
+<div class="reg" id="reg">📋 dispatch</div>
+<div id="insts"></div>
+<div class="acts">
+  <button class="act ok" id="actRegister">➕ Driver checks in</button>
+  <button class="act" id="actLookup">🔎 Rider calls dispatch</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('insts'), reg=document.getElementById('reg');
+  let insts=[{alive:true},{alive:true}], lookups=0, running=false, rr=0;
+  const elL=document.getElementById('statLookups'), elR=document.getElementById('statReg');
+  function ys(n){const a=[],top=42,bot=86;for(let i=0;i<n;i++)a.push(n===1?64:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(insts.length);
+    insts.forEach((s,i)=>{ s.y=y[i]; const el=document.createElement('div'); el.className='node abs vis inst in-'+i+(s.alive?'':' dead'); el.style.left='82%'; el.style.top=y[i]+'%'; el.innerHTML='<div class="box sm">🚕</div><div class="lbl"><span class="k">car '+(101+i)+'</span></div>'; wrap.appendChild(el); s.el=el; });
+    reg.innerHTML='📋 dispatch<br>'+insts.filter(s=>s.alive).map((_,i)=>'car '+(101+i)).join(' · '); elR.textContent=insts.filter(s=>s.alive).length; }
+  function register(){ if(insts.length<5){ insts.push({alive:true}); render(); const el=insts[insts.length-1].el; if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),400);}
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='82%'; d.style.top=insts[insts.length-1].y+'%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s, top .4s';d.style.left='50%';d.style.top='24%';}); setTimeout(()=>d.remove(),460); } }
+  function lookup(){ if(document.hidden) return; lookups++; elL.textContent=lookups;
+    const live=insts.filter(s=>s.alive); if(!live.length) return; const s=live[rr++%live.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='60%'; scene.appendChild(d);
+    const leg=400*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='24%'; });
+    setTimeout(()=>{ reg.style.boxShadow='0 0 0 3px rgba(31,111,230,.18)'; setTimeout(()=>reg.style.boxShadow='',250);
+      d.style.left='82%'; d.style.top=s.y+'%'; setTimeout(()=>{ d.classList.add('done'); if(s.el){s.el.classList.add('active'); setTimeout(()=>s.el.classList.remove('active'),200);} setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; lookup(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actRegister').onclick=register;
+  document.getElementById('actLookup').onclick=lookup;
+  render(); running=true; loop();
+  return {register,lookup,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In a taxi fleet, which driver is free and where changes minute to minute. Riders can't possibly track that themselves — and nor can your services.", dur:4600},
+  {cap:"Memorizing one driver's number is hopeless — that driver may be off-shift in five minutes. You need something live.", dur:4600},
+  {cap:"So there's a <b>dispatch board</b> — a constantly-updated list of which cars are out and available. That's the service registry.", dur:4600},
+  {cap:"When a driver starts a shift, they <b>check in with dispatch:</b> \"car 103 here, free and ready.\" That's an instance registering itself.", dur:4600, on(){SIM.register();}},
+  {cap:"When a rider needs a cab, they <b>call dispatch</b> for a free car — instead of guessing a number.", dur:4600, on(){SIM.lookup();}},
+  {cap:"Dispatch sends back an available car and the ride happens. Watch a freshly checked-in driver get picked automatically.", dur:4600, on(){SIM.register();SIM.lookup();}},
+  {cap:"Dispatch also <b>drops drivers who go off-air</b>, so a rider is never sent to a cab that's already clocked off.", dur:4600, on(){SIM.lookup();}},
+  {cap:"That's what lets the fleet grow and shrink smoothly: new drivers just check in and start getting fares, with no rider needing to know.", dur:4600},
+  {cap:"Your turn 👉 have <b>➕ drivers check in</b> and let <b>🔎 riders call dispatch</b> to watch cars get found on demand.", dur:5200},
+  {cap:"Service discovery is a live dispatch board: instances check in, clients ask for an available one. No hardcoded numbers, no dead ends.", dur:4800}
+]});
+
+</script>
+</body></html>

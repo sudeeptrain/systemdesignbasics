@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Gateway · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gw .box{transition:.3s}
+.gw.armed .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.tag{position:absolute; left:38%; top:24%; font-family:var(--fmono); font-size:10px; color:var(--good); z-index:4; opacity:0; transition:.3s}
+.tag.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">API Gateway</h1>
+  <p class="subtitle">Rather than let clients call dozens of microservices directly, you put one front door before them: the API gateway. It authenticates, rate-limits, and routes each request to the right service — so cross-cutting concerns live in one place, not in every service.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests routed</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Gateway policies</div><div class="stat-v" id="statPol">off</div></div>
+  <div class="stat"><div class="stat-k">Blocked at door</div><div class="stat-v good" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">📱</div><div class="lbl"><span class="k">Clients</span></div></div>
+<div class="node abs gw" data-show="1" style="left:40%;top:50%"><div class="box">🚪</div><div class="lbl"><span class="k">API Gateway</span></div></div>
+<div class="tag" id="tag">auth · rate-limit ✓</div>
+<div class="node abs" data-show="1" style="left:74%;top:22%"><div class="box sm s-0">👤</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:50%"><div class="box sm s-1">🛒</div><div class="lbl"><span class="k">Orders</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:78%"><div class="box sm s-2">💳</div><div class="lbl"><span class="k">Payments</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actRequest">📨 Send a request</button>
+  <button class="act" id="actPolicy">🛡️ Toggle gateway policies</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const svc=[{x:74,y:22},{x:74,y:50},{x:74,y:78}];
+  let reqs=0, armed=false, blocked=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elP=document.getElementById('statPol'), elB=document.getElementById('statBlock');
+  const gw=scene.querySelector('.gw'), tag=document.getElementById('tag');
+  function req(){ if(document.hidden) return;
+    const bad = armed && Math.random()<0.25; // policies block some (unauthenticated / over limit)
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='40%'; d.style.top='50%'; });
+    setTimeout(()=>{ if(bad){ d.classList.add('fail'); blocked++; elB.textContent=blocked; elB.className='stat-v warn'; if(gw)gw.classList.add('armed'); setTimeout(()=>d.remove(),320); return; }
+      const s=svc[rr++%3]; d.style.left=s.x+'%'; d.style.top=s.y+'%'; setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function policy(){ armed=!armed; elP.textContent=armed?'auth + rate-limit ✓':'off'; elP.className='stat-v '+(armed?'good':''); tag.classList.toggle('on',armed); if(gw)gw.classList.toggle('armed',armed); }
+  function demoBlock(){ const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ d.classList.add('fail'); blocked++; elB.textContent=blocked; elB.className='stat-v warn'; if(gw){gw.classList.add('armed');} setTimeout(()=>d.remove(),360); }, leg); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actRequest').onclick=req;
+  document.getElementById('actPolicy').onclick=policy;
+  running=true; loop();
+  return {req,policy,demoBlock};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Behind a big app sit dozens of microservices. Should clients call each one directly? That gets messy fast.", dur:4600},
+  {cap:"Instead, put a single <b>front door</b> before them all: the <b>API gateway.</b> Every request enters here first.", dur:4600, on(){SIM.req();}},
+  {cap:"Its first job is <b>routing</b>: read the request and forward it to the right service — Users, Orders, or Payments.", dur:4600, on(){SIM.req();}},
+  {cap:"Clients now talk to <b>one stable address</b> and don't need to know how the services are split up behind it.", dur:4400},
+  {cap:"Now the real value — <b>turn on gateway policies.</b>", dur:3600, on(){SIM.policy();}},
+  {cap:"<b>Authentication and rate-limiting</b> happen right at the door — applied once, for every service behind it.", dur:4600, on(){SIM.req();}},
+  {cap:"Unauthenticated or over-limit requests are <span class='hl-warn'>blocked at the gateway</span> and never reach the services. Clean and central.", dur:4800, on(){SIM.demoBlock();}},
+  {cap:"This keeps cross-cutting concerns — auth, throttling, logging, TLS — out of every individual service's code.", dur:4400},
+  {cap:"Your turn 👉 <b>📨 Send requests</b> and <b>🛡️ toggle policies</b> to watch routing and gatekeeping in action.", dur:5200, on(){SIM.policy();}},
+  {cap:"An API gateway is the one front door to your services: it routes, secures, and throttles — so each service stays simple.", dur:4800}
+]});
+
+</script>
+</body></html>

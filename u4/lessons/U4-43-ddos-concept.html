@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoS Attacks &amp; Mitigation · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.shield{position:absolute; left:52%; top:42%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:700; padding:7px 12px; border-radius:8px; border:2px dashed var(--line2); color:var(--muted); z-index:5; transition:.3s}
+.shield.on{border-style:solid; border-color:var(--good); color:var(--good)}
+.server4 .box{transition:.3s}
+.server4.overload .box{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">DDoS Attacks &amp; Mitigation</h1>
+  <p class="subtitle">A DDoS attack floods your server with junk traffic from thousands of machines, drowning out real users. Mitigation puts a scrubbing layer in front — a CDN, rate limits, traffic filtering — that absorbs and discards the bad traffic while letting legitimate requests through.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Legit users served</div><div class="stat-v accent" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Protection</div><div class="stat-v bad" id="statProt">off</div></div>
+  <div class="stat"><div class="stat-k">Bad traffic blocked</div><div class="stat-v" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:26%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Real users</span></div></div>
+<div class="node abs" data-show="1" style="left:14%;top:66%"><div class="box sm">🤖</div><div class="lbl"><span class="k">Bot army</span></div></div>
+<div class="shield" id="shield">🛡️ no protection</div>
+<div class="node abs server4" data-show="1" style="left:86%;top:46%"><div class="box">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actAttack">🤖 Launch DDoS flood</button>
+  <button class="act ok" id="actMitigate">🛡️ Enable mitigation</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let served=0, blocked=0, attacking=false, mitigated=false, running=false;
+  const elS=document.getElementById('statServed'), elP=document.getElementById('statProt'), elB=document.getElementById('statBlock');
+  const shield=document.getElementById('shield'), srv=scene.querySelector('.server4');
+  function pkt(bot){ if(document.hidden) return;
+    const fromY = bot?66:26;
+    const d=document.createElement('div'); d.className='dot'+(bot?' fail':''); d.style.left='14%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='52%'; d.style.top='42%'; });
+    setTimeout(()=>{ if(bot && mitigated){ // scrubbed at the shield
+        blocked++; elB.textContent=blocked; elB.className='stat-v good'; setTimeout(()=>d.remove(),300); return; }
+      if(bot && !mitigated){ // reaches server, contributes to overload
+        d.style.left='86%'; d.style.top='46%'; if(srv)srv.classList.add('overload'); setTimeout(()=>{ if(!attacking&&srv)srv.classList.remove('overload'); d.remove(); }, leg); return; }
+      // legit user
+      if(!mitigated && attacking){ // server overloaded → legit request also fails
+        d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      d.style.left='86%'; d.style.top='46%'; d.classList.add('done'); served++; elS.textContent=served; setTimeout(()=>d.remove(),leg);
+    }, leg);
+  }
+  function loop(){ if(!running)return; pkt(false); if(attacking){ pkt(true); pkt(true); } setTimeout(loop, 500*simRate()); }
+  function attack(){ attacking=true; if(srv)srv.classList.add('overload'); }
+  function mitigate(){ mitigated=!mitigated; shield.classList.toggle('on',mitigated); shield.textContent=mitigated?'🛡️ scrubbing traffic':'🛡️ no protection'; elP.textContent=mitigated?'on':'off'; elP.className='stat-v '+(mitigated?'good':'bad'); if(mitigated&&srv)srv.classList.remove('overload'); }
+  document.getElementById('actAttack').onclick=attack;
+  document.getElementById('actMitigate').onclick=mitigate;
+  running=true; loop();
+  return {attack,mitigate,pkt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Normally, real users reach your server just fine and get served. Quiet and healthy.", dur:4200, on(){SIM.pkt(false);}},
+  {cap:"A <b>DDoS</b> — Distributed Denial of Service — unleashes a <b>bot army</b> of thousands of machines, all flooding you at once.", dur:4600, on(){SIM.attack();}},
+  {cap:"The junk traffic <span class='hl-bad'>overwhelms the server.</span> It's so busy with bots that <em>real</em> users can't get through either.", dur:4800, on(){SIM.pkt(false);}},
+  {cap:"That's the whole goal of the attack: not to steal data, but to <b>deny service</b> to legitimate users by exhausting capacity.", dur:4600},
+  {cap:"The defense is a <b>scrubbing layer</b> in front — a CDN or DDoS service with massive capacity and traffic filters. Turn it on.", dur:4600, on(){SIM.mitigate();}},
+  {cap:"Now bot traffic is <span class='hl-good'>identified and discarded</span> at the edge, before it ever reaches your server.", dur:4600, on(){SIM.pkt(true);}},
+  {cap:"Meanwhile <b>real users pass straight through</b> and get served normally. The flood is absorbed far from your origin.", dur:4600, on(){SIM.pkt(false);}},
+  {cap:"Mitigation blends tactics: huge edge capacity, rate limiting, IP reputation, and challenges (CAPTCHAs) to tell humans from bots.", dur:4600},
+  {cap:"Your turn 👉 <b>🤖 Launch the flood</b> to overwhelm the server, then <b>🛡️ enable mitigation</b> to filter the bots out.", dur:5200},
+  {cap:"DDoS drowns you in junk traffic; mitigation puts a high-capacity filter in front to scrub the bad and pass the good.", dur:4800}
+]});
+
+</script>
+</body></html>

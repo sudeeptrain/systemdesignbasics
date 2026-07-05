@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mTLS — Two Spies Trading Passwords · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cert{position:absolute; font-family:var(--fmono); font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; z-index:5; opacity:0; transition:.2s}
+.cert.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">mTLS — Two Spies Trading Passwords</h1>
+  <p class="subtitle">At a normal shop, the shopkeeper shows credentials but you, the customer, stay anonymous. Two spies meeting are different: BOTH must give the secret password — and anyone who can't is turned away. mTLS is that two-way check, ideal for locking down service-to-service traffic.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Meetings</div><div class="stat-v accent" id="statConns">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">One-sided ID</div></div>
+  <div class="stat"><div class="stat-k">Visitor must prove ID?</div><div class="stat-v" id="statClient">no</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:50%"><div class="box client">🕵️</div><div class="lbl"><span class="k">Visitor</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:50%"><div class="box server">🕵️‍♀️</div><div class="lbl"><span class="k">Contact</span></div></div>
+<div class="cert" id="srvcert" style="left:64%;top:38%;color:var(--violet)">🔑 contact's password ✓</div>
+<div class="cert" id="clicert" style="left:36%;top:62%;color:var(--good)">🔑 visitor's password ✓</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 One-sided / Both-sided</button>
+  <button class="act ok" id="actConnect">🤝 Visitor approaches</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='tls', conns=0, running=false, n=0;
+  const elC=document.getElementById('statConns'), elM=document.getElementById('statMode'), elCl=document.getElementById('statClient');
+  const srvcert=document.getElementById('srvcert'), clicert=document.getElementById('clicert');
+  function connect(){ if(document.hidden) return;
+    const hasClientCert = (n++ %3)!==2; // both-sided: every 3rd visitor lacks the password → rejected
+    srvcert.classList.remove('on'); clicert.classList.remove('on');
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='82%'; });
+    setTimeout(()=>{ srvcert.classList.add('on'); // contact always gives password
+      if(mode==='mtls'){ if(hasClientCert){ clicert.classList.add('on'); finish(d,true); }
+        else { d.classList.add('fail'); const srv=scene.querySelector('.server'); if(srv){srv.classList.add('crash'); setTimeout(()=>srv.classList.remove('crash'),400);} setTimeout(()=>d.remove(),360); } }
+      else { finish(d,true); }
+    }, leg);
+  }
+  function finish(d,ok){ const r=document.createElement('div'); r.className='dot done'; r.style.left='82%'; r.style.top='56%'; scene.appendChild(r); const leg=460*simRate(); requestAnimationFrame(()=>{r.style.transition='left '+leg+'ms';r.style.left='18%';}); setTimeout(()=>r.remove(),leg); conns++; elC.textContent=conns; setTimeout(()=>d.remove(),300); }
+  function setMode(m){ mode=m; elM.textContent=m==='tls'?'One-sided ID':'Both-sided ID'; elM.className='stat-v '+(m==='tls'?'warn':'good'); elCl.textContent=m==='tls'?'no':'yes — password required'; elCl.className='stat-v '+(m==='tls'?'':'good'); }
+  function loop(){ if(!running)return; connect(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='tls'?'mtls':'tls');
+  document.getElementById('actConnect').onclick=connect;
+  setMode('tls'); running=true; loop();
+  return {connect,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Normal HTTPS (TLS) checks <b>one</b> side: like a shop where the <b>shopkeeper</b> shows ID, but the customer stays anonymous.", dur:4600, on(){SIM.connect();}},
+  {cap:"The visitor trusts the shopkeeper after seeing their credentials — but the visitor themselves needn't prove anything. <b>Anyone can walk in.</b>", dur:4600},
+  {cap:"For a public shop that's fine — you don't hand a secret password to every passer-by.", dur:4200, on(){SIM.connect();}},
+  {cap:"But picture <b>two spies</b> meeting in secret — your services talking privately inside the system. Both sides need to be sure. Enter mTLS.", dur:4600, on(){SIM.setMode('mtls');}},
+  {cap:"Now it's <b>both-sided:</b> the contact gives the password <em>and</em> the visitor must give theirs. Each verifies the other.", dur:4600, on(){SIM.connect();}},
+  {cap:"A real operative who knows the password is let through — now <span class='hl-good'>both identities are confirmed.</span>", dur:4400, on(){SIM.connect();}},
+  {cap:"But someone who <b>doesn't know the password</b> is <span class='hl-bad'>turned away at the door</span> — they never get near the contact.", dur:4800, on(){SIM.connect();}},
+  {cap:"That two-way check is the bedrock of <b>zero-trust</b> internal networks — every meeting between services is mutually verified.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 One-sided / Both-sided</b> and <b>🤝 approach</b> — in both-sided mode, watch the password-less get turned away.", dur:5200, on(){SIM.setMode('tls');}},
+  {cap:"TLS proves one side; mTLS makes both sides prove themselves. Use it to lock down exactly who's allowed to talk to your services.", dur:4800}
+]});
+
+</script>
+</body></html>

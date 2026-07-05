@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webhooks · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.evlbl{position:absolute; left:84%; top:24%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Webhooks</h1>
+  <p class="subtitle">Polling means constantly asking "anything new yet?" — wasteful and laggy. A webhook flips it: you register a URL, and when an event happens the other service calls YOU with an HTTP POST. It's a reverse API — don't call us, we'll call you.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Useful deliveries</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Polling</div></div>
+  <div class="stat"><div class="stat-k">Wasted checks</div><div class="stat-v" id="statWaste">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box yourapp">📱</div><div class="lbl"><span class="k">Your app</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box prov">💳</div><div class="lbl"><span class="k">Payment service</span></div></div>
+<div class="evlbl" id="evlbl">event: payment done</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Polling / Webhook</button>
+  <button class="act ok" id="actEvent">⚡ A payment completes</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='poll', events=0, waste=0, running=false;
+  const elE=document.getElementById('statEvents'), elM=document.getElementById('statMode'), elW=document.getElementById('statWaste');
+  const prov=scene.querySelector('.prov'), app=scene.querySelector('.yourapp');
+  function poll(){ if(mode!=='poll'||document.hidden) return; // app asks, usually nothing new
+    const got=Math.random()<0.2;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ d.style.left='16%'; d.classList.add(got?'done':'fail'); if(got){ events++; elE.textContent=events; } else { waste++; elW.textContent=waste; elW.className='stat-v warn'; } setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function event(){ if(document.hidden) return; if(prov){prov.classList.add('active'); setTimeout(()=>prov.classList.remove('active'),250);}
+    if(mode==='webhook'){ // service POSTs to your app
+      const d=document.createElement('div'); d.className='dot'; d.style.left='84%'; d.style.top='56%'; scene.appendChild(d);
+      const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='16%'; });
+      setTimeout(()=>{ d.classList.add('done'); if(app){app.classList.add('active'); setTimeout(()=>app.classList.remove('active'),250);} events++; elE.textContent=events; setTimeout(()=>d.remove(),240); }, leg);
+    } // in polling mode, the event just sits there until the app next polls
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='poll'?'Polling':'Webhook'; elM.className='stat-v '+(m==='poll'?'warn':'good'); }
+  function loop(){ if(!running)return; if(mode==='poll') poll(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='poll'?'webhook':'poll');
+  document.getElementById('actEvent').onclick=event;
+  setMode('poll'); running=true; loop();
+  return {poll,event,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your app needs to know when a <b>payment completes</b> on a payment service. How does it find out?", dur:4400},
+  {cap:"The naive way is <b>polling:</b> your app keeps asking \"is it done yet? …now? …now?\" on a timer.", dur:4600, on(){SIM.poll();}},
+  {cap:"Most of those checks come back with <span class='hl-warn'>nothing new</span> — wasted requests, and you still learn late, between polls.", dur:4800, on(){SIM.poll();}},
+  {cap:"A <b>webhook</b> flips the relationship. You register a URL with the payment service: \"POST here when a payment finishes.\"", dur:4800, on(){SIM.setMode('webhook');}},
+  {cap:"Now when the event actually happens, the <b>service calls your app</b> directly with an HTTP POST carrying the details.", dur:4600, on(){SIM.event();}},
+  {cap:"No more asking — you're <span class='hl-good'>told the instant it happens.</span> Zero wasted checks, near-zero delay.", dur:4600, on(){SIM.event();}},
+  {cap:"It's a <b>reverse API:</b> instead of you calling them, they call you. \"Don't call us — we'll call you.\"", dur:4400},
+  {cap:"The catches: your endpoint must be publicly reachable, you should verify the call is genuine (a signature), and handle retries.", dur:4800},
+  {cap:"Your turn 👉 flip <b>🔀 Polling / Webhook</b> and fire <b>⚡ an event</b> to compare constant asking with being notified.", dur:5200, on(){SIM.setMode('poll');}},
+  {cap:"Webhooks turn 'keep asking' into 'get told' — efficient, real-time event delivery between services. The backbone of integrations.", dur:4800}
+]});
+
+</script>
+</body></html>

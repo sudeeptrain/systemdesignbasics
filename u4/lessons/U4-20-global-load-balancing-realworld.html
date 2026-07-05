@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Global Load Balancing — Your Nearest Branch · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.region.down .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Global Load Balancing — Your Nearest Branch</h1>
+  <p class="subtitle">A pizza chain delivers from the branch closest to you — faster, and it spreads orders across shops. If your local branch shuts for the night, your order is automatically handled by the next-nearest one: a little slower, but you still get fed. That's global load balancing.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders delivered</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Branches open</div><div class="stat-v good" id="statUp">3 / 3</div></div>
+  <div class="stat"><div class="stat-k">Rerouted orders</div><div class="stat-v" id="statFO">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:28%"><div class="box sm">🧑</div><div class="lbl"><span class="k">North customer</span></div></div>
+<div class="node abs" data-show="1" style="left:12%;top:72%"><div class="box sm">🧑</div><div class="lbl"><span class="k">South customer</span></div></div>
+<div class="node abs region r-0" data-show="1" style="left:80%;top:22%"><div class="box sm">🏪</div><div class="lbl"><span class="k">North branch</span></div></div>
+<div class="node abs region r-1" data-show="1" style="left:80%;top:50%"><div class="box sm">🏪</div><div class="lbl"><span class="k">Central branch</span></div></div>
+<div class="node abs region r-2" data-show="1" style="left:80%;top:78%"><div class="box sm">🏪</div><div class="lbl"><span class="k">South branch</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actRegionDown">🔥 Close a branch</button>
+  <button class="act ok" id="actRecover">♻️ Reopen branch</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const regions=[{x:80,y:22},{x:80,y:50},{x:80,y:78}].map((p,i)=>({...p,up:true,el:scene.querySelector('.r-'+i)}));
+  const users=[{y:28,home:0},{y:72,home:2}];
+  let reqs=0, fo=0, running=false, u=0;
+  const elR=document.getElementById('statReqs'), elU=document.getElementById('statUp'), elF=document.getElementById('statFO');
+  function up(){ return regions.filter(r=>r.up); }
+  function fmt(){ elU.textContent=up().length+' / 3'; elU.className='stat-v '+(up().length===3?'good':up().length?'warn':'bad'); }
+  function nearest(home){ if(regions[home].up) return {r:regions[home],failover:false}; const alt=up()[0]; return {r:alt,failover:true}; }
+  function req(){ if(document.hidden) return; const user=users[u++%2]; const sel=nearest(user.home); if(!sel.r) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top=user.y+'%'; scene.appendChild(d);
+    const leg=(sel.failover?640:420)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='80%'; d.style.top=sel.r.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(sel.failover){ fo++; elF.textContent=fo; elF.className='stat-v warn'; } if(sel.r.el){sel.r.el.classList.add('active'); setTimeout(()=>sel.r.el.classList.remove('active'),200);} reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function down(){ const r=up()[0]; if(r){ r.up=false; if(r.el)r.el.classList.add('down'); const d=document.createElement('div'); d.className='dot fail'; d.style.left='80%'; d.style.top=r.y+'%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate()); fmt(); } }
+  function recover(){ const r=regions.find(x=>!x.up); if(r){ r.up=true; if(r.el)r.el.classList.remove('down'); fmt(); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actRegionDown').onclick=down;
+  document.getElementById('actRecover').onclick=recover;
+  fmt(); running=true; loop();
+  return {req,down,recover,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A pizza chain has branches all over the city. <b>Global load balancing</b> is how it decides which branch handles each order.", dur:4600},
+  {cap:"The goal is <b>closeness:</b> send each order to the <b>nearest branch</b> so the delivery travels the shortest distance.", dur:4600, on(){SIM.req();}},
+  {cap:"The north customer is served by the north branch; the south customer by the south branch. Faster food, and orders spread across shops.", dur:4600, on(){SIM.req();}},
+  {cap:"Behind the scenes, the chain's <b>system knows your area</b> and points your order to the right branch automatically — like geo-aware DNS.", dur:4600},
+  {cap:"Now trouble: a whole <b>branch closes</b> unexpectedly.", dur:3600, on(){SIM.down();}},
+  {cap:"Its customers can't be served there — so the system <b>reroutes them</b> to the next-nearest open branch.", dur:4800, on(){SIM.req();}},
+  {cap:"Their pizza takes a little longer (a farther branch), but it still <span class='hl-good'>arrives.</span> No 'sorry, closed' — just a quiet reroute.", dur:4600, on(){SIM.req();}},
+  {cap:"When the branch <b>reopens</b>, its local orders flow back to it automatically. Self-healing, city-wide.", dur:4400, on(){SIM.recover();}},
+  {cap:"Your turn 👉 <b>🔥 Close a branch</b> to trigger rerouting, then <b>♻️ reopen</b> it.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Global load balancing sends users to the nearest branch for speed, and reroutes around closures for resilience. Fast and fault-tolerant.", dur:4800}
+]});
+
+</script>
+</body></html>

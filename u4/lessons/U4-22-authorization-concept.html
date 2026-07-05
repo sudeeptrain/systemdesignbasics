@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authorization · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gate{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:13px; font-weight:700; padding:8px 14px; border-radius:999px; border:2px solid var(--accent); color:var(--accent-d); background:#eaf2fe; z-index:5}
+.role{position:absolute; left:18%; top:66%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Authorization</h1>
+  <p class="subtitle">Authentication proved who you are; authorization decides what you're allowed to do. The same logged-in user can read their own data but be blocked from an admin action — the server checks each request against the user's roles and permissions.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Access checks</div><div class="stat-v accent" id="statChecks">0</div></div>
+  <div class="stat"><div class="stat-k">Your role</div><div class="stat-v" id="statRole">user</div></div>
+  <div class="stat"><div class="stat-k">Denied (403)</div><div class="stat-v" id="statDenied">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:42%"><div class="box">🧑</div><div class="lbl"><span class="k">Logged-in user</span></div></div>
+<div class="gate" id="gate">🛂 permission check</div>
+<div class="node abs" data-show="1" style="left:84%;top:24%"><div class="box sm">📄</div><div class="lbl"><span class="k">Own profile<br>(allowed)</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:70%"><div class="box sm">🛠️</div><div class="lbl"><span class="k">Admin panel<br>(restricted)</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actAllowed">📄 Open own profile</button>
+  <button class="act bad" id="actForbidden">🛠️ Open admin panel</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let checks=0, denied=0, running=false;
+  const elC=document.getElementById('statChecks'), elD=document.getElementById('statDenied'), gate=document.getElementById('gate');
+  function access(allowed){ if(document.hidden) return; checks++; elC.textContent=checks;
+    const ty = allowed?24:70;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='42%'; });
+    setTimeout(()=>{ gate.style.borderColor=allowed?'var(--good)':'var(--bad)'; gate.style.color=allowed?'var(--good)':'var(--bad)'; setTimeout(()=>{gate.style.borderColor='var(--accent)';gate.style.color='var(--accent-d)';},500);
+      if(allowed){ d.classList.add('done'); d.style.left='84%'; d.style.top=ty+'%'; setTimeout(()=>d.remove(),leg); }
+      else { d.classList.add('fail'); denied++; elD.textContent=denied; elD.className='stat-v bad'; setTimeout(()=>d.remove(),360); }
+    }, leg);
+  }
+  function loop(){ if(!running)return; access(Math.random()<0.6); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actAllowed').onclick=()=>access(true);
+  document.getElementById('actForbidden').onclick=()=>access(false);
+  running=true; loop();
+  return {access};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're logged in — the system knows <em>who</em> you are. <b>Authorization</b> is the next gate: <em>what are you allowed to do?</em>", dur:4600},
+  {cap:"Every sensitive request passes through a <b>permission check</b> before the server acts on it.", dur:4400},
+  {cap:"You ask to open <b>your own profile.</b> Your role permits it, so the check <span class='hl-good'>passes</span> and the data is returned.", dur:4600, on(){SIM.access(true);}},
+  {cap:"Authorization is per-action and per-resource: being logged in doesn't mean you can do <em>everything.</em>", dur:4400},
+  {cap:"Now try to open the <b>admin panel.</b>", dur:3400, on(){SIM.access(false);}},
+  {cap:"Your role is just 'user', so the check <span class='hl-bad'>fails</span> — the server returns <b>403 Forbidden.</b> You're known, but not permitted.", dur:4800},
+  {cap:"Note the difference from authentication's 401: <b>401</b> means \"I don't know who you are,\" <b>403</b> means \"I know you, and no.\"", dur:4800},
+  {cap:"Permissions are usually grouped into <b>roles</b> (user, editor, admin) so you grant capabilities to roles, not to people one by one.", dur:4600, on(){SIM.access(true);}},
+  {cap:"Your turn 👉 <b>📄 Open your profile</b> (allowed) and <b>🛠️ the admin panel</b> (denied) to see the gate decide.", dur:5200},
+  {cap:"Authentication asks who you are; authorization decides what you may do. Always check permissions on the server, per request.", dur:4800}
+]});
+
+</script>
+</body></html>

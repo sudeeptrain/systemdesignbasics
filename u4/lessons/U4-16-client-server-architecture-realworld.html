@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client-Server — Diners and the Kitchen · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.srvbox .box{transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Client-Server — Diners and the Kitchen</h1>
+  <p class="subtitle">In a restaurant, diners at their tables place orders; one shared kitchen cooks and sends food back. Diners handle the eating and choosing; the kitchen holds the ingredients and recipes. One kitchen serves every table, and the tables never cook for each other. That's client-server.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Tables</div><div class="stat-v" id="statClients">2</div></div>
+  <div class="stat"><div class="stat-k">Food &amp; recipes live</div><div class="stat-v good" id="statWhere">in the kitchen</div></div>
+</div>
+<div id="clients"></div>
+<div class="node abs srvbox" data-show="1" style="left:82%;top:50%"><div class="box">🍳</div><div class="lbl"><span class="k">Kitchen<br>(food + recipes)</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actRequest">🍽️ A table orders</button>
+  <button class="act" id="actAddClient">➕ Seat a new table</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('clients');
+  let clients=[{e:'🧑'},{e:'🧑‍🤝‍🧑'}], reqs=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elC=document.getElementById('statClients');
+  function ys(n){const a=[],top=22,bot=84;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(clients.length);
+    clients.forEach((c,i)=>{ c.y=y[i]; const el=document.createElement('div'); el.className='node abs vis c-'+i; el.style.left='16%'; el.style.top=y[i]+'%'; el.innerHTML='<div class="box sm">'+c.e+'</div><div class="lbl"><span class="k">Table</span></div>'; wrap.appendChild(el); c.el=el; }); elC.textContent=clients.length; }
+  function req(){ if(document.hidden) return; const c=clients[rr++%clients.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top=c.y+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='82%'; d.style.top='50%'; });
+    setTimeout(()=>{ const srv=scene.querySelector('.srvbox'); if(srv){srv.classList.add('busy'); setTimeout(()=>srv.classList.remove('busy'),200);}
+      d.classList.add('done'); d.style.left='16%'; d.style.top=c.y+'%'; setTimeout(()=>{ if(c.el){c.el.classList.add('active'); setTimeout(()=>c.el.classList.remove('active'),150);} reqs++; elR.textContent=reqs; d.remove(); }, leg); }, leg);
+  }
+  function addClient(){ const pool=['👩','👨','🧓','🧒']; if(clients.length<6){ clients.push({e:pool[(clients.length-2)%pool.length]}); render(); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 650*simRate()); }
+  document.getElementById('actRequest').onclick=req;
+  document.getElementById('actAddClient').onclick=addClient;
+  render(); running=true; loop();
+  return {req,addClient,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Almost everything online runs on one shape — <b>client-server</b> — and a restaurant shows the division of labour perfectly.", dur:4400},
+  {cap:"A <b>table of diners</b> is the client — what the customer experiences. They handle <b>choosing and eating.</b>", dur:4600},
+  {cap:"But they don't have the ingredients. To actually get a meal, they <b>place an order</b> with the kitchen.", dur:4400, on(){SIM.req();}},
+  {cap:"The <b>kitchen</b> is the server: it holds the <b>ingredients and the recipes.</b> It cooks the order and sends the dish back.", dur:4600, on(){SIM.req();}},
+  {cap:"That split is the whole idea: the table presents and requests, the kitchen stores and prepares. Each does what it's best at.", dur:4400},
+  {cap:"Crucially, <b>one kitchen serves every table.</b> Seat a new table and it orders from the same kitchen, on its own.", dur:4600, on(){SIM.addClient();}},
+  {cap:"Tables never cook for each other — every order goes through the shared kitchen, the single source of all the food.", dur:4400, on(){SIM.req();}},
+  {cap:"That central kitchen is powerful (one place for recipes and stock) but also why it must be kept big enough and well-run.", dur:4400, on(){SIM.addClient();}},
+  {cap:"Your turn 👉 let <b>🍽️ tables order</b> and <b>➕ seat new tables</b> to watch many tables share one kitchen.", dur:5200},
+  {cap:"Client-server: tables choose and request; one shared kitchen holds the food and recipes and serves them all. The base pattern of the web.", dur:4600}
+]});
+
+</script>
+</body></html>

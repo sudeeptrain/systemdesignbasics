@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mTLS (Mutual TLS) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cert{position:absolute; font-family:var(--fmono); font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; z-index:5; opacity:0; transition:.2s}
+.cert.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">mTLS (Mutual TLS)</h1>
+  <p class="subtitle">In normal TLS, only the server proves its identity with a certificate — the client stays anonymous. In mutual TLS, BOTH sides present and verify certificates. A client with no valid cert is rejected at the door — ideal for locking down service-to-service traffic.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Connections</div><div class="stat-v accent" id="statConns">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">TLS (server only)</div></div>
+  <div class="stat"><div class="stat-k">Client must prove ID?</div><div class="stat-v" id="statClient">no</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:50%"><div class="box client">💻</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:50%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="cert" id="srvcert" style="left:64%;top:38%;color:var(--violet)">🪪 server cert ✓</div>
+<div class="cert" id="clicert" style="left:36%;top:62%;color:var(--good)">🪪 client cert ✓</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 TLS / mTLS</button>
+  <button class="act ok" id="actConnect">🤝 Client connects</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='tls', conns=0, running=false, n=0;
+  const elC=document.getElementById('statConns'), elM=document.getElementById('statMode'), elCl=document.getElementById('statClient');
+  const srvcert=document.getElementById('srvcert'), clicert=document.getElementById('clicert');
+  function connect(){ if(document.hidden) return;
+    const hasClientCert = (n++ %3)!==2; // in mTLS, every 3rd client lacks a cert → rejected
+    srvcert.classList.remove('on'); clicert.classList.remove('on');
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='82%'; });
+    setTimeout(()=>{ srvcert.classList.add('on'); // server always shows cert
+      if(mode==='mtls'){ if(hasClientCert){ clicert.classList.add('on'); finish(d,true); }
+        else { d.classList.add('fail'); const srv=scene.querySelector('.server'); if(srv){srv.classList.add('crash'); setTimeout(()=>srv.classList.remove('crash'),400);} setTimeout(()=>d.remove(),360); } }
+      else { finish(d,true); }
+    }, leg);
+  }
+  function finish(d,ok){ const r=document.createElement('div'); r.className='dot done'; r.style.left='82%'; r.style.top='56%'; scene.appendChild(r); const leg=460*simRate(); requestAnimationFrame(()=>{r.style.transition='left '+leg+'ms';r.style.left='18%';}); setTimeout(()=>r.remove(),leg); conns++; elC.textContent=conns; setTimeout(()=>d.remove(),300); }
+  function setMode(m){ mode=m; elM.textContent=m==='tls'?'TLS (server only)':'mTLS (both)'; elM.className='stat-v '+(m==='tls'?'warn':'good'); elCl.textContent=m==='tls'?'no':'yes — cert required'; elCl.className='stat-v '+(m==='tls'?'':'good'); }
+  function loop(){ if(!running)return; connect(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='tls'?'mtls':'tls');
+  document.getElementById('actConnect').onclick=connect;
+  setMode('tls'); running=true; loop();
+  return {connect,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Regular <b>TLS</b> (the 'S' in HTTPS) authenticates <b>one</b> side: the server proves who it is with a certificate.", dur:4600, on(){SIM.connect();}},
+  {cap:"The client checks that cert and trusts the server — but the client itself stays <b>anonymous.</b> Anyone can connect.", dur:4600},
+  {cap:"For a public website that's fine: you don't issue a certificate to every visitor.", dur:4200, on(){SIM.connect();}},
+  {cap:"But for <b>service-to-service</b> traffic inside your system, you often want to know <em>both</em> sides are trusted. Enter <b>mTLS.</b>", dur:4600, on(){SIM.setMode('mtls');}},
+  {cap:"In mutual TLS, the server presents its cert <b>and</b> the client must present its own. Both verify each other.", dur:4600, on(){SIM.connect();}},
+  {cap:"A legitimate client with a valid cert connects fine — now <span class='hl-good'>both identities are proven.</span>", dur:4400, on(){SIM.connect();}},
+  {cap:"But a client with <b>no valid certificate</b> is <span class='hl-bad'>rejected at the handshake</span> — it never reaches the service at all.", dur:4800, on(){SIM.connect();}},
+  {cap:"That makes mTLS a strong foundation for <b>zero-trust</b> internal networks and service meshes — every call is mutually authenticated.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 TLS / mTLS</b> and <b>🤝 connect</b> — in mTLS, watch certless clients get turned away.", dur:5200, on(){SIM.setMode('tls');}},
+  {cap:"TLS proves the server; mTLS proves both sides. Use mTLS to lock down who's even allowed to talk to your services.", dur:4800}
+]});
+
+</script>
+</body></html>

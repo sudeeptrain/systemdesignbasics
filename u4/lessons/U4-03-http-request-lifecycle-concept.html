@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP Request Lifecycle · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pkt{position:absolute; font-family:var(--fmono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px; z-index:5; opacity:0; transition:.2s; white-space:nowrap}
+.pkt.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">HTTP Request Lifecycle</h1>
+  <p class="subtitle">Every web interaction is a request and a response. The client sends a method (GET, POST), a path, and headers; the server processes it and replies with a status code (200 OK, 404 Not Found) and a body. Understand this round trip and you understand the web.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statMethod">GET</div></div>
+  <div class="stat"><div class="stat-k">Last status</div><div class="stat-v good" id="statStatus">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:52%"><div class="box">🌐</div><div class="lbl"><span class="k">Browser</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:52%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="pkt" id="reqlbl" style="left:38%;top:40%;color:var(--accent-d)">GET /home →</div>
+<div class="pkt" id="reslbl" style="left:38%;top:64%;color:var(--good)">← 200 OK + HTML</div>
+<div class="acts">
+  <button class="act ok" id="actRequest">📨 Send request</button>
+  <button class="act" id="actMethod">🔁 GET / POST</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, method='GET', busy=false, running=false;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMethod'), elS=document.getElementById('statStatus');
+  const reqlbl=document.getElementById('reqlbl'), reslbl=document.getElementById('reslbl'), srv=scene.querySelector('.server');
+  function request(){ if(busy||document.hidden) return; busy=true; reqs++; elR.textContent=reqs;
+    const fail=Math.random()<0.18; reqlbl.textContent=method+(method==='GET'?' /home →':' /submit →'); reqlbl.classList.add('on'); reslbl.classList.remove('on');
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ d.remove(); if(srv){srv.classList.add('busy'); setTimeout(()=>srv.classList.remove('busy'),400);}
+      reqlbl.classList.remove('on');
+      setTimeout(()=>{ const r=document.createElement('div'); r.className='dot'+(fail?' fail':' done'); r.style.left='84%'; r.style.top='60%'; scene.appendChild(r);
+        reslbl.textContent= fail?'← 404 Not Found':'← 200 OK + body'; reslbl.style.color= fail?'var(--bad)':'var(--good)'; reslbl.classList.add('on');
+        requestAnimationFrame(()=>{ r.style.transition='left '+leg+'ms'; r.style.left='16%'; });
+        elS.textContent= fail?'404 ✗':'200 ✓'; elS.className='stat-v '+(fail?'bad':'good');
+        setTimeout(()=>{ r.remove(); busy=false; }, leg); }, 300*simRate());
+    }, leg);
+  }
+  function toggle(){ method=method==='GET'?'POST':'GET'; elM.textContent=method; }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 1800*simRate()); }
+  document.getElementById('actRequest').onclick=request;
+  document.getElementById('actMethod').onclick=toggle;
+  running=true; loop();
+  return {request,toggle};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Click a link, submit a form, load a page — under the hood it's always the same dance: one <b>HTTP request</b>, one <b>response.</b>", dur:4600},
+  {cap:"The browser sends a request with three key parts: a <b>method</b> (GET, POST), a <b>path</b> (/home), and <b>headers</b> (who you are, what you accept).", dur:4800, on(){SIM.request();}},
+  {cap:"<b>GET</b> means \"fetch me this.\" <b>POST</b> means \"here's data to create or process.\" The method states your intent.", dur:4600},
+  {cap:"The server reads the request, does its work — query a database, run logic — then sends a <b>response.</b>", dur:4600, on(){SIM.request();}},
+  {cap:"The response leads with a <b>status code:</b> <span class='hl-good'>200 OK</span> for success, plus a body (the HTML or JSON you asked for).", dur:4600},
+  {cap:"Not every request succeeds. Ask for something missing and you get <span class='hl-bad'>404 Not Found.</span> The code tells you what happened.", dur:4600, on(){SIM.request();}},
+  {cap:"Status families are worth memorizing: <b>2xx</b> success, <b>3xx</b> redirect, <b>4xx</b> your mistake, <b>5xx</b> the server's.", dur:4600},
+  {cap:"HTTP is <b>stateless</b> — each request stands alone — so identity rides along in headers (cookies, tokens) every time.", dur:4400},
+  {cap:"Your turn 👉 <b>📨 Send requests</b> and toggle <b>🔁 GET / POST</b> to watch the round trip and its status codes.", dur:5200},
+  {cap:"Request in, response out, with a status code on every reply — this simple loop is the heartbeat of the entire web.", dur:4600}
+]});
+
+</script>
+</body></html>

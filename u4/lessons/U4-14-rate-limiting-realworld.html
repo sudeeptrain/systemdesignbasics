@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rate Limiting — A Nightclub Bouncer · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bucket4{position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); width:90px; height:120px; border:2.5px solid var(--line2); border-bottom-width:5px; border-radius:8px 8px 12px 12px; background:#eef5fd; overflow:hidden; z-index:2}
+.bfill4{position:absolute; left:0; right:0; bottom:0; background:linear-gradient(180deg,#6fb1ff,#1f6fe6); transition:height .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Rate Limiting — A Nightclub Bouncer</h1>
+  <p class="subtitle">A club has a safe capacity. The bouncer lets people in until it's full, then holds the line — "sorry, wait." As people leave, slots free up and the queue moves again. A token bucket rate limiter is exactly that bouncer, counting how many can enter right now.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">People arriving</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Free spots inside</div><div class="stat-v good" id="statTok">5</div></div>
+  <div class="stat"><div class="stat-k">Turned away</div><div class="stat-v" id="statRej">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:40%"><div class="box sm">🧑‍🤝‍🧑</div><div class="lbl"><span class="k">Queue outside</span></div></div>
+<div class="bucket4"><div class="bfill4" id="bfill"></div></div>
+<div class="nlbl" style="left:50%;top:60%">🪙 free spots (open as guests leave)</div>
+<div class="node abs" data-show="1" style="left:84%;top:40%"><div class="box sm">🕺</div><div class="lbl"><span class="k">Club</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actBurst">📈 A crowd arrives</button>
+  <button class="act ok" id="actRefill">🚪 Guests leave (free spots)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const MAX=5; let tokens=MAX, reqs=0, rej=0, running=false;
+  const elR=document.getElementById('statReqs'), elT=document.getElementById('statTok'), elRej=document.getElementById('statRej'), bfill=document.getElementById('bfill');
+  function fmt(){ elT.textContent=tokens; elT.className='stat-v '+(tokens>2?'good':tokens>0?'warn':'bad'); bfill.style.height=(tokens/MAX*100)+'%'; bfill.style.background=tokens>0?'linear-gradient(180deg,#6fb1ff,#1f6fe6)':'linear-gradient(180deg,#f0a0a0,#d83a2e)'; }
+  function req(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const ok = tokens>0; if(ok) tokens--; fmt();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(!ok){ d.classList.add('fail'); rej++; elRej.textContent=rej; elRej.className='stat-v bad'; setTimeout(()=>d.remove(),320); return; }
+      d.classList.add('done'); d.style.left='84%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function refill(){ tokens=Math.min(MAX,tokens+2); fmt(); }
+  function burst(){ for(let k=0;k<6;k++) setTimeout(req, k*150*simRate()); }
+  function tick(){ tokens=Math.min(MAX,tokens+1); fmt(); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actBurst').onclick=burst;
+  document.getElementById('actRefill').onclick=refill;
+  fmt(); running=true; loop(); setInterval(tick, 1500);
+  return {req,refill,burst,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A nightclub has a legal capacity. Cram in too many people and it's unsafe — so a <b>bouncer</b> controls the door. An API does the same with <b>rate limiting.</b>", dur:4800},
+  {cap:"There are a fixed number of <b>free spots</b> inside, and they open back up steadily as guests leave — like tokens refilling.", dur:4600},
+  {cap:"Each person who enters <b>takes a spot.</b> While spots remain, the line moves and people stroll right in.", dur:4600, on(){SIM.req();}},
+  {cap:"Now a whole <b>crowd shows up</b> at once. Watch the free spots drain fast.", dur:4000, on(){SIM.burst();}},
+  {cap:"Once it's <b>at capacity</b>, the bouncer <span class='hl-bad'>turns people away</span> — \"sorry, we're full, wait in line.\" That's HTTP 429.", dur:4800, on(){SIM.burst();}},
+  {cap:"They have to <b>wait.</b> As guests inside head home, spots free up and the queue starts moving again.", dur:4400, on(){SIM.refill();}},
+  {cap:"This handles a brief rush (up to capacity) while capping the <b>steady flow</b> to how fast spots reopen — exactly the token-bucket trick.", dur:4600, on(){SIM.req();}},
+  {cap:"And the limit is usually <b>per person</b> (per API key or IP), so one rowdy guest can't hog the whole door.", dur:4400},
+  {cap:"Your turn 👉 send <b>📈 a crowd</b> to hit capacity, then let <b>🚪 guests leave</b> to free up spots.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Rate limiting is a bouncer for your API: admit up to capacity, turn away the overflow with a 429, let more in as room opens.", dur:4800}
+]});
+
+</script>
+</body></html>

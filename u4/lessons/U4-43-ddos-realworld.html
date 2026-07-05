@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDoS — A Mob Jamming the Phone Line · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.shield{position:absolute; left:52%; top:42%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:700; padding:7px 12px; border-radius:8px; border:2px dashed var(--line2); color:var(--muted); z-index:5; transition:.3s}
+.shield.on{border-style:solid; border-color:var(--good); color:var(--good)}
+.server4 .box{transition:.3s}
+.server4.overload .box{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">DDoS — A Mob Jamming the Phone Line</h1>
+  <p class="subtitle">Imagine thousands of prank callers dialing a shop nonstop so real customers can never get through. That's a DDoS. The fix is a call-screening service that fields every call, drops the pranksters, and only forwards genuine customers to the shop.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Real customers helped</div><div class="stat-v accent" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Call screening</div><div class="stat-v bad" id="statProt">off</div></div>
+  <div class="stat"><div class="stat-k">Prank calls dropped</div><div class="stat-v" id="statBlock">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:26%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Real customers</span></div></div>
+<div class="node abs" data-show="1" style="left:14%;top:66%"><div class="box sm">📞</div><div class="lbl"><span class="k">Prank mob</span></div></div>
+<div class="shield" id="shield">☎️ no screening</div>
+<div class="node abs server4" data-show="1" style="left:86%;top:46%"><div class="box">🏪</div><div class="lbl"><span class="k">Shop phone</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actAttack">📞 Unleash the prank mob</button>
+  <button class="act ok" id="actMitigate">☎️ Enable call screening</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let served=0, blocked=0, attacking=false, mitigated=false, running=false;
+  const elS=document.getElementById('statServed'), elP=document.getElementById('statProt'), elB=document.getElementById('statBlock');
+  const shield=document.getElementById('shield'), srv=scene.querySelector('.server4');
+  function pkt(bot){ if(document.hidden) return;
+    const fromY = bot?66:26;
+    const d=document.createElement('div'); d.className='dot'+(bot?' fail':''); d.style.left='14%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='52%'; d.style.top='42%'; });
+    setTimeout(()=>{ if(bot && mitigated){ // screened out
+        blocked++; elB.textContent=blocked; elB.className='stat-v good'; setTimeout(()=>d.remove(),300); return; }
+      if(bot && !mitigated){ // reaches phone, jams the line
+        d.style.left='86%'; d.style.top='46%'; if(srv)srv.classList.add('overload'); setTimeout(()=>{ if(!attacking&&srv)srv.classList.remove('overload'); d.remove(); }, leg); return; }
+      // real customer
+      if(!mitigated && attacking){ // line jammed → real customer can't get through
+        d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      d.style.left='86%'; d.style.top='46%'; d.classList.add('done'); served++; elS.textContent=served; setTimeout(()=>d.remove(),leg);
+    }, leg);
+  }
+  function loop(){ if(!running)return; pkt(false); if(attacking){ pkt(true); pkt(true); } setTimeout(loop, 500*simRate()); }
+  function attack(){ attacking=true; if(srv)srv.classList.add('overload'); }
+  function mitigate(){ mitigated=!mitigated; shield.classList.toggle('on',mitigated); shield.textContent=mitigated?'☎️ screening calls':'☎️ no screening'; elP.textContent=mitigated?'on':'off'; elP.className='stat-v '+(mitigated?'good':'bad'); if(mitigated&&srv)srv.classList.remove('overload'); }
+  document.getElementById('actAttack').onclick=attack;
+  document.getElementById('actMitigate').onclick=mitigate;
+  running=true; loop();
+  return {attack,mitigate,pkt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Normally, real customers phone the shop and get helped right away. The line is open and calm.", dur:4200, on(){SIM.pkt(false);}},
+  {cap:"A <b>DDoS</b> — Distributed Denial of Service — is like organizing <b>thousands of prank callers</b> to dial the shop nonstop, all at once.", dur:4600, on(){SIM.attack();}},
+  {cap:"The line is <span class='hl-bad'>permanently busy.</span> The phone's so swamped with pranksters that <em>real</em> customers can't get through.", dur:4800, on(){SIM.pkt(false);}},
+  {cap:"That's the whole point of the attack: not to steal anything, but to <b>deny service</b> — keep everyone else out by clogging the line.", dur:4600},
+  {cap:"The defense is a <b>call-screening service</b> in front, one big enough to field every incoming call. Switch it on.", dur:4600, on(){SIM.mitigate();}},
+  {cap:"Now the prank calls are <span class='hl-good'>identified and dropped</span> before they ever ring the shop's phone.", dur:4600, on(){SIM.pkt(true);}},
+  {cap:"Meanwhile genuine customers are <b>forwarded straight through</b> and helped as normal. The flood is absorbed off-site.", dur:4600, on(){SIM.pkt(false);}},
+  {cap:"Real screening blends tricks: huge capacity to take the calls, caller reputation, rate limits, and challenges (CAPTCHAs) to spot bots.", dur:4600},
+  {cap:"Your turn 👉 <b>📞 Unleash the prank mob</b> to jam the line, then <b>☎️ enable screening</b> to filter them out.", dur:5200},
+  {cap:"DDoS jams your line with junk callers; mitigation is a high-capacity screener that drops the pranks and passes the real customers.", dur:4800}
+]});
+
+</script>
+</body></html>

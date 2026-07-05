@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitoring (Prometheus &amp; Grafana) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gauge{position:absolute; left:50%; bottom:14%; transform:translateX(-50%); width:60%; height:18px; border:1.5px solid var(--line2); border-radius:9px; background:#eef5fd; overflow:hidden; z-index:2}
+.gfill{position:absolute; left:0; top:0; bottom:0; width:30%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}
+.thresh{position:absolute; top:-3px; bottom:-3px; width:2.5px; background:var(--ink); left:80%; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Monitoring (Prometheus &amp; Grafana)</h1>
+  <p class="subtitle">You can't fix what you can't see. Services expose metrics; Prometheus scrapes them on a schedule and stores the time-series; Grafana turns them into dashboards. When a metric crosses a threshold, an alert fires — so you hear about trouble before your users do.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Scrapes</div><div class="stat-v accent" id="statScrapes">0</div></div>
+  <div class="stat"><div class="stat-k">CPU metric</div><div class="stat-v good" id="statVal">30%</div></div>
+  <div class="stat"><div class="stat-k">Alert</div><div class="stat-v good" id="statAlert">calm</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:40%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Service<br>(emits metrics)</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:40%"><div class="box sm prom">📊</div><div class="lbl"><span class="k">Prometheus</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:40%"><div class="box sm">📈</div><div class="lbl"><span class="k">Grafana + alerts</span></div></div>
+<div class="nlbl" style="left:50%;bottom:36%">CPU usage vs alert threshold (80%)</div>
+<div class="gauge"><div class="gfill" id="gfill"></div><div class="thresh"></div></div>
+<div class="acts">
+  <button class="act bad" id="actSpike">📈 Metric spikes</button>
+  <button class="act ok" id="actResolve">✅ Resolve incident</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let scrapes=0, val=30, running=false;
+  const elS=document.getElementById('statScrapes'), elV=document.getElementById('statVal'), elA=document.getElementById('statAlert'), gfill=document.getElementById('gfill');
+  function fmt(){ elV.textContent=Math.round(val)+'%'; gfill.style.width=Math.min(100,val)+'%';
+    const alert=val>=80; elV.className='stat-v '+(alert?'bad':val>60?'warn':'good'); gfill.style.background=alert?'linear-gradient(90deg,#f08070,#d83a2e)':val>60?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#3fcf8e,#0f8f5b)';
+    elA.textContent=alert?'🔥 FIRING':'calm'; elA.className='stat-v '+(alert?'bad':'good'); }
+  function scrape(){ if(document.hidden) return; scrapes++; elS.textContent=scrapes;
+    const alert=val>=80; const d=document.createElement('div'); d.className='dot'+(alert?' fail':''); d.style.left='14%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ const p=scene.querySelector('.prom'); if(p){p.classList.add('active'); setTimeout(()=>p.classList.remove('active'),200);}
+      d.style.left='84%'; setTimeout(()=>{ d.classList.add(alert?'fail':'done'); setTimeout(()=>d.remove(),240); }, leg); }, leg);
+    val += (Math.random()*6-3); val=Math.max(15,Math.min(100,val)); fmt();
+  }
+  function spike(){ val=92; fmt(); }
+  function resolve(){ val=30; fmt(); }
+  function loop(){ if(!running)return; scrape(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actSpike').onclick=spike;
+  document.getElementById('actResolve').onclick=resolve;
+  fmt(); running=true; loop();
+  return {scrape,spike,resolve,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In production you're flying blind without <b>monitoring.</b> The goal: see problems before your users feel them.", dur:4600},
+  {cap:"It starts with the services themselves <b>exposing metrics</b> — CPU, latency, error rate, requests per second.", dur:4600},
+  {cap:"<b>Prometheus</b> <b>scrapes</b> those metrics on a schedule and stores them as time-series data. Watch it pull samples.", dur:4600, on(){SIM.scrape();}},
+  {cap:"<b>Grafana</b> reads that data and turns it into live <b>dashboards</b> — graphs of how every metric is trending.", dur:4400, on(){SIM.scrape();}},
+  {cap:"Here's the CPU gauge with an <b>alert threshold</b> at 80%. While it's below, everything is calm.", dur:4400, on(){SIM.scrape();}},
+  {cap:"Now a <b>traffic surge spikes CPU</b> past the threshold.", dur:3600, on(){SIM.spike();}},
+  {cap:"The rule trips and an <span class='hl-bad'>alert fires</span> — paging the on-call engineer via Slack, email, or PagerDuty. You know <em>immediately.</em>", dur:4800, on(){SIM.scrape();}},
+  {cap:"You investigate, scale up or fix the cause, and the metric falls back below the line — the alert <span class='hl-good'>resolves.</span>", dur:4600, on(){SIM.resolve();}},
+  {cap:"Your turn 👉 <b>📈 Spike the metric</b> to fire an alert, then <b>✅ resolve</b> the incident.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Monitoring = metrics scraped, visualized, and alerted on. Prometheus + Grafana turn invisible problems into early warnings.", dur:4800}
+]});
+
+</script>
+</body></html>

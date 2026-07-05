@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sticky vs Stateless Sessions · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.store{position:absolute; left:50%; top:84%; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:11px; color:var(--accent-d); z-index:3; opacity:0; transition:.3s}
+.store.on{opacity:1}
+.srvn.dead .box{border-color:var(--bad); opacity:.45}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Sticky vs Stateless Sessions</h1>
+  <p class="subtitle">If a user's session lives in one server's memory, the load balancer must pin them to that server — sticky sessions. Lose that server and the session is gone. Store the session in a shared place (or a token) instead, and any server can serve any request — stateless.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Sticky</div></div>
+  <div class="stat"><div class="stat-k">Lost sessions</div><div class="stat-v good" id="statLost">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box sm">🧑</div><div class="lbl"><span class="k">User</span></div></div>
+<div class="node abs" data-show="1" style="left:40%;top:50%"><div class="box sm">⚖️</div><div class="lbl"><span class="k">LB</span></div></div>
+<div class="node abs srvn s-0" data-show="1" style="left:74%;top:24%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server 1</span></div></div>
+<div class="node abs srvn s-1" data-show="1" style="left:74%;top:52%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server 2</span></div></div>
+<div class="node abs srvn s-2" data-show="1" style="left:74%;top:80%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Server 3</span></div></div>
+<div class="store" id="store">🗄️ shared session store (any server can read)</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Sticky / Stateless</button>
+  <button class="act bad" id="actKill">💥 Kill the user's server</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const srv=[{x:74,y:24},{x:74,y:52},{x:74,y:80}].map((p,i)=>({...p,alive:true,el:scene.querySelector('.s-'+i)}));
+  let mode='sticky', reqs=0, lost=0, pinned=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elL=document.getElementById('statLost'), store=document.getElementById('store');
+  function req(){ if(document.hidden) return; if(!srv.some(s=>s.alive)) return; let idx;
+    if(mode==='sticky'){ if(pinned<0||!srv[pinned]||!srv[pinned].alive){ // session lost — must restart on another server
+        const dead=srv[pinned]||srv[0]; const d=document.createElement('div'); d.className='dot fail'; d.style.left='40%'; d.style.top='50%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s, top .4s';d.style.left=dead.x+'%';d.style.top=dead.y+'%';}); setTimeout(()=>d.remove(),420*simRate());
+        lost++; elL.textContent=lost; elL.className='stat-v bad'; pinned=srv.findIndex(s=>s.alive); return; }
+      idx=pinned; }
+    else { const live=srv.filter(s=>s.alive); idx=srv.indexOf(live[rr++%live.length]); }
+    if(idx<0||!srv[idx]) return; const s=srv[idx]; const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=s.x+'%'; d.style.top=s.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(s.el){s.el.classList.add('active'); setTimeout(()=>s.el.classList.remove('active'),180);} reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function kill(){ const target = mode==='sticky'? pinned : srv.findIndex(s=>s.alive); const s=srv[target]; if(s){ s.alive=false; if(s.el)s.el.classList.add('dead'); setTimeout(()=>{ s.alive=true; if(s.el)s.el.classList.remove('dead'); }, 4000*simRate()); } }
+  function setMode(m){ mode=m; elM.textContent=m==='sticky'?'Sticky':'Stateless'; elM.className='stat-v '+(m==='sticky'?'warn':'good'); store.classList.toggle('on',m==='stateless'); pinned=srv.findIndex(s=>s.alive); }
+  function demoLost(){ lost++; elL.textContent=lost; elL.className='stat-v bad'; const d=document.createElement('div'); d.className='dot fail'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; }); setTimeout(()=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),360); }, leg); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='sticky'?'stateless':'sticky');
+  document.getElementById('actKill').onclick=kill;
+  setMode('sticky'); running=true; loop();
+  return {req,kill,setMode,demoLost};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"After login, where does a user's <b>session</b> live? The answer shapes how resilient your system is.", dur:4400},
+  {cap:"<b>Sticky sessions:</b> the session sits in <em>one</em> server's memory, so the load balancer <b>pins</b> that user to that server.", dur:4600, on(){SIM.req();}},
+  {cap:"Every request from them goes to the same server, which remembers who they are. Simple — while that server is alive.", dur:4400, on(){SIM.req();}},
+  {cap:"Now <b>kill that server.</b>", dur:3400, on(){SIM.kill();}},
+  {cap:"Their session was only in <em>that</em> server's memory, so it's <span class='hl-bad'>gone</span> — they're logged out and bounced to a fresh server.", dur:4800, on(){SIM.demoLost();}},
+  {cap:"The fix: make sessions <b>stateless.</b> Store them in a shared place (Redis) or carry them in a signed <b>token</b> the client holds.", dur:4600, on(){SIM.setMode('stateless');}},
+  {cap:"Now <b>any server can serve any request</b> — it just reads the session from the shared store. No pinning needed.", dur:4600, on(){SIM.req();}},
+  {cap:"Kill a server now and the user simply lands on another one, session intact. <span class='hl-good'>Nothing lost.</span>", dur:4600, on(){SIM.kill();SIM.req();}},
+  {cap:"Your turn 👉 flip <b>🔀 Sticky / Stateless</b> and <b>💥 kill the server</b> to see sessions lost vs preserved.", dur:5200, on(){SIM.setMode('sticky');}},
+  {cap:"Sticky pins users to one server (simple, fragile). Stateless keeps session in a shared store/token (any server, resilient). Prefer stateless to scale.", dur:4800}
+]});
+
+</script>
+</body></html>

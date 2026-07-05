@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CDN — Local Library Branches · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.edge.cached .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">CDN — Local Library Branches</h1>
+  <p class="subtitle">One giant central archive far away is slow to reach. Local library branches keep copies close to readers. A branch can order a book from the archive the first time someone asks (pull), or the central library can ship popular titles to every branch ahead of demand (push).</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reader requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Order on demand</div></div>
+  <div class="stat"><div class="stat-k">Picked up from</div><div class="stat-v good" id="statFrom">local branch</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:50%"><div class="box origin">🏛️</div><div class="lbl"><span class="k">Central archive<br>(far away)</span></div></div>
+<div class="node abs edge e-0" data-show="1" style="left:50%;top:20%"><div class="box sm">📚</div><div class="lbl"><span class="k">Branch · North</span></div></div>
+<div class="node abs edge e-1" data-show="1" style="left:50%;top:50%"><div class="box sm">📚</div><div class="lbl"><span class="k">Branch · local</span></div></div>
+<div class="node abs edge e-2" data-show="1" style="left:50%;top:80%"><div class="box sm">📚</div><div class="lbl"><span class="k">Branch · South</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:50%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Reader</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 On-demand / Pre-stocked</button>
+  <button class="act ok" id="actRequest">📖 Reader asks for a book</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const edges=[{x:50,y:20,cached:false},{x:50,y:50,cached:false},{x:50,y:80,cached:false}];
+  let reqs=0, mode='pull', running=false;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elF=document.getElementById('statFrom');
+  const els=[0,1,2].map(i=>scene.querySelector('.e-'+i));
+  function setCached(i,v){ edges[i].cached=v; if(els[i])els[i].classList.toggle('cached',v); }
+  function request(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const idx=1; const e=edges[idx]; // reader nearest local branch
+    if(e.cached){ // on the shelf — quick
+      const d=document.createElement('div'); d.className='dot'; d.style.left='88%'; d.style.top='50%'; scene.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transition='left .4s'; d.style.left='50%'; }); setTimeout(()=>{ d.classList.add('done'); if(els[idx]){els[idx].classList.add('active'); setTimeout(()=>els[idx].classList.remove('active'),200);} d.style.left='88%'; setTimeout(()=>d.remove(),420*simRate()); }, 420*simRate());
+      elF.textContent='local branch ⚡'; elF.className='stat-v good';
+    } else { // not on shelf → branch orders from archive, shelves it, then lends
+      const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top=e.y+'%'; scene.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transition='left .5s, top .5s'; d.style.left='12%'; d.style.top='50%'; });
+      setTimeout(()=>{ setCached(idx,true); d.classList.add('done'); d.style.left='50%'; d.style.top=e.y+'%';
+        setTimeout(()=>{ d.style.left='88%'; d.style.top='50%'; setTimeout(()=>d.remove(),420*simRate()); }, 420*simRate()); }, 520*simRate());
+      elF.textContent='central archive (first wait) 🐌'; elF.className='stat-v warn';
+    }
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='pull'?'Order on demand':'Pre-stocked'; elM.className='stat-v '+(m==='pull'?'accent':'good');
+    if(m==='push'){ // archive ships to all branches ahead of time
+      edges.forEach((e,i)=>setTimeout(()=>{ setCached(i,true); const d=document.createElement('div'); d.className='dot done'; d.style.left='12%'; d.style.top='50%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s, top .5s'; d.style.left='50%'; d.style.top=e.y+'%';}); setTimeout(()=>d.remove(),560); }, i*200));
+    } else { edges.forEach((e,i)=>setCached(i,false)); }
+  }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='pull'?'push':'pull');
+  document.getElementById('actRequest').onclick=request;
+  setMode('pull'); running=true; loop();
+  return {request,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Imagine one enormous <b>central archive</b> across the country. Everyone trekking there for every book would be painfully slow.", dur:4800},
+  {cap:"So we build <b>local branches</b> all over — north, south, your own neighborhood — close to where readers actually live. That's a CDN.", dur:4600},
+  {cap:"In <b>order-on-demand</b> mode, the branch shelf starts empty. The first reader's request <span class='hl-warn'>isn't in stock</span>, so the branch orders it from the archive…", dur:4800, on(){SIM.request();}},
+  {cap:"…and <b>keeps a copy on the shelf</b> on the way back. That first reader waits, but the book now lives nearby.", dur:4600},
+  {cap:"Every <em>later</em> reader just borrows it straight from the <span class='hl-good'>local branch</span> — quick, and the archive is barely bothered.", dur:4600, on(){SIM.request();}},
+  {cap:"On-demand is easy: you do nothing special, the branch stocks whatever gets asked for, and old copies are refreshed periodically.", dur:4400, on(){SIM.request();}},
+  {cap:"In <b>pre-stocked</b> mode, the central library <em>ships</em> a title to every branch in advance — before anyone asks.", dur:4400, on(){SIM.setMode('push');}},
+  {cap:"Now even the <b>very first</b> reader finds it on the shelf — no wait. Ideal for titles you <em>know</em> will be in demand (a big new release).", dur:4800, on(){SIM.request();}},
+  {cap:"Your turn 👉 flip <b>🔀 On-demand / Pre-stocked</b> and <b>📖 request a book</b> to compare lazy stocking with pre-shipping.", dur:5200, on(){SIM.setMode('pull');}},
+  {cap:"A CDN is a network of local branches: order-on-demand stocks as readers ask, pre-stocked ships ahead. Either way, the book is closer and arrives faster.", dur:4800}
+]});
+
+</script>
+</body></html>

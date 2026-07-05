@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS — Looking Up a Phone Number · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.chain{position:absolute; font-family:var(--fmono); font-size:10.5px; color:var(--faint); text-align:center; transform:translateX(-50%); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">DNS — Looking Up a Phone Number</h1>
+  <p class="subtitle">You know the name "Pizza Palace" but not the number. Your phone checks its saved contacts first; if it's not there, it works up a chain — directory assistance, the right category, the actual listing — gets the number, and saves it so next time is instant.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Lookups</div><div class="stat-v accent" id="statLookups">0</div></div>
+  <div class="stat"><div class="stat-k">Last lookup</div><div class="stat-v" id="statHops">—</div></div>
+  <div class="stat"><div class="stat-k">Saved contact</div><div class="stat-v bad" id="statCache">not saved</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:10%;top:50%"><div class="box sm">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:30%;top:50%"><div class="box sm resolver">📱</div><div class="lbl"><span class="k">Your phone</span></div></div>
+<div class="node abs" data-show="1" style="left:54%;top:24%"><div class="box sm r-0">☎️</div><div class="lbl"><span class="k">Directory</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:24%"><div class="box sm r-1">🍕</div><div class="lbl"><span class="k">Restaurants</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:62%"><div class="box sm r-2">📇</div><div class="lbl"><span class="k">Pizza Palace<br>listing</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actResolve">🔎 Look up the number</button>
+  <button class="act" id="actCache">🗑️ Forget the contact</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const RES={x:30,y:50}, steps=[{x:54,y:24},{x:74,y:24},{x:88,y:62}];
+  let lookups=0, cached=false, busy=false, running=false;
+  const elL=document.getElementById('statLookups'), elH=document.getElementById('statHops'), elCa=document.getElementById('statCache');
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),200); }, leg); }
+  function resolve(){ if(busy||document.hidden) return; busy=true; lookups++; elL.textContent=lookups;
+    if(cached){ hop(10,50,RES.x,RES.y,'done',()=>{ const r=scene.querySelector('.resolver'); if(r){r.classList.add('active'); setTimeout(()=>r.classList.remove('active'),250);} hop(RES.x,RES.y,10,50,'done',()=>{ elH.textContent='1 (already saved) ⚡'; elH.className='stat-v good'; busy=false; }); }); return; }
+    hop(10,50,RES.x,RES.y,'',()=>{ let i=0;
+      (function walk(){ if(i>=steps.length){ cached=true; elCa.textContent='Pizza Palace ✓'; elCa.className='stat-v good';
+          hop(RES.x,RES.y,10,50,'done',()=>{ elH.textContent='4 hops (full search)'; elH.className='stat-v warn'; busy=false; }); return; }
+        const s=steps[i]; const el=scene.querySelector('.r-'+i);
+        hop(RES.x,RES.y,s.x,s.y,'',()=>{ if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),250);} hop(s.x,s.y,RES.x,RES.y,'done',()=>{ i++; walk(); }); });
+      })();
+    });
+  }
+  function clearCache(){ cached=false; elCa.textContent='not saved'; elCa.className='stat-v bad'; }
+  function loop(){ if(!running)return; resolve(); setTimeout(loop, 3200*simRate()); }
+  document.getElementById('actResolve').onclick=resolve;
+  document.getElementById('actCache').onclick=clearCache;
+  running=true; loop();
+  return {resolve,clearCache};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You want to call <b>Pizza Palace</b> — but you only know the name, not the number. That's the everyday version of a DNS lookup.", dur:4800},
+  {cap:"Your <b>phone</b> checks its saved contacts first (the resolver). Not there yet, so it has to go find the number.", dur:4600, on(){SIM.resolve();}},
+  {cap:"It rings <b>directory assistance</b> — \"who handles restaurant listings?\" That's like asking a DNS root server.", dur:4600},
+  {cap:"Directory points it to the <b>restaurants</b> section, which knows who lists Pizza Palace — like a top-level domain server.", dur:4600},
+  {cap:"That points to the actual <b>Pizza Palace listing</b>, which finally hands back the real phone number — the authoritative answer.", dur:4800},
+  {cap:"Four hops just to turn a name into a number. Fine once, but you wouldn't do it every single time you call.", dur:4400},
+  {cap:"So your phone <b>saves the contact.</b> The next lookup skips the whole search.", dur:4200, on(){SIM.resolve();}},
+  {cap:"Now it's a <span class='hl-good'>saved contact</span> — instant. That's DNS caching, and it's why the web feels fast.", dur:4400, on(){SIM.resolve();}},
+  {cap:"Your turn 👉 <b>🔎 Look up the number</b>, then <b>🗑️ forget the contact</b> to force the full search again.", dur:5200, on(){SIM.clearCache();}},
+  {cap:"DNS turns a name into an address through a chain of lookups — then saves the answer, so next time it's instant. Just like your contacts.", dur:4800}
+]});
+
+</script>
+</body></html>

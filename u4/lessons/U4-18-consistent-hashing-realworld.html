@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consistent Hashing — Hosts Around a Round Table · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ring{position:absolute; left:50%; top:50%; width:230px; height:230px; transform:translate(-50%,-50%); border:2px dashed var(--line2); border-radius:50%; z-index:1}
+.rnode{position:absolute; transform:translate(-50%,-50%); width:42px; height:42px; border-radius:50%; border:2px solid var(--accent); background:#eaf2fe; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:11px; font-weight:700; color:var(--accent-d); z-index:3; transition:.3s}
+.rnode.hit{border-color:var(--good); background:#e7f7ef; box-shadow:0 0 0 5px rgba(18,163,104,.18)}
+.rkey{position:absolute; transform:translate(-50%,-50%); width:12px; height:12px; border-radius:50%; background:var(--pink); z-index:4; transition:left .5s, top .5s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Consistent Hashing — Hosts Around a Round Table</h1>
+  <p class="subtitle">Seat guests around a round banquet table, each looked after by the nearest host clockwise. Add another host and only the guests in that little arc switch over — everyone else keeps their host. Reassigning every guest each time would be chaos; this barely ruffles the table.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Guests seated</div><div class="stat-v accent" id="statKeys">0</div></div>
+  <div class="stat"><div class="stat-k">Hosts</div><div class="stat-v" id="statNodes">3</div></div>
+  <div class="stat"><div class="stat-k">Guests reassigned (last change)</div><div class="stat-v good" id="statMoved">—</div></div>
+</div>
+<div class="ring"></div>
+<div id="nodes"></div>
+<div id="keys"></div>
+<div class="acts">
+  <button class="act ok" id="actAddNode">➕ Add a host</button>
+  <button class="act bad" id="actRemoveNode">➖ Remove a host</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const nodesWrap=document.getElementById('nodes'), keysWrap=document.getElementById('keys');
+  const cx=50, cy=50, R=24;
+  let nodeAngles=[0,120,240], keys=[], running=false;
+  const elK=document.getElementById('statKeys'), elN=document.getElementById('statNodes'), elM=document.getElementById('statMoved');
+  function posA(ang){ const rad=(ang-90)*Math.PI/180; return [cx + R*Math.cos(rad)*1.7, cy + R*Math.sin(rad)]; }
+  function owner(ang){ const sorted=[...nodeAngles].sort((a,b)=>a-b); for(const na of sorted){ if(na>=ang) return na; } return sorted[0]; }
+  function renderNodes(){ nodesWrap.innerHTML=''; nodeAngles.forEach((a,i)=>{ const p=posA(a); const el=document.createElement('div'); el.className='rnode na-'+a; el.style.left=p[0]+'%'; el.style.top=p[1]+'%'; el.textContent='H'; nodesWrap.appendChild(el); }); elN.textContent=nodeAngles.length; }
+  function renderKeys(){ keysWrap.innerHTML=''; keys.forEach(k=>{ const own=owner(k.ang); const kp=posA(k.ang); const el=document.createElement('div'); el.className='rkey'; el.style.left=(kp[0]*0.85+50*0.15)+'%'; el.style.top=(kp[1]*0.85+50*0.15)+'%'; keysWrap.appendChild(el); k.el=el; k.owner=own; }); }
+  function addKey(){ if(document.hidden||keys.length>=14) return; const ang=Math.floor(Math.random()*360); keys.push({ang}); elK.textContent=keys.length; renderKeys(); }
+  function recompute(label){ let moved=0; keys.forEach(k=>{ const newOwner=owner(k.ang); if(k.owner!==undefined && k.owner!==newOwner) moved++; k.owner=newOwner; });
+    elM.textContent=moved+' of '+keys.length+' '+label; elM.className='stat-v '+(moved<=keys.length/2?'good':'warn'); renderKeys(); }
+  function addNode(){ if(nodeAngles.length<7){ const a=Math.floor(Math.random()*360); nodeAngles.push(a); renderNodes(); const el=nodesWrap.querySelector('.na-'+a); if(el){el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),700);} recompute('(only that arc)'); } }
+  function removeNode(){ if(nodeAngles.length>2){ nodeAngles.pop(); renderNodes(); recompute('(only that arc)'); } }
+  function loop(){ if(!running)return; addKey(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actAddNode').onclick=addNode;
+  document.getElementById('actRemoveNode').onclick=removeNode;
+  renderNodes(); running=true; loop();
+  return {addNode,removeNode,addKey};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You want to share <b>guests evenly among hosts.</b> The naive rule — \"guest number mod number-of-hosts\" — works… until the host count changes.", dur:4800},
+  {cap:"The problem: add or lose one host and <b>almost every guest</b> gets reshuffled to a different host. A whole-room scramble — chaos.", dur:4800},
+  {cap:"<b>Consistent hashing</b> fixes it. Seat the <b>hosts around a round table</b>, and give every guest a seat on the same circle.", dur:4600, on(){SIM.addKey();}},
+  {cap:"Each guest is looked after by the <b>first host clockwise</b> from their seat. Guests spread naturally around the table.", dur:4600, on(){SIM.addKey();}},
+  {cap:"Now <b>add a host</b> to the table and watch carefully.", dur:3800, on(){SIM.addNode();}},
+  {cap:"Only the guests in the <span class='hl-good'>small arc</span> the new host now covers switch to them. Everyone else keeps their host.", dur:4800, on(){SIM.addKey();}},
+  {cap:"<b>Remove a host</b> and it's the same — only <em>their</em> guests pass to the next host clockwise. Barely a ripple.", dur:4800, on(){SIM.removeNode();}},
+  {cap:"That's the whole win: adding or removing a host moves a tiny fraction of guests, not all of them. The room stays settled.", dur:4600},
+  {cap:"Real setups give each host <b>several seats</b> around the table, so the guests stay evenly balanced between them.", dur:4400, on(){SIM.addNode();}},
+  {cap:"Consistent hashing powers caches, sharded databases, and load balancers — anywhere you add and remove nodes without reshuffling everything.", dur:4800}
+]});
+
+</script>
+</body></html>

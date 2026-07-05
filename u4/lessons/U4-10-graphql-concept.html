@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphQL · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.payload{position:absolute; right:7%; top:22%; width:34%; font-family:var(--fmono); font-size:11px; background:#fff; border:1.5px solid var(--line2); border-radius:9px; padding:9px; z-index:2; white-space:pre-wrap; transition:.3s}
+.payload .want{color:var(--good); font-weight:700}
+.payload .waste{color:var(--bad); text-decoration:line-through; opacity:.6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">GraphQL</h1>
+  <p class="subtitle">With REST, each endpoint returns a fixed shape — so you over-fetch fields you don't need or make several calls to gather what you do. GraphQL flips it: one endpoint, and the client asks for exactly the fields it wants, getting precisely that in a single response.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Queries</div><div class="stat-v accent" id="statQueries">0</div></div>
+  <div class="stat"><div class="stat-k">Style</div><div class="stat-v" id="statMode">REST</div></div>
+  <div class="stat"><div class="stat-k">Wasted fields</div><div class="stat-v" id="statWaste">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:48%"><div class="box">📱</div><div class="lbl"><span class="k">Client<br>wants: name, avatar</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:48%"><div class="box sm ep">🔌</div><div class="lbl"><span class="k" id="eplbl">/users/42</span></div></div>
+<div class="payload" id="payload"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 REST / GraphQL</button>
+  <button class="act ok" id="actQuery">📨 Fetch the user</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const payload=document.getElementById('payload'), eplbl=document.getElementById('eplbl');
+  let mode='rest', queries=0, running=false;
+  const elQ=document.getElementById('statQueries'), elM=document.getElementById('statMode'), elW=document.getElementById('statWaste');
+  function fetchUser(){ if(document.hidden) return; queries++; elQ.textContent=queries;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ const ep=scene.querySelector('.ep'); if(ep){ep.classList.add('active'); setTimeout(()=>ep.classList.remove('active'),250);} d.classList.add('done'); d.style.left='14%'; setTimeout(()=>d.remove(),leg);
+      if(mode==='rest'){ payload.innerHTML='{\n  <span class="want">name</span>: "Ann",\n  <span class="want">avatar</span>: "🖼️",\n  <span class="waste">email</span>: "...",\n  <span class="waste">address</span>: {...},\n  <span class="waste">orders</span>: [...],\n  <span class="waste">settings</span>: {...}\n}';
+        elW.textContent='4 (over-fetched)'; elW.className='stat-v bad'; }
+      else { payload.innerHTML='{\n  <span class="want">name</span>: "Ann",\n  <span class="want">avatar</span>: "🖼️"\n}'; elW.textContent='0 (exact)'; elW.className='stat-v good'; }
+    }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='rest'?'REST':'GraphQL'; elM.className='stat-v '+(m==='rest'?'warn':'good'); eplbl.textContent=m==='rest'?'/users/42':'/graphql'; payload.innerHTML=''; }
+  function loop(){ if(!running)return; fetchUser(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='rest'?'graphql':'rest');
+  document.getElementById('actQuery').onclick=fetchUser;
+  setMode('rest'); running=true; loop();
+  return {fetchUser,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your app's profile header needs just two things: a user's <b>name</b> and <b>avatar.</b> Watch how REST and GraphQL handle that.", dur:4800},
+  {cap:"With <b>REST</b>, you call /users/42 — and the endpoint returns its <b>fixed shape</b>: the whole user object.", dur:4600, on(){SIM.fetchUser();}},
+  {cap:"You wanted two fields but got the lot — email, address, orders, settings. That waste is <span class='hl-bad'>over-fetching.</span>", dur:4800, on(){SIM.fetchUser();}},
+  {cap:"Worse, if you <em>also</em> needed the user's recent orders, that's often a <b>second</b> call — <span class='hl-warn'>under-fetching</span> in one round trip.", dur:4800},
+  {cap:"<b>GraphQL</b> flips it. There's one endpoint, /graphql, and the <b>client specifies exactly the fields it wants.</b>", dur:4600, on(){SIM.setMode('graphql');}},
+  {cap:"Ask for just name and avatar, and you get <span class='hl-good'>precisely that</span> — nothing more, in a single response.", dur:4600, on(){SIM.fetchUser();}},
+  {cap:"Need orders too? Add them to the <em>same</em> query. One round trip fetches exactly your data, no over- or under-fetching.", dur:4600, on(){SIM.fetchUser();}},
+  {cap:"The cost: GraphQL is more complex on the server — a schema, resolvers, and trickier caching than plain REST endpoints.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 REST / GraphQL</b> and <b>📨 fetch</b> to compare fixed payloads with precise queries.", dur:5200},
+  {cap:"REST returns fixed shapes per endpoint; GraphQL lets the client request exactly what it needs from one endpoint. Power vs simplicity.", dur:4800}
+]});
+
+</script>
+</body></html>

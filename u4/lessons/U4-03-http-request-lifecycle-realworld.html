@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP Lifecycle — Ordering at a Counter · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pkt{position:absolute; font-family:var(--fmono); font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px; z-index:5; opacity:0; transition:.2s; white-space:nowrap}
+.pkt.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">HTTP Lifecycle — Ordering at a Counter</h1>
+  <p class="subtitle">You step up and place an order; the kitchen prepares it; you're handed a tray with a receipt. Sometimes they're out of an item and you get "sorry, unavailable." Every web page load is exactly this: one request placed, one response served back, with a status on the receipt.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders placed</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Order type</div><div class="stat-v" id="statMethod">Pick up (GET)</div></div>
+  <div class="stat"><div class="stat-k">Last receipt</div><div class="stat-v good" id="statStatus">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:52%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:52%"><div class="box server">🧑‍🍳</div><div class="lbl"><span class="k">Kitchen</span></div></div>
+<div class="pkt" id="reqlbl" style="left:38%;top:40%;color:var(--accent-d)">"one coffee" →</div>
+<div class="pkt" id="reslbl" style="left:38%;top:64%;color:var(--good)">← ✅ served + receipt</div>
+<div class="acts">
+  <button class="act ok" id="actRequest">🗣️ Place order</button>
+  <button class="act" id="actMethod">🔁 Pick up / Drop off</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, method='GET', busy=false, running=false;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMethod'), elS=document.getElementById('statStatus');
+  const reqlbl=document.getElementById('reqlbl'), reslbl=document.getElementById('reslbl'), srv=scene.querySelector('.server');
+  function request(){ if(busy||document.hidden) return; busy=true; reqs++; elR.textContent=reqs;
+    const fail=Math.random()<0.18; reqlbl.textContent=(method==='GET'?'"one coffee" →':'"here\'s my form" →'); reqlbl.classList.add('on'); reslbl.classList.remove('on');
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ d.remove(); if(srv){srv.classList.add('busy'); setTimeout(()=>srv.classList.remove('busy'),400);}
+      reqlbl.classList.remove('on');
+      setTimeout(()=>{ const r=document.createElement('div'); r.className='dot'+(fail?' fail':' done'); r.style.left='84%'; r.style.top='60%'; scene.appendChild(r);
+        reslbl.textContent= fail?'← ❌ sorry, out of that':'← ✅ served + receipt'; reslbl.style.color= fail?'var(--bad)':'var(--good)'; reslbl.classList.add('on');
+        requestAnimationFrame(()=>{ r.style.transition='left '+leg+'ms'; r.style.left='16%'; });
+        elS.textContent= fail?'404 ✗ (no item)':'200 ✓ (served)'; elS.className='stat-v '+(fail?'bad':'good');
+        setTimeout(()=>{ r.remove(); busy=false; }, leg); }, 300*simRate());
+    }, leg);
+  }
+  function toggle(){ method=method==='GET'?'POST':'GET'; elM.textContent=method==='GET'?'Pick up (GET)':'Drop off (POST)'; }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 1800*simRate()); }
+  document.getElementById('actRequest').onclick=request;
+  document.getElementById('actMethod').onclick=toggle;
+  running=true; loop();
+  return {request,toggle};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Loading a web page is just like ordering at a café counter: you ask for something, and you're handed back what you asked for.", dur:4600},
+  {cap:"You step up and <b>place an order</b> — that's the HTTP request. It says what you want (\"one coffee\") and a few details about you.", dur:4800, on(){SIM.request();}},
+  {cap:"<b>\"Pick up\"</b> is like GET — just fetch me something. <b>\"Drop off\"</b> is like POST — here's a form for you to process. Your order type signals intent.", dur:4800},
+  {cap:"The <b>kitchen</b> takes your order, does the work — brews, plates, looks things up — then prepares your response.", dur:4600, on(){SIM.request();}},
+  {cap:"You're handed a tray <b>and a receipt.</b> The receipt's first line is the status: <span class='hl-good'>✅ served</span> — that's 200 OK.", dur:4600},
+  {cap:"Sometimes they're <b>out of what you asked for</b> — \"sorry, we don't have that.\" That's a <span class='hl-bad'>404 Not Found.</span>", dur:4600, on(){SIM.request();}},
+  {cap:"Receipts come in families: <b>2xx</b> all good, <b>3xx</b> \"try the other counter,\" <b>4xx</b> your order was wrong, <b>5xx</b> the kitchen messed up.", dur:4800},
+  {cap:"And each order stands alone — the counter doesn't remember you between visits, so you show your loyalty card (a cookie or token) each time.", dur:4600},
+  {cap:"Your turn 👉 <b>🗣️ Place orders</b> and switch <b>🔁 Pick up / Drop off</b> to watch each round trip and its receipt.", dur:5200},
+  {cap:"Order in, tray out, status on every receipt — that simple counter exchange is the heartbeat of every web request.", dur:4600}
+]});
+
+</script>
+</body></html>

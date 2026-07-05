@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idempotency Keys — A Coat-Check Ticket · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ledger{position:absolute; right:7%; top:22%; width:34%; font-family:var(--fmono); font-size:11px; z-index:2}
+.lrow{padding:5px 8px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px}
+.seen{position:absolute; left:50%; top:80%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--accent-d); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Idempotency Keys — A Coat-Check Ticket</h1>
+  <p class="subtitle">You hand over your coat and get a numbered ticket. Show that same ticket twice and you don't get a second coat — you get your one coat. An idempotency key works the same way: the same key returns the original result instead of repeating the action.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Tickets shown</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Coats handed out</div><div class="stat-v good" id="statCharges">0</div></div>
+  <div class="stat"><div class="stat-k">Repeat shows ignored</div><div class="stat-v" id="statDup">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:44%"><div class="box">🧑</div><div class="lbl"><span class="k">Guest<br>ticket #123</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:44%"><div class="box sm srv">🧥</div><div class="lbl"><span class="k">Coat check</span></div></div>
+<div class="ledger" id="ledger"></div>
+<div class="seen" id="seen">claimed tickets: (none)</div>
+<div class="acts">
+  <button class="act ok" id="actSubmit">🎫 Claim coat (new ticket)</button>
+  <button class="act" id="actRetry">🔁 Show same ticket again</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ledger=document.getElementById('ledger'), seenEl=document.getElementById('seen');
+  let reqs=0, charges=0, dup=0, running=false, keyN=0, lastKey='123', seen=new Set();
+  const elR=document.getElementById('statReqs'), elC=document.getElementById('statCharges'), elD=document.getElementById('statDup');
+  function render(){ ledger.innerHTML=''; [...seen].slice(-4).forEach(k=>{ const r=document.createElement('div'); r.className='lrow'; r.textContent='🧥 returned · ticket '+k; ledger.appendChild(r); }); seenEl.textContent='claimed tickets: '+([...seen].slice(-3).join(', ')||'(none)'); }
+  function send(key,isRetry){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const dupHit = seen.has(key);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ const srv=scene.querySelector('.srv'); if(srv){srv.classList.add('active'); setTimeout(()=>srv.classList.remove('active'),200);}
+      if(dupHit){ // recognized repeat → same coat, nothing new
+        d.classList.add('fail'); dup++; elD.textContent=dup; elD.className='stat-v warn'; setTimeout(()=>d.remove(),320);
+      } else { seen.add(key); charges++; elC.textContent=charges; render(); d.classList.add('done'); d.style.left='84%'; setTimeout(()=>d.remove(),leg); }
+    }, leg);
+  }
+  function submit(){ keyN++; lastKey=''+(124+keyN); send(lastKey,false); }
+  function retry(){ send(lastKey,true); }
+  function demoDup(){ if(!seen.size) seen.add(lastKey); dup++; elD.textContent=dup; elD.className='stat-v warn';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; }); setTimeout(()=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),360); }, leg); }
+  function loop(){ if(!running)return; if(Math.random()<0.6) submit(); else retry(); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actSubmit').onclick=submit;
+  document.getElementById('actRetry').onclick=retry;
+  render(); running=true; loop();
+  return {submit,retry,demoDup,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You tap <b>Pay $50</b>, the network stalls, and you never see a confirmation. Your app <b>retries.</b> Did you just pay twice?", dur:4800},
+  {cap:"Think of the coat check. You hand over your coat once and receive a <b>numbered ticket.</b> That ticket is your idempotency key.", dur:4800},
+  {cap:"You show the ticket to claim your coat. The attendant hands it over and <b>marks that number as collected.</b>", dur:4600, on(){SIM.submit();}},
+  {cap:"The key fact: the attendant <b>remembers the ticket number</b> — it's now in the claimed list.", dur:4400},
+  {cap:"Now suppose you nervously <b>show the very same ticket again.</b>", dur:3800, on(){SIM.retry();}},
+  {cap:"You don't get a <em>second</em> coat. The attendant sees the number's already claimed and just <span class='hl-good'>points to your one coat.</span> No duplicate.", dur:4800, on(){SIM.demoDup();}},
+  {cap:"A different guest with a <b>new ticket</b> gets their own coat, normally. Watch a fresh number go through.", dur:4400, on(){SIM.submit();}},
+  {cap:"So retries are harmless: same ticket = at most one coat; new ticket = a real new claim. The flaky network can't double-charge you.", dur:4800},
+  {cap:"Your turn 👉 <b>🎫 Claim</b> with new tickets and <b>🔁 show the same one</b> to watch repeats get absorbed.", dur:5200, on(){SIM.render();}},
+  {cap:"An idempotency key is a coat-check ticket: the same key returns the same result, never a second action — making retries safe.", dur:4800}
+]});
+
+</script>
+</body></html>

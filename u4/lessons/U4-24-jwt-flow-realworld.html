@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JWT — A Festival Wristband · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.jwt{position:absolute; left:50%; top:78%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; z-index:4}
+.jwt .h{color:var(--accent-d)} .jwt .p{color:var(--good)} .jwt .s{color:var(--violet)}
+.jwt.bad .p{color:var(--bad); text-decoration:line-through} .jwt.bad .s{color:var(--bad)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">JWT — A Festival Wristband</h1>
+  <p class="subtitle">At a festival you check in once and get a wristband. After that, every stage just glances at it — no looking you up on a list. It carries your access level and is hard to fake. Snip it or alter it and staff see the tamper instantly. That's a JWT.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Entries waved through</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Guest-list lookups</div><div class="stat-v good" id="statState">none needed</div></div>
+  <div class="stat"><div class="stat-k">Rejected</div><div class="stat-v" id="statRej">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:44%"><div class="box">🧑</div><div class="lbl"><span class="k">Guest<br>wears band</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:44%"><div class="box server">🎪</div><div class="lbl"><span class="k">Stage gate<br>checks band</span></div></div>
+<div class="jwt" id="jwt"><span class="h">festival</span>.<span class="p">access: VIP</span>.<span class="s">hologram seal</span></div>
+<div class="acts">
+  <button class="act ok" id="actRequest">🎟️ Enter with wristband</button>
+  <button class="act bad" id="actTamper">✏️ Alter the wristband</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, rej=0, tampered=false, running=false;
+  const elR=document.getElementById('statReqs'), elRej=document.getElementById('statRej'), jwt=document.getElementById('jwt');
+  const srv=scene.querySelector('.server');
+  function request(){ if(document.hidden) return; const bad=tampered;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='82%'; });
+    setTimeout(()=>{ if(srv){srv.classList.add(bad?'crash':'healthy'); setTimeout(()=>srv.classList.remove('crash','healthy'),400);}
+      if(bad){ d.classList.add('fail'); rej++; elRej.textContent=rej; elRej.className='stat-v bad'; setTimeout(()=>d.remove(),320); }
+      else { d.classList.add('done'); reqs++; elR.textContent=reqs; const r=document.createElement('div'); r.className='dot done'; r.style.left='82%'; r.style.top='56%'; scene.appendChild(r); requestAnimationFrame(()=>{r.style.transition='left '+leg+'ms';r.style.left='18%';}); setTimeout(()=>r.remove(),leg); setTimeout(()=>d.remove(),300); }
+    }, leg);
+  }
+  function tamper(){ tampered=true; jwt.classList.add('bad'); jwt.innerHTML='<span class="h">festival</span>.<span class="p">access: BACKSTAGE!</span>.<span class="s">seal broken ✗</span>'; }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actRequest').onclick=request;
+  document.getElementById('actTamper').onclick=tamper;
+  running=true; loop();
+  return {request,tamper};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"At a festival, you check in <b>once</b> at the entrance and get a <b>wristband.</b> After that, no one re-checks the guest list. That's a JWT.", dur:4800},
+  {cap:"The band has three things printed on it: which <b>festival</b> it's for, your <b>access level</b>, and a hard-to-fake <b>hologram seal.</b>", dur:4600},
+  {cap:"Staff create and seal it at check-in, then snap it on your wrist. You carry it everywhere.", dur:4400},
+  {cap:"At every stage, the gate just <b>glances at the band</b> and waves you through — no clipboard, no looking up your name.", dur:4800, on(){SIM.request();}},
+  {cap:"That's the magic: the gate keeps <b>no list at all.</b> Any gate can check any band on the spot — which scales beautifully.", dur:4800, on(){SIM.request();}},
+  {cap:"But the access level is printed right there — so what stops you editing it to say <b>BACKSTAGE?</b> Try it.", dur:4400, on(){SIM.tamper();}},
+  {cap:"Alter the band and the <span class='hl-bad'>hologram seal breaks.</span> Staff spot the tamper instantly and turn you away.", dur:4800, on(){SIM.request();}},
+  {cap:"So a wristband is tamper-<em>evident</em>, not secret — anyone can read it. Don't print secrets on it, and make it expire after the event.", dur:4800},
+  {cap:"Your turn 👉 <b>🎟️ Enter</b> with a valid band, then <b>✏️ alter it</b> to watch the seal fail.", dur:5200},
+  {cap:"A JWT is a sealed festival wristband: checked once, waved through everywhere, no guest list needed — and obvious the moment it's faked.", dur:4800}
+]});
+
+</script>
+</body></html>

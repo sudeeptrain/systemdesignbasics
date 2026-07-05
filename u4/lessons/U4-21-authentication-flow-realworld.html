@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authentication — Showing ID at the Door · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tokchip{position:absolute; left:50%; top:78%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; z-index:4; opacity:0; transition:.3s}
+.tokchip.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Authentication — Showing ID at the Door</h1>
+  <p class="subtitle">At a members' club, you show ID at the door. The doorman checks it against the register and, if it matches, gives you a stamp on your hand. After that the stamp proves you belong — you don't re-prove who you are at every room. That's authentication.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Successful entries</div><div class="stat-v accent" id="statLogins">0</div></div>
+  <div class="stat"><div class="stat-k">ID check</div><div class="stat-v" id="statCred">—</div></div>
+  <div class="stat"><div class="stat-k">Hand stamp</div><div class="stat-v" id="statSess">none</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:18%;top:46%"><div class="box">🧑</div><div class="lbl"><span class="k">Guest</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:46%"><div class="box server">💂</div><div class="lbl"><span class="k">Doorman</span></div></div>
+<div class="tokchip" id="tokchip">🖐️ hand stamp given</div>
+<div class="acts">
+  <button class="act ok" id="actLogin">🪪 Show valid ID</button>
+  <button class="act bad" id="actWrong">🚫 Show fake ID</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let logins=0, busy=false, running=false;
+  const elL=document.getElementById('statLogins'), elC=document.getElementById('statCred'), elS=document.getElementById('statSess'), tok=document.getElementById('tokchip');
+  const srv=scene.querySelector('.server');
+  function login(ok){ if(busy && ok!==false) return; busy=true; tok.classList.remove('on'); elC.textContent='checking…'; elC.className='stat-v warn';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=480*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='82%'; });
+    setTimeout(()=>{ d.remove(); if(srv){srv.classList.add(ok?'healthy':'crash'); setTimeout(()=>srv.classList.remove('healthy','crash'),500);}
+      if(ok){ const r=document.createElement('div'); r.className='dot done'; r.style.left='82%'; r.style.top='58%'; scene.appendChild(r); requestAnimationFrame(()=>{r.style.transition='left '+leg+'ms';r.style.left='18%';});
+        setTimeout(()=>{ r.remove(); tok.classList.add('on'); logins++; elL.textContent=logins; elC.textContent='matches register ✓'; elC.className='stat-v good'; elS.textContent='stamped 🖐️'; elS.className='stat-v good'; busy=false; }, leg); }
+      else { const r=document.createElement('div'); r.className='dot fail'; r.style.left='82%'; r.style.top='58%'; scene.appendChild(r); requestAnimationFrame(()=>{r.style.transition='left '+leg+'ms';r.style.left='18%';});
+        setTimeout(()=>{ r.remove(); elC.textContent='rejected ✗'; elC.className='stat-v bad'; elS.textContent='none'; elS.className='stat-v bad'; busy=false; }, leg); }
+    }, leg);
+  }
+  function loop(){ if(!running)return; if(!busy) login(true); setTimeout(loop, 3000*simRate()); }
+  document.getElementById('actLogin').onclick=()=>login(true);
+  document.getElementById('actWrong').onclick=()=>login(false);
+  running=true; loop();
+  return {login};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Authentication</b> answers one question: <b>who are you?</b> It's the door check — proving your identity before you're let in.", dur:4600},
+  {cap:"You hand over your <b>ID</b> — your username and password — and the doorman takes it to verify.", dur:4400, on(){SIM.login(true);}},
+  {cap:"He <b>checks it against the register.</b> Cleverly, the club doesn't keep your actual password on file — only a scrambled fingerprint of it (a hash), so a stolen ledger reveals nothing.", dur:4800},
+  {cap:"Your ID matches, so he gives you a <b>stamp on the hand</b> — your session token. ✓", dur:4600},
+  {cap:"Now that stamp lets you <b>move freely inside</b> — you flash it, not your full ID, at each room. You prove yourself once, not on every step.", dur:4600, on(){SIM.login(true);}},
+  {cap:"Now try a <b>fake ID.</b>", dur:3400, on(){SIM.login(false);}},
+  {cap:"The doorman rejects it — <span class='hl-bad'>no stamp, no entry.</span> Try too many times and you're held aside for extra scrutiny.", dur:4600},
+  {cap:"Tighter clubs add a <b>second check</b> — a code, an app, a fingerprint — so a stolen ID alone won't get someone in.", dur:4600, on(){SIM.login(true);}},
+  {cap:"Your turn 👉 <b>🪪 Show valid ID</b> to get stamped, and try a <b>🚫 fake ID</b> to be turned away.", dur:5200},
+  {cap:"Authentication = proving who you are at the door, then carrying a stamp to stay 'in.' Next comes authorization: which rooms you may enter.", dur:4800}
+]});
+
+</script>
+</body></html>
