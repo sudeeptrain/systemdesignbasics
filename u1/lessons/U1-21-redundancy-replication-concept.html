@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redundancy &amp; Replication · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.copybadge{position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); font-family:var(--fmono); font-size:9px; color:var(--good)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Redundancy &amp; Replication</h1>
+  <p class="subtitle">Replication keeps multiple copies of your data on different machines. Lose one and the data survives. More copies = higher durability — at the cost of more storage and sync work.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Copies of data</div><div class="stat-v accent" id="statCopies">—</div></div>
+  <div class="stat"><div class="stat-k">Durability</div><div class="stat-v good" id="statDur">Safe</div></div>
+  <div class="stat"><div class="stat-k">Writes</div><div class="stat-v" id="statWrites">0</div></div>
+</div>
+<div class="wireline" style="left:14%;width:22%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">✍️</div><div class="lbl"><span class="k">Writer</span></div></div>
+<div class="node abs" data-show="1" style="left:38%;top:55%"><div class="box prim">🗄️</div><div class="lbl"><span class="k">Primary</span></div></div>
+<div id="reps"></div>
+<div class="nlbl" style="left:74%;top:11%">Replicas</div>
+<div class="acts">
+  <button class="act ok" id="actAddReplica">➕ Add replica</button>
+  <button class="act bad" id="actKillCopy">💥 Kill a copy</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const P={x:38,y:55};
+  let reps=[], writes=0, running=false;
+  const wrap=document.getElementById('reps');
+  const elC=document.getElementById('statCopies'), elD=document.getElementById('statDur'), elW=document.getElementById('statWrites');
+  function ys(n){const a=[],top=24,bot=86;for(let i=0;i<n;i++)a.push(n===1?55:top+(bot-top)*i/(n-1));return a;}
+  function aliveReps(){ return reps.filter(r=>r.alive); }
+  function copies(){ return 1 + aliveReps().length; }
+  function fmt(){ const c=copies(); elC.textContent=c; elW.textContent=writes;
+    const d=c>=3?'Safe':c===2?'OK':'At risk'; elD.textContent=d; elD.className='stat-v '+(c>=3?'good':c===2?'warn':'bad'); }
+  function render(){ wrap.innerHTML=''; const y=ys(reps.length); reps.forEach((r,i)=>{ r.y=y[i]; const el=document.createElement('div'); el.className='wbox'+(r.alive?'':' crash'); el.textContent='🗄️'; el.style.left='74%'; el.style.top=y[i]+'%'; wrap.appendChild(el); r.el=el; }); fmt(); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='55%'; scene.appendChild(d);
+    const leg=480*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=P.x+'%'; });
+    setTimeout(()=>{ d.remove(); aliveReps().forEach(r=>{ const e=document.createElement('div'); e.className='dot'; e.style.left=P.x+'%'; e.style.top=P.y+'%'; scene.appendChild(e);
+      requestAnimationFrame(()=>{ e.style.transition='left '+leg+'ms, top '+leg+'ms'; e.style.left='74%'; e.style.top=r.y+'%'; });
+      setTimeout(()=>{ e.classList.add('done'); if(r.el){r.el.classList.add('ping'); setTimeout(()=>r.el.classList.remove('ping'),300);} setTimeout(()=>e.remove(),300); }, leg); }); }, leg);
+  }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 2200*simRate()); }
+  function addReplica(){ if(reps.length<5){ reps.push({alive:true}); render(); } }
+  function killCopy(){ const a=aliveReps(); if(!a.length) return; const r=a[Math.floor(Math.random()*a.length)]; r.alive=false; r.el.classList.add('crash'); fmt(); setTimeout(()=>{ r.alive=true; if(r.el)r.el.classList.remove('crash'); fmt(); }, 3200); }
+  document.getElementById('actAddReplica').onclick=addReplica;
+  document.getElementById('actKillCopy').onclick=killCopy;
+  reps=[{alive:true},{alive:true}]; render(); running=true; loop();
+  return {addReplica,killCopy,write};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Replication</b> keeps copies of your data on separate machines. Here a write lands on the <b>primary</b>…", dur:4400, on(){SIM.write();}},
+  {cap:"…and is <b>copied out</b> to the replicas, so the same data now lives in several places at once.", dur:4200},
+  {cap:"Count the <b>copies</b>: with a primary plus two replicas, that's 3 copies — comfortably <span class='hl-good'>durable.</span>", dur:4400},
+  {cap:"Why bother? Because disks die. Watch what happens when one copy is <span class='hl-bad'>destroyed.</span>", dur:4000, on(){SIM.killCopy();}},
+  {cap:"No data lost — the other copies still have everything. The system just rebuilds the missing replica.", dur:4400},
+  {cap:"<b>Replication factor</b> is the dial: more copies survive more simultaneous failures, but cost more storage and sync.", dur:4600, on(){SIM.addReplica();}},
+  {cap:"Three copies is the classic default — it survives losing any one machine while staying affordable.", dur:4200},
+  {cap:"Replication also speeds up <b>reads</b>: clients can read from the nearest copy instead of crowding the primary.", dur:4400},
+  {cap:"Your turn 👉 <b>➕ Add replica</b> to raise durability, <b>💥 Kill a copy</b> to prove the data survives.", dur:5200, on(){SIM.addReplica();}},
+  {cap:"Redundancy is the foundation under availability and durability: never trust a single copy of anything important.", dur:4600}
+]});
+
+</script>
+</body></html>

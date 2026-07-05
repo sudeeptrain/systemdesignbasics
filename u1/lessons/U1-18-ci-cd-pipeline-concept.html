@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CI/CD Pipeline · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stagewrap{position:absolute; inset:0}
+.arrow{position:absolute; top:55%; height:3px; background:var(--line2); transform:translateY(-50%); z-index:1; border-radius:3px}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">CI/CD Pipeline</h1>
+  <p class="subtitle">CI/CD automates the path from code to production: build, test, deploy — automatically. A failing test stops a bad change before it ever reaches users.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Commits</div><div class="stat-v accent" id="statCommits">0</div></div>
+  <div class="stat"><div class="stat-k">Deployed</div><div class="stat-v good" id="statDeploys">0</div></div>
+  <div class="stat"><div class="stat-k">Blocked</div><div class="stat-v bad" id="statBlocked">0</div></div>
+</div>
+<div class="arrow" style="left:21%;width:13%"></div>
+<div class="arrow" style="left:44%;width:13%"></div>
+<div class="arrow" style="left:67%;width:13%"></div>
+<div class="node abs" data-show="1" style="left:15%;top:55%"><div class="box st-commit">🧑‍💻</div><div class="lbl"><span class="k">Commit</span></div></div>
+<div class="node abs" data-show="1" style="left:38%;top:55%"><div class="box st-build">🛠️</div><div class="lbl"><span class="k">Build</span></div></div>
+<div class="node abs" data-show="1" style="left:61%;top:55%"><div class="box st-test">🧪</div><div class="lbl"><span class="k">Test</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:55%"><div class="box st-deploy">🚀</div><div class="lbl"><span class="k">Deploy</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actPush">📨 Push commit</button>
+  <button class="act bad" id="actBreak">🐞 Push broken commit</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const X={commit:15,build:38,test:61,deploy:86}, Y=55;
+  const boxes={commit:scene.querySelector('.st-commit'),build:scene.querySelector('.st-build'),test:scene.querySelector('.st-test'),deploy:scene.querySelector('.st-deploy')};
+  let commits=0, deploys=0, blocked=0, running=false;
+  const elC=document.getElementById('statCommits'), elD=document.getElementById('statDeploys'), elB=document.getElementById('statBlocked');
+  function lite(k){ const b=boxes[k]; if(b){ b.classList.add('active'); setTimeout(()=>b.classList.remove('active'),700*simRate()); } }
+  function push(forceFail){
+    if(document.hidden) return;
+    commits++; elC.textContent=commits;
+    const fail = forceFail!=null ? forceFail : Math.random()<0.22;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=X.commit+'%'; d.style.top=Y+'%'; scene.appendChild(d);
+    const leg=560*simRate();
+    function hop(x,k,then){ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=x+'%'; lite(k); setTimeout(then,leg); }
+    lite('commit');
+    setTimeout(()=>hop(X.build,'build',()=>hop(X.test,'test',()=>{
+      if(fail){ d.classList.add('fail'); const t=boxes.test; if(t){t.classList.add('crash'); setTimeout(()=>t.classList.remove('crash'),900);} blocked++; elB.textContent=blocked; setTimeout(()=>d.remove(),750); }
+      else hop(X.deploy,'deploy',()=>{ d.classList.add('done'); deploys++; elD.textContent=deploys; setTimeout(()=>d.remove(),550); });
+    })), leg*0.2);
+  }
+  function loop(){ if(!running)return; push(false); setTimeout(loop, 3000*simRate()); }
+  document.getElementById('actPush').onclick=()=>push(false);
+  document.getElementById('actBreak').onclick=()=>push(true);
+  running=true; loop();
+  return {push};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>CI/CD</b> turns the messy path from code to production into an automated assembly line.", dur:4000},
+  {cap:"A developer <b>commits</b> code. That single push kicks off the whole pipeline automatically.", dur:4000, on(){SIM.push(false);}},
+  {cap:"<b>Build:</b> the system compiles the app and packages it — no human hands needed.", dur:4000},
+  {cap:"<b>Test:</b> automated tests run. This is the gate that decides whether the change is safe.", dur:4200},
+  {cap:"Tests pass → the change sails through to <b>Deploy</b> and reaches users in minutes. <span class='hl-good'>Green all the way.</span>", dur:4400, on(){SIM.push(false);}},
+  {cap:"Now push a <span class='hl-bad'>broken commit</span>. Watch it get stopped at the test stage.", dur:4000, on(){SIM.push(true);}},
+  {cap:"<span class='hl-bad'>Blocked.</span> The bad build never deploys — the pipeline caught it before any user did.", dur:4400},
+  {cap:"That's the whole point: <b>fast, repeatable releases</b> with an automatic safety net.", dur:4200},
+  {cap:"Your turn 👉 <b>📨 Push commit</b> for a clean release, or <b>🐞 Push broken commit</b> to watch the gate block it.", dur:5400, on(){SIM.push(true);}},
+  {cap:"Ship small, ship often, and let the pipeline — not your users — find the bugs.", dur:4400}
+]});
+
+</script>
+</body></html>

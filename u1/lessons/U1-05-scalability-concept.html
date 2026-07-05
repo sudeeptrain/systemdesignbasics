@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scalability · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.donezone{position:absolute; left:92%; top:55%; transform:translate(-50%,-50%); font-size:34px; z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Scalability</h1>
+  <p class="subtitle">Scalability is staying fast as load grows — by adding resources, not rewriting. Watch the load climb, latency creep up, then drop again each time you add a server.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Load (req/s)</div><div class="stat-v accent" id="statQps">40</div></div>
+  <div class="stat"><div class="stat-k">p99 latency</div><div class="stat-v good" id="statP99">— ms</div><div class="stat-sub">slowest 1% of requests</div></div>
+  <div class="stat"><div class="stat-k">Servers</div><div class="stat-v" id="statSrv">1</div></div>
+</div>
+<div class="wireline" style="left:14%;width:21%;top:55%"></div>
+<div class="wireline" style="left:39%;width:24%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs" data-show="1" style="left:37%;top:55%"><div class="box">⚖️</div><div class="lbl"><span class="k">Load Balancer</span></div></div>
+<div id="servers"></div>
+<div class="nlbl" style="left:66%;top:12%">Servers</div>
+<div class="donezone">✅</div>
+<div class="acts">
+  <button class="act" id="actAddLoad">📈 Add load</button>
+  <button class="act ok" id="actAddSrv">➕ Add server</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const U={x:12,y:55}, LB={x:37,y:55}, OUT={x:92,y:55};
+  let servers=[], qps=40, running=false, rr=0;
+  const wrap=document.getElementById('servers');
+  const elQ=document.getElementById('statQps'), elP=document.getElementById('statP99'), elS=document.getElementById('statSrv');
+  function ys(n){const a=[],top=26,bot=84;for(let i=0;i<n;i++)a.push(n===1?55:top+(bot-top)*i/(n-1));return a;}
+  function p99(){ return Math.round(18 + Math.max(0,(qps/servers.length - 38))*1.7); }
+  function fmt(){ elQ.textContent=qps; elS.textContent=servers.length; const p=p99(); elP.textContent=p+' ms';
+    elP.className='stat-v '+(p<60?'good':p<140?'warn':'bad'); const hot=p>=140; servers.forEach(s=>{ if(s.el)s.el.classList.toggle('busy',hot); }); }
+  function render(){ wrap.innerHTML=''; const y=ys(servers.length); servers.forEach((s,i)=>{ s.y=y[i]; const el=document.createElement('div'); el.className='wbox'; el.textContent='🖥️'; el.style.left='66%'; el.style.top=y[i]+'%'; wrap.appendChild(el); s.el=el; }); fmt(); }
+  function spawn(){ if(document.hidden||!servers.length) return;
+    const s=servers[rr++%servers.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left=U.x+'%'; d.style.top=U.y+'%'; scene.appendChild(d);
+    const leg=520*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1), top '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=LB.x+'%'; d.style.top=LB.y+'%'; });
+    setTimeout(()=>{ d.style.left='66%'; d.style.top=s.y+'%';
+      setTimeout(()=>{ d.classList.add('done'); d.style.left=OUT.x+'%'; d.style.top='55%'; setTimeout(()=>d.remove(),leg); }, leg); }, leg);
+  }
+  function loop(){ if(running){ spawn(); const interval=Math.max(170, 1400 - qps*8)*simRate(); setTimeout(loop, interval); } }
+  function ramp(){ if(qps<150){ qps+=12; fmt(); } }
+  function addServer(){ if(servers.length<5){ servers.push({}); render(); } }
+  function addLoad(){ qps=Math.min(240, qps+30); fmt(); }
+  function start(){ if(!running){running=true; loop();} }
+  document.getElementById('actAddSrv').onclick=addServer;
+  document.getElementById('actAddLoad').onclick=addLoad;
+  servers=[{}]; render(); start(); setInterval(ramp,3000);
+  return {addServer,addLoad};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Scalability</b> is the ability to handle more load by adding resources — without redesigning the system.", dur:4200},
+  {cap:"Traffic flows from users through the <b>load balancer</b> to a single server. Light load, snappy <span class='hl-good'>p99 latency</span>.", dur:4200},
+  {cap:"As the world discovers your app, the <b>load (req/s) keeps rising</b> — watch the meter climb.", dur:4200},
+  {cap:"One server can't keep up. Requests pile up and <span class='hl-warn'>p99 latency creeps upward.</span>", dur:4400},
+  {cap:"<b>Scale out:</b> add a server. The balancer spreads the load and latency drops back down.", dur:4400, on(){SIM.addServer();}},
+  {cap:"Load climbs again? Add another. Capacity grows roughly <b>linearly</b> with servers.", dur:4400, on(){SIM.addServer();}},
+  {cap:"This is the whole game: meet rising demand by <b>adding resources</b>, while latency stays flat for users.", dur:4400},
+  {cap:"A non-scalable system would force a rewrite here. A scalable one just adds a box.", dur:4200},
+  {cap:"Your turn 👉 <b>📈 Add load</b> to stress it, then <b>➕ Add server</b> to rescue p99.", dur:5200, on(){SIM.addLoad();SIM.addServer();}},
+  {cap:"<span class='hl-good'>Scalable =</span> growth is a config change (more machines), not an engineering crisis.", dur:4400}
+]});
+
+</script>
+</body></html>

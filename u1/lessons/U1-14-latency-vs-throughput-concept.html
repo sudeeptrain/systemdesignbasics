@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latency vs Throughput · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stat.lat .stat-v{color:var(--warn)} .stat.thr .stat-v{color:var(--good)} .stat.lane .stat-v{color:var(--accent-d)}
+.pipe{position:absolute; left:13.5%; top:30%; height:46%; border-radius:16px;
+  background:linear-gradient(180deg,#eef5fd,#e3edf8); border:1.5px solid var(--line2);
+  box-shadow:inset 0 2px 12px rgba(40,70,120,.12); transition:right .5s ease, left .5s ease; overflow:hidden; z-index:1}
+.pipe .lane-div{position:absolute; left:0; right:0; height:1px; background:rgba(70,110,160,.18)}
+.gate{position:absolute; width:4px; top:28%; height:50%; border-radius:4px; z-index:3}
+.gate.in{left:12%; background:var(--accent); box-shadow:0 0 0 3px rgba(43,127,255,.15)}
+.gate.out{background:var(--good); box-shadow:0 0 0 3px rgba(18,163,104,.15); transition:left .5s ease}
+.gate-lbl{position:absolute; font-family:var(--fmono); font-size:11px; color:var(--faint); top:23%; transform:translateX(-50%); z-index:3; transition:left .5s ease; font-weight:500}
+.item{position:absolute; width:14px; height:14px; border-radius:4px; background:var(--accent);
+  box-shadow:0 0 0 3px rgba(43,127,255,.14); transform:translate(-50%,-50%); z-index:4; transition:left linear}
+.item.tag1{background:var(--pink); width:20px; height:20px; border:2px solid #fff; z-index:6; animation:tagpulse 1s ease-in-out infinite}
+@keyframes tagpulse{0%,100%{box-shadow:0 0 0 4px rgba(204,47,134,.20)}50%{box-shadow:0 0 0 10px rgba(204,47,134,.30)}}
+.item.out{background:var(--good); box-shadow:0 0 0 3px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Latency vs Throughput</h1>
+  <p class="subtitle">Two numbers everyone mixes up. Latency is how long one request takes end-to-end; throughput is how many finish per second. Watch them move independently — and push the buttons yourself.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat lat"><div class="stat-k">Latency (1 request)</div><div class="stat-v" id="statLat">— ms</div><div class="stat-sub">time to cross the pipe</div></div>
+  <div class="stat thr"><div class="stat-k">Throughput</div><div class="stat-v" id="statThr">0 req/s</div><div class="stat-sub">finishing per second</div></div>
+  <div class="stat lane"><div class="stat-k">Lanes (workers)</div><div class="stat-v" id="statLane">1</div><div class="stat-sub">parallel capacity</div></div>
+</div>
+<div class="gate-lbl" id="lblIn" style="left:13.5%">enter</div>
+<div class="pipe" id="pipe"></div>
+<div class="gate in"></div>
+<div class="gate out" id="gateOut" style="left:88%"></div>
+<div class="gate-lbl" id="lblOut" style="left:88%">done</div>
+<div class="acts">
+  <button class="act" id="actAdd">➕ Add lane</button>
+  <button class="act" id="actRemove">➖ Remove lane</button>
+  <button class="act" id="actPath">🚀 Shorten path</button>
+</div>
+<div class="legend">
+  <div><span class="sw" style="background:var(--accent)"></span>request in flight</div>
+  <div><span class="sw" style="background:var(--pink)"></span><b>tracked</b> request = latency</div>
+  <div><span class="sw" style="background:var(--good)"></span>finished → throughput</div>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene'), pipe=document.getElementById('pipe');
+  const gateOut=document.getElementById('gateOut'), lblOut=document.getElementById('lblOut');
+  const START_X=13.5, MS_PER_PCT=22, GAP=820;
+  let exitX=88, lanes=1, exits=[], gen=0;
+  const elLat=document.getElementById('statLat'), elThr=document.getElementById('statThr'), elLane=document.getElementById('statLane');
+  function travelMs(){ return Math.round((exitX-START_X)*MS_PER_PCT); }
+  function laneYs(){const ys=[],top=34,bot=76;for(let i=0;i<lanes;i++){ys.push(lanes===1?55:top+(bot-top)*i/(lanes-1));}return ys;}
+  function renderPipe(){
+    pipe.style.left=START_X+'%'; pipe.style.right=(100-exitX-1)+'%';
+    gateOut.style.left=exitX+'%'; lblOut.style.left=exitX+'%';
+    [...pipe.querySelectorAll('.lane-div')].forEach(d=>d.remove());
+    const ys=laneYs();
+    if(lanes>1) ys.forEach((y,i)=>{ if(i===0)return; const ln=document.createElement('div'); ln.className='lane-div'; ln.style.top=((y-34)/(76-34)*100)+'%'; pipe.appendChild(ln); });
+    elLane.textContent=lanes; elLat.textContent=travelMs()+' ms';
+  }
+  function spawn(y,tracked){
+    if(document.hidden) return;
+    const it=document.createElement('div'); it.className='item'+(tracked?' tag1':'');
+    it.style.left=START_X+'%'; it.style.top=y+'%'; scene.appendChild(it);
+    const tv=travelMs()*simRate();
+    requestAnimationFrame(()=>{ it.style.transition='left '+tv+'ms linear'; it.style.left=exitX+'%'; });
+    setTimeout(()=>{
+      exits.push(performance.now());
+      if(!tracked) it.classList.add('out');
+      const outMs=560*simRate();
+      requestAnimationFrame(()=>{ it.style.transition='left '+outMs+'ms ease-out, opacity '+(outMs*0.7)+'ms ease-out'; it.style.left='97%'; });
+      setTimeout(()=>{ it.style.opacity='0'; }, outMs*0.45);
+      setTimeout(()=>it.remove(), outMs+150);
+    }, tv);
+  }
+  function laneLoop(y,g){ if(g!==gen) return; spawn(y,false); setTimeout(()=>laneLoop(y,g), GAP*simRate()); }
+  function rebuild(){ gen++; const g=gen; renderPipe(); const ys=laneYs(); ys.forEach((y,i)=> setTimeout(()=>laneLoop(y,g), i*(GAP*simRate()/lanes)) ); }
+  function throughputTick(){ const now=performance.now(); exits=exits.filter(t=>now-t<1000); elThr.textContent=exits.length+' req/s'; }
+  function addLane(){ if(lanes<5){ lanes++; rebuild(); } }
+  function removeLane(){ if(lanes>1){ lanes--; rebuild(); } }
+  function setShort(s){ exitX=s?56:88; rebuild(); }
+  function togglePath(){ setShort(exitX>70); }
+  function track(){ let n=0; const fire=()=>{ spawn(55,true); if(++n<4) setTimeout(fire, 1500*simRate()); }; fire(); }
+  function setLanes(n){ lanes=Math.max(1,Math.min(5,n)); rebuild(); }
+  document.getElementById('actAdd').onclick=addLane;
+  document.getElementById('actRemove').onclick=removeLane;
+  document.getElementById('actPath').onclick=togglePath;
+  window.onRateChange=()=>rebuild();
+  rebuild(); setInterval(throughputTick,250);
+  return {addLane,removeLane,setShort,track,setLanes};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Meet the two numbers people constantly confuse. Requests enter the <b>pipe</b> on the left and finish on the right.", dur:4000, on(){SIM.setLanes(1);SIM.setShort(false);}},
+  {cap:"Follow the <span style='color:var(--pink);font-weight:600'>pink</span> request. The time it takes to cross the whole pipe is <b>latency</b> — how long <em>one</em> request waits.", dur:4400, on(){SIM.track();}},
+  {cap:"Now count the green ones leaving every second. That's <b>throughput</b> — how <em>many</em> requests finish per second.", dur:4200},
+  {cap:"Need more throughput? Add a parallel <b>lane</b> (another worker). Watch req/s jump — but each request's trip is unchanged.", dur:4200, on(){SIM.addLane();}},
+  {cap:"Add another lane: throughput climbs again, yet <span class='hl-warn'>latency stays flat</span>. Width and length are different things.", dur:4400, on(){SIM.addLane();}},
+  {cap:"So they're <b>independent</b>: a wide pipe (high throughput) can still be long (high latency). One doesn't fix the other.", dur:4400, on(){SIM.addLane();}},
+  {cap:"Want lower <b>latency</b> instead? <span class='hl-good'>Shorten the path</span> — fewer hops, closer servers, a cache hit. The ms drops; req/s barely changes.", dur:4600, on(){SIM.setShort(true);}},
+  {cap:"The real-world levers: <b>batching &amp; more workers</b> raise throughput; <b>caching &amp; shorter paths</b> cut latency.", dur:4400},
+  {cap:"Your turn 👉 use <b>➕ / ➖ lanes</b> to move throughput, and <b>🚀 Shorten path</b> to move latency. Prove to yourself they don't track together.", dur:5600},
+  {cap:"Recap: <span class='hl-warn'>latency = one trip's time</span>; <span class='hl-good'>throughput = trips finished per second</span>. Always ask which one the requirement actually cares about.", dur:5000, on(){SIM.setShort(false);}}
+]});
+
+</script>
+</body></html>

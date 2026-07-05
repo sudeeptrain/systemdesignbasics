@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maintainability · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.mod.changed .box{border-color:var(--accent); box-shadow:0 0 0 5px rgba(43,127,255,.18)}
+.mod.hit .box{border-color:var(--bad); box-shadow:0 0 0 5px rgba(216,58,46,.18); animation:sd-shake .5s ease-in-out 1}
+.gw .box{border-color:var(--violet)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Maintainability</h1>
+  <p class="subtitle">Maintainability is how cheaply you can change a system later. In a tangled design one change ripples everywhere; in a modular design it stays put. Watch the blast radius.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Blast radius</div><div class="stat-v bad" id="statBlast">—</div><div class="stat-sub">modules hit by 1 change</div></div>
+  <div class="stat"><div class="stat-k">Design</div><div class="stat-v warn" id="statMode">Tangled</div></div>
+  <div class="stat"><div class="stat-k">Changes made</div><div class="stat-v accent" id="statChanges">0</div></div>
+</div>
+<div class="node abs mod m-0" data-show="1" style="left:30%;top:32%"><div class="box">🔐</div><div class="lbl"><span class="k">Auth</span></div></div>
+<div class="node abs mod m-1" data-show="1" style="left:70%;top:32%"><div class="box">🛒</div><div class="lbl"><span class="k">Cart</span></div></div>
+<div class="node abs mod m-2" data-show="1" style="left:30%;top:76%"><div class="box">💳</div><div class="lbl"><span class="k">Payments</span></div></div>
+<div class="node abs mod m-3" data-show="1" style="left:70%;top:76%"><div class="box">🔎</div><div class="lbl"><span class="k">Search</span></div></div>
+<div class="node abs gw" data-show="1" style="left:50%;top:54%"><div class="box sm">🚪</div><div class="lbl"><span class="k">Gateway</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actChange">✏️ Change a module</button>
+  <button class="act" id="actMode">🔀 Tangled / Modular</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const mods=[{x:30,y:32},{x:70,y:32},{x:30,y:76},{x:70,y:76}].map((p,i)=>({...p,el:scene.querySelector('.m-'+i)}));
+  let mode='tangled', changes=0, running=false;
+  const elBlast=document.getElementById('statBlast'), elMode=document.getElementById('statMode'), elCh=document.getElementById('statChanges');
+  function ripple(from,to){ const d=document.createElement('div'); d.className='dot fail'; d.style.left=from.x+'%'; d.style.top=from.y+'%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=to.x+'%'; d.style.top=to.y+'%'; });
+    setTimeout(()=>{ to.el.classList.add('hit'); setTimeout(()=>to.el.classList.remove('hit'),700*simRate()); d.remove(); }, leg); }
+  function change(){
+    if(document.hidden) return;
+    changes++; elCh.textContent=changes;
+    const i=Math.floor(Math.random()*4), m=mods[i];
+    m.el.classList.add('changed'); setTimeout(()=>m.el.classList.remove('changed'),900*simRate());
+    if(mode==='tangled'){ mods.forEach((o,j)=>{ if(j!==i) ripple(m,o); }); elBlast.textContent='4 / 4'; elBlast.className='stat-v bad'; }
+    else { elBlast.textContent='1 / 4'; elBlast.className='stat-v good'; }
+  }
+  function loop(){ if(!running)return; change(); setTimeout(loop, 3200*simRate()); }
+  function setMode(m){ mode=m; elMode.textContent=(m==='tangled'?'Tangled':'Modular'); elMode.className='stat-v '+(m==='tangled'?'warn':'good'); }
+  function toggleMode(){ setMode(mode==='tangled'?'modular':'tangled'); }
+  document.getElementById('actChange').onclick=change;
+  document.getElementById('actMode').onclick=toggleMode;
+  setMode('tangled'); running=true; loop();
+  return {change,toggleMode,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Maintainability</b> asks: when you change this system in a year, how much will break?", dur:4200},
+  {cap:"Here are four modules — Auth, Cart, Payments, Search — in a <b>tangled</b> design where everything depends on everything.", dur:4400},
+  {cap:"Change one module… and the change <span class='hl-bad'>ripples out</span> to every other module. Blast radius: 4 of 4.", dur:4400, on(){SIM.change();}},
+  {cap:"That's expensive and risky: one small edit forces you to re-test the whole system.", dur:4200},
+  {cap:"Now switch to a <b>modular</b> design — each module talks only through a clean interface (the gateway).", dur:4400, on(){SIM.setMode('modular');}},
+  {cap:"Change a module now and the change <span class='hl-good'>stays put</span>. Blast radius: 1 of 4.", dur:4400, on(){SIM.change();}},
+  {cap:"Same feature, far cheaper change. You touch one box, test one box, ship with confidence.", dur:4200},
+  {cap:"Clear boundaries, small focused modules, and clean interfaces are what make a system maintainable.", dur:4200},
+  {cap:"Your turn 👉 flip <b>🔀 Tangled / Modular</b> and hit <b>✏️ Change a module</b> to compare the blast radius.", dur:5400, on(){SIM.setMode('tangled');}},
+  {cap:"Maintainability is invisible on day one and priceless on day 500. Design for the change you can't yet see.", dur:4600, on(){SIM.setMode('modular');}}
+]});
+
+</script>
+</body></html>

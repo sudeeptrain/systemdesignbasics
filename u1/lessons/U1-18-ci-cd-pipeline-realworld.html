@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CI/CD — A Car Assembly Line · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stn{position:absolute; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:11px; color:var(--faint); text-align:center; z-index:2}
+.stn .ic{font-size:22px; display:block}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">CI/CD — A Car Assembly Line</h1>
+  <p class="subtitle">A modern car factory is one automated line: weld, inspect, paint, ship — with quality gates that pull a faulty car off before it reaches a customer. CI/CD does the same for code, automatically.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Cars shipped</div><div class="stat-v accent" id="statShipped">0</div></div>
+  <div class="stat"><div class="stat-k">Caught by QA</div><div class="stat-v" id="statCaught">0</div></div>
+  <div class="stat"><div class="stat-k">Line</div><div class="stat-v good" id="statLine">Automated</div></div>
+</div>
+<div class="wireline" style="left:12%;width:18%;top:50%"></div>
+<div class="wireline" style="left:34%;width:18%;top:50%"></div>
+<div class="wireline" style="left:56%;width:18%;top:50%"></div>
+<div class="stn" style="left:12%;top:36%"><span class="ic">📝</span>Commit</div>
+<div class="stn" style="left:34%;top:36%"><span class="ic">🔧</span>Build</div>
+<div class="stn" style="left:56%;top:36%"><span class="ic">🔍</span>Test (QA gate)</div>
+<div class="stn" style="left:84%;top:36%"><span class="ic">🚗</span>Deploy</div>
+<div class="acts">
+  <button class="act ok" id="actCommit">✅ Commit good code</button>
+  <button class="act bad" id="actBad">🐛 Commit buggy code</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const xs=[12,34,56,84], Y=50;
+  let shipped=0, caught=0, running=false;
+  const elS=document.getElementById('statShipped'), elC=document.getElementById('statCaught');
+  function run(bad){ if(document.hidden) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=xs[0]+'%'; d.style.top=Y+'%'; scene.appendChild(d);
+    const leg=560*simRate(); let i=0;
+    (function step(){
+      i++;
+      d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=xs[Math.min(i,3)]+'%';
+      // i=1 build, i=2 test, i=3 deploy
+      if(i===2 && bad){ setTimeout(()=>{ d.classList.add('fail'); caught++; elC.textContent=caught; elC.className='stat-v bad'; setTimeout(()=>d.remove(),360); }, leg*0.7); return; }
+      if(i>=3){ setTimeout(()=>{ d.classList.add('done'); shipped++; elS.textContent=shipped; setTimeout(()=>d.remove(),leg); }, leg); return; }
+      setTimeout(step, leg);
+    })();
+  }
+  function loop(){ if(!running)return; run(false); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actCommit').onclick=()=>run(false);
+  document.getElementById('actBad').onclick=()=>run(true);
+  running=true; loop();
+  return {run};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A car factory is one long <b>automated line</b>: every car flows commit → build → test → ship, hands-free.", dur:4600},
+  {cap:"In software this is <b>CI/CD</b>: every code change is automatically built, tested, and deployed the same way.", dur:4600, on(){SIM.run(false);}},
+  {cap:"A <b>good change</b> sails through every station and reaches customers in minutes — no manual steps.", dur:4400, on(){SIM.run(false);}},
+  {cap:"The magic is the <b>Test station</b> — an automated quality gate that every change must pass.", dur:4200},
+  {cap:"Now push a <span class='hl-bad'>buggy change.</span> Watch what the gate does.", dur:3800, on(){SIM.run(true);}},
+  {cap:"The Test station <span class='hl-bad'>catches it and pulls it off the line</span> — the bug never reaches a single customer.", dur:4600},
+  {cap:"That's the whole point of <b>CI</b> (Continuous Integration): test every change automatically, the moment it's made.", dur:4600},
+  {cap:"And <b>CD</b> (Continuous Delivery): once it passes, ship it automatically — small, frequent, low-risk releases.", dur:4400, on(){SIM.run(false);}},
+  {cap:"Your turn 👉 <b>✅ commit good code</b> to ship, <b>🐛 commit buggy code</b> to watch the gate stop it.", dur:5200},
+  {cap:"Automate the line and let the gates catch bugs. Fast to ship, hard to break — that's CI/CD.", dur:4400}
+]});
+
+</script>
+</body></html>

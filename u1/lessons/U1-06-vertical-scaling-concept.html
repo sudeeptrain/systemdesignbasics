@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vertical Scaling (Scale Up) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.vbar{position:absolute; top:26%; height:52%; width:34px; transform:translateX(-50%); border:1.5px solid var(--line2); border-radius:8px; background:#eef5fd; overflow:hidden; z-index:2}
+.vfill{position:absolute; left:0; right:0; bottom:0; height:0; background:linear-gradient(180deg,#7fb0ef,#2b7fff); transition:height .5s}
+.vfill.ram{background:linear-gradient(180deg,#9b8af0,#6a4fe0)}
+.donezone{position:absolute; left:94%; top:55%; transform:translate(-50%,-50%); font-size:30px; z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Vertical Scaling (Scale Up)</h1>
+  <p class="subtitle">Make one machine more powerful — bigger CPU, more RAM. Simple and code-free, but there's a hard ceiling and it's still a single box. Upgrade it and watch capacity jump.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Capacity</div><div class="stat-v good" id="statCap">— req/s</div></div>
+  <div class="stat"><div class="stat-k">Machine tier</div><div class="stat-v accent" id="statTier">Small</div></div>
+  <div class="stat"><div class="stat-k">Served</div><div class="stat-v" id="statServed">0</div></div>
+</div>
+<div class="wireline" style="left:14%;width:30%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs" id="srvNode" data-show="1" style="left:54%;top:55%"><div class="box" style="width:150px;height:118px;font-size:48px">🖥️</div><div class="lbl"><span class="k">One Server</span></div></div>
+<div class="vbar" style="left:74%"><div class="vfill" id="cpu"></div></div>
+<div class="nlbl" style="left:74%;top:82%">CPU</div>
+<div class="vbar" style="left:82%"><div class="vfill ram" id="ram"></div></div>
+<div class="nlbl" style="left:82%;top:82%">RAM</div>
+<div class="donezone">✅</div>
+<div class="acts">
+  <button class="act" id="actAddLoad">📈 Add load</button>
+  <button class="act ok" id="actUpgrade">⬆️ Upgrade machine</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const tiers=[{n:'Small',cap:60},{n:'Medium',cap:110},{n:'Large',cap:170},{n:'XL',cap:230},{n:'MAX',cap:300}];
+  let ti=0, load=50, served=0, running=false;
+  const elCap=document.getElementById('statCap'), elTier=document.getElementById('statTier'), elS=document.getElementById('statServed');
+  const cpu=document.getElementById('cpu'), ram=document.getElementById('ram'), srvBox=scene.querySelector('#srvNode .box');
+  const btnUp=document.getElementById('actUpgrade');
+  function fmt(){ const t=tiers[ti]; elCap.textContent=t.cap+' req/s'; elTier.textContent=t.n; elS.textContent=served;
+    const h=(ti+1)/tiers.length*100; cpu.style.height=h+'%'; ram.style.height=Math.max(0,h-7)+'%';
+    elCap.className='stat-v '+(load>t.cap?'bad':'good'); srvBox.classList.toggle('busy',load>t.cap);
+    if(ti>=tiers.length-1){ btnUp.textContent='⛔ Ceiling reached'; btnUp.disabled=true; } }
+  function spawn(){ if(document.hidden) return;
+    const over=load>tiers[ti].cap, leg=(over?880:520)*simRate();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='55%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left='54%'; });
+    setTimeout(()=>{ served++; elS.textContent=served; d.classList.add('done'); d.style.transition='left '+leg+'ms'; d.style.left='94%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function loop(){ if(running){ spawn(); const over=load>tiers[ti].cap; setTimeout(loop,(over?720:380)*simRate()); } }
+  function ramp(){ load=Math.min(320,load+18); fmt(); }
+  function upgrade(){ if(ti<tiers.length-1){ ti++; srvBox.classList.add('healthy'); setTimeout(()=>srvBox.classList.remove('healthy'),650); fmt(); } }
+  function addLoad(){ load=Math.min(360,load+40); fmt(); }
+  function start(){ if(!running){running=true; loop();} }
+  document.getElementById('actUpgrade').onclick=upgrade;
+  document.getElementById('actAddLoad').onclick=addLoad;
+  fmt(); start(); setInterval(ramp,3000);
+  return {upgrade,addLoad};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Vertical scaling</b> means making ONE machine more powerful — more CPU, more RAM — instead of adding machines.", dur:4200},
+  {cap:"Our server starts <b>Small</b>. Light traffic flows through and everything's served comfortably.", dur:4000},
+  {cap:"Load keeps rising. Soon it exceeds the little machine's <span class='hl-bad'>capacity</span> and requests slow down.", dur:4200},
+  {cap:"Instead of adding servers, we <b>upgrade this one</b> — swap in a bigger CPU and more RAM. Capacity jumps.", dur:4400, on(){SIM.upgrade();}},
+  {cap:"No code changes, no load balancer — just a beefier box. That simplicity is vertical scaling's big appeal.", dur:4200},
+  {cap:"Load climbs again? Upgrade again — Large, XL… each tier buys more headroom.", dur:4200, on(){SIM.upgrade();SIM.upgrade();}},
+  {cap:"But there's a catch: eventually you hit the <span class='hl-bad'>biggest machine that exists</span> — a hard ceiling.", dur:4400, on(){SIM.upgrade();SIM.upgrade();}},
+  {cap:"And it's still <b>one box</b>: if it dies, everything dies. No redundancy comes for free here.", dur:4200},
+  {cap:"Your turn 👉 <b>📈 Add load</b> to stress it, <b>⬆️ Upgrade</b> to scale up — until you meet the ceiling.", dur:5200, on(){SIM.addLoad();}},
+  {cap:"Scale <em>up</em> for simplicity and small jumps; scale <em>out</em> (next lesson) when you need to blow past the ceiling.", dur:4600}
+]});
+
+</script>
+</body></html>

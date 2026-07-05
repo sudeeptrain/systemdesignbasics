@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Availability — Hospital Power · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.hosp.ping{animation:sd-ping .5s ease-out}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Availability — Hospital Power</h1>
+  <p class="subtitle">A hospital can never go dark. The same idea as redundant servers: keep a backup ready, switch over the instant the mains fails, and patients never notice.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Power availability</div><div class="stat-v good" id="statUp">100.00%</div></div>
+  <div class="stat"><div class="stat-k">Units delivered</div><div class="stat-v" id="statServed">0</div></div>
+</div>
+<div class="wireline" id="wmains" style="left:16%;width:46%;top:30%"></div>
+<div class="wireline" id="wgen" style="left:16%;width:46%;top:80%"></div>
+<div class="node abs" data-show="1" style="left:14%;top:30%"><div class="box src-mains">🔌</div><div class="lbl"><span class="k">City Mains</span></div></div>
+<div class="node abs" data-show="1" style="left:14%;top:80%"><div class="box src-gen">🔋</div><div class="lbl"><span class="k">Generator</span><br><span class="lbl" style="font-size:10px">backup</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:55%"><div class="box hosp" style="width:120px;height:96px;font-size:42px">🏥</div><div class="lbl"><span class="k">Hospital</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actCut">⚡ Cut mains power</button>
+  <button class="act ok" id="actRestore">♻ Restore mains</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const SINK={x:74,y:55};
+  const sources=[{id:'mains',x:14,y:30},{id:'gen',x:14,y:80}].map(s=>({...s,el:scene.querySelector('.src-'+s.id),alive:true}));
+  const hosp=scene.querySelector('.hosp');
+  let served=0, fails=0, running=false;
+  const elUp=document.getElementById('statUp'), elS=document.getElementById('statServed');
+  function active(){ const m=sources[0]; if(m.alive) return m; const g=sources[1]; return g.alive?g:null; }
+  function fmt(){ const tot=served+fails, av=tot?served/tot:1; elUp.textContent=(av*100).toFixed(2)+'%'; elUp.className='stat-v '+(av>=0.999?'good':av>=0.99?'warn':'bad'); elS.textContent=served; }
+  function spawn(){
+    if(document.hidden) return;
+    const s=active();
+    const d=document.createElement('div'); d.className='dot';
+    const sx=s?s.x:14, sy=s?s.y:55; d.style.left=sx+'%'; d.style.top=sy+'%'; scene.appendChild(d);
+    const leg=820*simRate();
+    if(!s){ d.classList.add('fail'); fails++; fmt(); setTimeout(()=>d.remove(),700); return; }
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1), top '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=SINK.x+'%'; d.style.top=SINK.y+'%'; });
+    setTimeout(()=>{ served++; d.classList.add('done'); fmt(); hosp.classList.add('ping'); setTimeout(()=>hosp.classList.remove('ping'),350); setTimeout(()=>d.remove(),250); }, leg);
+  }
+  function loop(){ if(running){ spawn(); setTimeout(loop, 640*simRate()); } }
+  function cut(){ const m=sources[0]; m.alive=false; m.el.classList.add('crash'); document.getElementById('wmains').classList.add('dead'); }
+  function restore(){ const m=sources[0]; m.alive=true; m.el.classList.remove('crash'); document.getElementById('wmains').classList.remove('dead'); }
+  function start(){ if(!running){running=true;loop();} }
+  document.getElementById('actCut').onclick=cut;
+  document.getElementById('actRestore').onclick=restore;
+  fmt(); start();
+  return {cut,restore};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A hospital runs on <b>city mains power</b>. Energy flows steadily to the wards and monitors.", dur:4000},
+  {cap:"Every unit of power delivered keeps machines alive — availability sits at a perfect <span class='hl-good'>100%</span>.", dur:3800},
+  {cap:"But mains power isn't guaranteed. So the hospital keeps a <b>generator</b> on standby — its redundancy.", dur:4000},
+  {cap:"Disaster: a storm <span class='hl-bad'>cuts the mains.</span> The supply line goes dark.", dur:3800, on(){SIM.cut();}},
+  {cap:"A transfer switch detects the outage in milliseconds and the <b>generator takes over</b> automatically.", dur:4200},
+  {cap:"Power keeps flowing from the backup — patients and machines never notice. Availability stays high.", dur:4200},
+  {cap:"This is exactly redundant servers behind a load balancer: a standby ready to carry the load instantly.", dur:4400},
+  {cap:"Mains returns and the hospital switches back, generator on standby again for next time.", dur:4000, on(){SIM.restore();}},
+  {cap:"Your turn 👉 hit <b>⚡ Cut mains power</b> and watch the generator cover. <b>♻ Restore</b> to switch back.", dur:5200},
+  {cap:"<span class='hl-good'>High availability =</span> assume any single source fails, and design a backup so the service never stops.", dur:4400}
+]});
+
+</script>
+</body></html>

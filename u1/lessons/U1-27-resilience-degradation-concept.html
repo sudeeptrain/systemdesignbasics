@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resilience &amp; Graceful Degradation · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.svc.dead .box{border-color:var(--bad); filter:grayscale(.5) brightness(.95)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Resilience &amp; Graceful Degradation</h1>
+  <p class="subtitle">A resilient system bends instead of breaking. When a non-essential service fails, it serves a reduced experience rather than crashing entirely — like an escalator becoming stairs.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Features up</div><div class="stat-v good" id="statFeatures">2 / 2</div></div>
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statStatus">Full service</div></div>
+</div>
+<div class="wireline" style="left:16%;width:22%;top:55%"></div>
+<div class="wireline" style="left:44%;width:24%;top:40%;transform:rotate(-13deg);transform-origin:left center"></div>
+<div class="wireline" style="left:44%;width:24%;top:70%;transform:rotate(13deg);transform-origin:left center"></div>
+<div class="node abs" data-show="1" style="left:14%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">User</span></div></div>
+<div class="node abs" data-show="1" style="left:42%;top:55%"><div class="box app">🖥️</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="node abs svc core" data-show="1" style="left:72%;top:32%"><div class="box">🗄️</div><div class="lbl"><span class="k">Core (essential)</span></div></div>
+<div class="node abs svc recs" data-show="1" style="left:72%;top:80%"><div class="box">🤖</div><div class="lbl"><span class="k">Recommendations</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actKillRec">🔌 Kill recommendations</button>
+  <button class="act bad" id="actKillCore">💥 Kill core</button>
+  <button class="act ok" id="actHeal">♻ Heal all</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const U={x:14,y:55}, APP={x:42,y:55}, CORE={x:72,y:32}, REC={x:72,y:80};
+  let coreAlive=true, recAlive=true, served=0, running=false;
+  const elF=document.getElementById('statFeatures'), elS=document.getElementById('statServed'), elStat=document.getElementById('statStatus');
+  const coreEl=scene.querySelector('.core'), recEl=scene.querySelector('.recs'), appEl=scene.querySelector('.app');
+  function fmt(){ const f=(coreAlive?1:0)+(recAlive?1:0); elF.textContent=f+' / 2'; elF.className='stat-v '+(f===2?'good':f===1?'warn':'bad');
+    let st = !coreAlive?'OUTAGE':(recAlive?'Full service':'Degraded'); elStat.textContent=st; elStat.className='stat-v '+(!coreAlive?'bad':recAlive?'good':'warn');
+    if(appEl) appEl.classList.toggle('crash',!coreAlive); }
+  function dot(cls,fx,fy,tx,ty,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms cubic-bezier(.45,0,.25,1), top '+ms+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(then)then(d); setTimeout(()=>d.remove(),300); }, ms); }
+  function request(){
+    if(document.hidden) return;
+    const leg=480*simRate();
+    dot('', U.x,U.y, APP.x,APP.y, leg, ()=>{
+      if(recAlive) dot('', APP.x,APP.y, REC.x,REC.y, leg, ()=>{ recEl.classList.add('ping'); setTimeout(()=>recEl.classList.remove('ping'),300); });
+      if(!coreAlive){ dot('fail', APP.x,APP.y, 56,55, leg); return; }
+      dot('', APP.x,APP.y, CORE.x,CORE.y, leg, ()=>{ coreEl.classList.add('ping'); setTimeout(()=>coreEl.classList.remove('ping'),300);
+        dot('done', CORE.x,CORE.y, 92,55, leg, ()=>{ served++; elS.textContent=served; }); });
+    });
+  }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 900*simRate()); }
+  function killRec(){ recAlive=false; recEl.classList.add('dead'); fmt(); }
+  function killCore(){ coreAlive=false; coreEl.classList.add('dead'); fmt(); dot('fail', APP.x,APP.y, 56,55, 480*simRate()); }
+  function heal(){ coreAlive=recAlive=true; coreEl.classList.remove('dead'); recEl.classList.remove('dead'); fmt(); }
+  document.getElementById('actKillRec').onclick=killRec;
+  document.getElementById('actKillCore').onclick=killCore;
+  document.getElementById('actHeal').onclick=heal;
+  fmt(); running=true; loop();
+  return {killRec,killCore,heal};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>resilient</b> system bends instead of breaking. Here the app uses two services: an essential <b>Core</b> and an optional <b>Recommendations</b> engine.", dur:4600},
+  {cap:"Every request hits the app, which calls both — full service, <span class='hl-good'>2 of 2 features</span> up.", dur:4200},
+  {cap:"Now the recommendations service <span class='hl-bad'>dies.</span> A fragile app would crash the whole page.", dur:4000, on(){SIM.killRec();}},
+  {cap:"But a resilient app <b>degrades gracefully</b>: it just hides recommendations and keeps serving the core experience.", dur:4600},
+  {cap:"Requests still succeed — users get a slightly reduced page instead of an error. That's graceful degradation.", dur:4400},
+  {cap:"Heal it, and the optional feature pops back. The app never went down.", dur:4000, on(){SIM.heal();}},
+  {cap:"But kill the <span class='hl-bad'>core</span> — the essential dependency — and now there's nothing to degrade <em>to</em>. Real outage.", dur:4600, on(){SIM.killCore();}},
+  {cap:"The lesson: separate <b>essential</b> from <b>optional</b>, and let optional failures shrink the experience, not break it.", dur:4600, on(){SIM.heal();}},
+  {cap:"Your turn 👉 <b>🔌 Kill recommendations</b> (degrade) vs <b>💥 Kill core</b> (outage), then <b>♻ Heal</b>.", dur:5400},
+  {cap:"Design every dependency to fail softly. The best systems get <em>quieter</em> under stress — they don't go silent.", dur:4800}
+]});
+
+</script>
+</body></html>

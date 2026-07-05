@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disaster Recovery — Phone Photo Backup · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.newp.active .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Disaster Recovery — Phone Photo Backup</h1>
+  <p class="subtitle">Your phone backs up photos to the cloud now and then. Drop it in a lake and you lose only the snaps taken since the last backup — and you're back up as soon as a new phone restores them. That's RPO and RTO.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Photos since backup</div><div class="stat-v warn" id="statSince">0</div><div class="stat-sub">= at risk (RPO)</div></div>
+  <div class="stat"><div class="stat-k">Last lost (RPO)</div><div class="stat-v" id="statRPO">—</div></div>
+  <div class="stat"><div class="stat-k">Restore time (RTO)</div><div class="stat-v" id="statRTO">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:26%;top:36%"><div class="box phone">📱</div><div class="lbl"><span class="k">Your phone</span></div></div>
+<div class="node abs" data-show="1" style="left:26%;top:82%"><div class="box">☁️</div><div class="lbl"><span class="k">Cloud backup</span></div></div>
+<div class="node abs newp" data-show="1" style="left:78%;top:60%"><div class="box">📱</div><div class="lbl"><span class="k">New phone</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actBackup">☁️ Back up now</button>
+  <button class="act bad" id="actLose">💧 Drop phone in lake</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const PH={x:26,y:36}, CL={x:26,y:82}, NP={x:78,y:60};
+  let since=0, down=false, running=true;
+  const elSince=document.getElementById('statSince'), elRPO=document.getElementById('statRPO'), elRTO=document.getElementById('statRTO');
+  const phoneEl=scene.querySelector('.phone'), newEl=scene.querySelector('.newp');
+  function fmt(){ elSince.textContent=since; elSince.className='stat-v '+(since>10?'bad':since>4?'warn':'good'); }
+  function dot(cls,fx,fy,tx,ty,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms cubic-bezier(.45,0,.25,1), top '+ms+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),300); }, ms); }
+  function snap(){ if(document.hidden||down) return; since++; fmt(); if(phoneEl){phoneEl.classList.add('ping'); setTimeout(()=>phoneEl.classList.remove('ping'),250);} }
+  function backup(){ if(down) return; dot('', PH.x,PH.y, CL.x,CL.y, 520*simRate(), ()=>{ since=0; fmt(); }); }
+  function lose(){ if(down) return; down=true; const lost=since; elRPO.textContent=lost+' photos'; elRPO.className='stat-v '+(lost>4?'bad':'warn');
+    if(phoneEl)phoneEl.classList.add('crash');
+    const rto=1600*simRate(); elRTO.textContent='restoring…';
+    dot('', CL.x,CL.y, NP.x,NP.y, rto, ()=>{ newEl.classList.add('active'); newEl.querySelector('.box').classList.add('done'); });
+    setTimeout(()=>{ elRTO.textContent=(rto/1000).toFixed(1)+'s'; elRTO.className='stat-v good'; }, rto+60);
+  }
+  function recover(){ down=false; since=0; if(phoneEl)phoneEl.classList.remove('crash'); newEl.classList.remove('active'); fmt(); }
+  function loop(){ if(!running)return; snap(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actBackup').onclick=backup;
+  document.getElementById('actLose').onclick=()=>{ if(down) recover(); else lose(); };
+  fmt(); loop(); setInterval(()=>{ if(!down) backup(); }, 5000);
+  return {backup,lose,recover};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"All day your phone snaps photos. Each new photo that <em>isn't</em> backed up yet is data <span class='hl-warn'>at risk.</span>", dur:4400},
+  {cap:"Every so often the phone <b>backs up to the cloud</b>, copying your photos to safety and resetting the at-risk count.", dur:4600, on(){SIM.backup();}},
+  {cap:"Between backups, the at-risk pile grows again. The longer since a backup, the more you'd lose.", dur:4200},
+  {cap:"Then disaster: you <span class='hl-bad'>drop your phone in a lake.</span> Gone.", dur:3800, on(){SIM.lose();}},
+  {cap:"Your <b>RPO</b> — Recovery Point Objective — is exactly the photos taken <em>since the last backup.</em> Those are lost.", dur:4800},
+  {cap:"Everything older was safe in the cloud and restores onto a <b>new phone</b>. The restore time is your <b>RTO.</b>", dur:4800},
+  {cap:"Want a smaller RPO? Back up more often. Want a smaller RTO? Faster restore (or a spare phone ready).", dur:4600, on(){SIM.recover();}},
+  {cap:"Both cost something — frequent backups, faster hardware — so you pick targets that match how much pain you can take.", dur:4600},
+  {cap:"Your turn 👉 <b>☁️ Back up now</b> to shrink what's at risk, then <b>💧 Drop the phone</b> to see RPO &amp; RTO.", dur:5200},
+  {cap:"Whole-system DR is the same idea at scale: regular backups + a tested restore = a survivable disaster.", dur:4600}
+]});
+
+</script>
+</body></html>

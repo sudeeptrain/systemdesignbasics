@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redundancy — The Spare Tyre · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.car{position:absolute; left:50%; top:30%; transform:translateX(-50%); font-size:50px; z-index:2}
+.tyre{position:absolute; transform:translate(-50%,-50%); width:40px; height:40px; border-radius:50%; border:3px solid var(--good); background:#e7f7ef; display:flex; align-items:center; justify-content:center; font-size:17px; transition:.3s; z-index:3}
+.tyre.flat{border-color:var(--bad); background:#fdeceb; opacity:.5}
+.tyre.spare{border-style:dashed; border-color:var(--accent); background:#eaf2fe}
+.road{position:absolute; left:6%; right:6%; top:58%; height:5px; background:repeating-linear-gradient(90deg,var(--line2) 0 18px,transparent 18px 34px); z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Redundancy — The Spare Tyre</h1>
+  <p class="subtitle">Cars carry a fifth wheel you hope never to use. When a tyre blows on the highway, the spare turns a catastrophe into a 15-minute delay. Redundancy is keeping a backup ready before you need it.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Distance driven</div><div class="stat-v accent" id="statKm">0 km</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statRun">Rolling</div></div>
+  <div class="stat"><div class="stat-k">Spares ready</div><div class="stat-v" id="statSp">1</div></div>
+</div>
+<div class="car">🚙</div>
+<div class="tyre t-0" id="t0" style="left:42%;top:44%">🛞</div>
+<div class="tyre t-1" id="t1" style="left:58%;top:44%">🛞</div>
+<div class="road"></div>
+<div class="acts">
+  <button class="act bad" id="actBlow">💥 Blow a tyre</button>
+  <button class="act ok" id="actAddSpare">➕ Pack a spare</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let main=[true,true], spares=1, km=0, stopped=false, running=false;
+  const elKm=document.getElementById('statKm'), elRun=document.getElementById('statRun'), elSp=document.getElementById('statSp');
+  const els=[document.getElementById('t0'),document.getElementById('t1')];
+  function fmt(){ elSp.textContent=spares; elSp.className='stat-v '+(spares>0?'good':'bad');
+    els.forEach((el,i)=>el.classList.toggle('flat',!main[i]));
+    if(stopped){ elRun.textContent='Stopped!'; elRun.className='stat-v bad'; } else { elRun.textContent='Rolling'; elRun.className='stat-v good'; } }
+  function roll(){ if(document.hidden||stopped) return; km+=5; elKm.textContent=km+' km';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='58%'; scene.appendChild(d);
+    const leg=620*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='88%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),260); }, leg); }
+  function blow(){ const i=main.indexOf(true); if(i<0) return; main[i]=false; if(els[i])els[i].classList.add('crash');
+    const d=document.createElement('div'); d.className='dot crash'; d.style.left=(i===0?42:58)+'%'; d.style.top='44%'; scene.appendChild(d); setTimeout(()=>d.remove(),520*simRate());
+    if(spares>0){ stopped=true; fmt(); setTimeout(()=>{ spares--; main[i]=true; if(els[i]){els[i].classList.remove('crash');} stopped=false; fmt(); }, 1500*simRate()); }
+    else { stopped=true; fmt(); }
+  }
+  function addSpare(){ spares++; if(stopped && main.indexOf(true)<0){ } fmt(); }
+  function loop(){ if(!running)return; roll(); setTimeout(loop, 800*simRate()); }
+  document.getElementById('actBlow').onclick=blow;
+  document.getElementById('actAddSpare').onclick=addSpare;
+  fmt(); running=true; loop();
+  return {blow,addSpare,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're cruising down the highway 🚙. Tyres rolling, kilometres ticking up. All good.", dur:4000},
+  {cap:"In the boot sits a <b>spare tyre</b> — dead weight you've carried for years and never used.", dur:4200},
+  {cap:"Suddenly — <span class='hl-bad'>a tyre blows out.</span>", dur:3400, on(){SIM.blow();}},
+  {cap:"You pull over, fit the <b>spare</b>, and you're <span class='hl-good'>rolling again</span> in minutes. Crisis → minor delay.", dur:4600, on(){SIM.fmt();}},
+  {cap:"That spare is <b>redundancy</b>: a ready backup that takes over the instant the primary fails.", dur:4400},
+  {cap:"The key word is <em>ready</em>. A spare back home in the garage is useless. It has to be packed <b>before</b> the blowout.", dur:4600},
+  {cap:"But now you've used it — <b>pack another</b> so the next blowout isn't the end of the road.", dur:4200, on(){SIM.addSpare();}},
+  {cap:"Systems do the same: standby servers, backup power, replica databases — spares waiting to take over.", dur:4400},
+  {cap:"Your turn 👉 <b>💥 Blow a tyre</b> with and without a spare, and <b>➕ pack spares</b> to stay on the road.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Redundancy costs a little to carry and saves you enormously the day something fails. Keep a spare ready.", dur:4600}
+]});
+
+</script>
+</body></html>

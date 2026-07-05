@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean Code Principles · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.code{position:absolute; left:50%; top:48%; transform:translate(-50%,-50%); width:54%; display:flex; flex-direction:column; gap:6px; z-index:2}
+.cl{height:14px; border-radius:4px; background:var(--good); transition:.3s}
+.cl.mid{background:var(--warn)} .cl.bad{background:var(--bad)}
+.cmeter{position:absolute; left:50%; bottom:11%; transform:translateX(-50%); width:60%; height:16px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.cfill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Clean Code Principles</h1>
+  <p class="subtitle">Code rots if you let it. Every quick hack adds complexity; refactoring pays it back. Watch the complexity meter drift up as features pile on — and drop when you clean up.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Complexity</div><div class="stat-v good" id="statComplexity">—</div></div>
+  <div class="stat"><div class="stat-k">Readability</div><div class="stat-v good" id="statRead">—</div></div>
+  <div class="stat"><div class="stat-k">State</div><div class="stat-v good" id="statState">Clean</div></div>
+</div>
+<div class="code" id="code"></div>
+<div class="cmeter"><div class="cfill" id="cfill"></div></div>
+<div class="acts">
+  <button class="act bad" id="actAddFeature">⚡ Add feature (quick hack)</button>
+  <button class="act ok" id="actRefactor">🧼 Refactor</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const code=document.getElementById('code');
+  let cx=22, running=false;
+  const elC=document.getElementById('statComplexity'), elR=document.getElementById('statRead'), elS=document.getElementById('statState'), cfill=document.getElementById('cfill');
+  function render(){ cx=Math.max(8,Math.min(100,cx));
+    const rows=Math.round(cx/9)+3; code.innerHTML='';
+    for(let i=0;i<rows;i++){ const d=document.createElement('div'); d.className='cl'+(cx>62?' bad':cx>38?' mid':'');
+      d.style.width=(30+ (cx>50? (40+Math.random()*30) : (10+Math.random()*30)))+'%'; code.appendChild(d); }
+    elC.textContent=Math.round(cx); elR.textContent=Math.round(100-cx)+'%';
+    elC.className='stat-v '+(cx<38?'good':cx<62?'warn':'bad'); elR.className=elC.className;
+    elS.textContent=cx<38?'Clean':cx<62?'Smelly':'Spaghetti 🍝'; elS.className='stat-v '+(cx<38?'good':cx<62?'warn':'bad');
+    cfill.style.width=cx+'%'; cfill.style.background=cx<38?'linear-gradient(90deg,#3fcf8e,#0f8f5b)':cx<62?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#f08070,#d83a2e)'; }
+  function drift(){ cx+=1.6; render(); }                 // entropy: code rots on its own
+  function addFeature(){ cx+=14; render(); }
+  function refactor(){ cx-=24; render(); }
+  function loop(){ if(!running)return; drift(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAddFeature').onclick=addFeature;
+  document.getElementById('actRefactor').onclick=refactor;
+  render(); running=true; loop();
+  return {addFeature,refactor};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Clean code</b> is simple, readable code a teammate can change without fear. It starts clean — those short green lines.", dur:4400},
+  {cap:"Here's the uncomfortable truth: code <b>rots on its own.</b> Every passing day, complexity creeps upward.", dur:4200},
+  {cap:"Now add a feature the <b>quick way</b> — a copy-paste here, a special case there. Fast today…", dur:4200, on(){SIM.addFeature();}},
+  {cap:"…but the complexity meter jumps and the lines grow long and red. We're sliding toward <span class='hl-bad'>spaghetti.</span>", dur:4400, on(){SIM.addFeature();}},
+  {cap:"Pile on a few more hacks and nobody can safely touch it. Every change risks breaking something far away.", dur:4400},
+  {cap:"Time to <b>refactor</b>: clear names, small single-purpose functions, remove duplication. Same behaviour, less complexity.", dur:4600, on(){SIM.refactor();}},
+  {cap:"The meter drops back into the green. The code does exactly what it did before — but now it's <span class='hl-good'>readable</span> again.", dur:4400, on(){SIM.refactor();}},
+  {cap:"Clean code isn't a one-time event; it's a habit. Refactor a little, continuously, to keep entropy in check.", dur:4400},
+  {cap:"Your turn 👉 <b>⚡ Add feature</b> the hacky way, then <b>🧼 Refactor</b> to pay down the complexity.", dur:5200},
+  {cap:"Readable beats clever. The cheapest code to change in a year is the code you keep clean today.", dur:4600}
+]});
+
+</script>
+</body></html>

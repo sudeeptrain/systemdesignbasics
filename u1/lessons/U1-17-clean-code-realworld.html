@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean Code — A Tidy Kitchen · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.counter-top{position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:54%; display:flex; flex-direction:column; gap:6px; z-index:2}
+.cl{height:14px; border-radius:4px; background:var(--good); transition:.3s}
+.cl.mid{background:var(--warn)} .cl.bad{background:var(--bad)}
+.cmeter{position:absolute; left:50%; bottom:11%; transform:translateX(-50%); width:60%; height:16px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.cfill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Clean Code — A Tidy Kitchen</h1>
+  <p class="subtitle">A working kitchen gets messy on its own as you cook. Clean as you go and you stay fast and safe; let dishes pile up and every new dish gets slower and more error-prone. Code rots the very same way.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Mess level</div><div class="stat-v good" id="statMess">—</div></div>
+  <div class="stat"><div class="stat-k">Cooking speed</div><div class="stat-v good" id="statSpeed">—</div></div>
+  <div class="stat"><div class="stat-k">Kitchen</div><div class="stat-v good" id="statState">Spotless</div></div>
+</div>
+<div class="counter-top" id="code"></div>
+<div class="cmeter"><div class="cfill" id="cfill"></div></div>
+<div class="acts">
+  <button class="act bad" id="actCook">🍳 Cook in a hurry</button>
+  <button class="act ok" id="actClean">🧽 Clean as you go</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const code=document.getElementById('code');
+  let mess=20, running=false;
+  const elM=document.getElementById('statMess'), elSp=document.getElementById('statSpeed'), elS=document.getElementById('statState'), cfill=document.getElementById('cfill');
+  function render(){ mess=Math.max(8,Math.min(100,mess));
+    const rows=Math.round(mess/9)+3; code.innerHTML='';
+    for(let i=0;i<rows;i++){ const d=document.createElement('div'); d.className='cl'+(mess>62?' bad':mess>38?' mid':'');
+      d.style.width=(30+ (mess>50? (40+Math.random()*30) : (10+Math.random()*30)))+'%'; code.appendChild(d); }
+    elM.textContent=Math.round(mess); elSp.textContent=Math.round(100-mess)+'%';
+    elM.className='stat-v '+(mess<38?'good':mess<62?'warn':'bad'); elSp.className=elM.className;
+    elS.textContent=mess<38?'Spotless':mess<62?'Getting messy':'Chaos 🔥'; elS.className='stat-v '+(mess<38?'good':mess<62?'warn':'bad');
+    cfill.style.width=mess+'%'; cfill.style.background=mess<38?'linear-gradient(90deg,#3fcf8e,#0f8f5b)':mess<62?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#f08070,#d83a2e)'; }
+  function drift(){ mess+=1.6; render(); }          // mess creeps up just from working
+  function cook(){ mess+=14; render(); }
+  function clean(){ mess-=24; render(); }
+  function loop(){ if(!running)return; drift(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actCook').onclick=cook;
+  document.getElementById('actClean').onclick=clean;
+  render(); running=true; loop();
+  return {cook,clean};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A fresh, <b>spotless kitchen.</b> Clear counters, everything in reach — you cook fast and make no mistakes.", dur:4400},
+  {cap:"Here's the catch: a kitchen gets <b>messier on its own</b> as you work. The mess bar creeps up by itself.", dur:4200},
+  {cap:"Now <b>cook in a hurry</b> — skip the wiping, leave pans where they land. Quick now…", dur:4200, on(){SIM.cook();}},
+  {cap:"…but the counters fill with clutter and the mess bar <span class='hl-bad'>jumps.</span> Soon there's no room to work.", dur:4400, on(){SIM.cook();}},
+  {cap:"A chaotic kitchen is slow and dangerous — you knock things over, grab the wrong jar, burn the next dish.", dur:4400},
+  {cap:"So you <b>clean as you go</b>: wipe surfaces, wash up, put things back. Same kitchen, far less clutter.", dur:4600, on(){SIM.clean();}},
+  {cap:"The mess drops back to green and you're <span class='hl-good'>fast and safe</span> again. Small, constant tidying keeps chaos away.", dur:4400, on(){SIM.clean();}},
+  {cap:"Code is identical: messy code rots and slows every change; clean names and small functions keep you quick.", dur:4400},
+  {cap:"Your turn 👉 <b>🍳 Cook in a hurry</b> to pile up mess, then <b>🧽 Clean as you go</b> to recover speed.", dur:5200},
+  {cap:"Clean as you go — in kitchens and in code. A little tidiness, constantly, beats one big cleanup that never comes.", dur:4800}
+]});
+
+</script>
+</body></html>

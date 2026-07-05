@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horizontal Scaling — Toll Booths · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.backup{position:absolute; left:9%; top:74%; font-family:var(--fmono); font-size:12px; color:var(--warn)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Horizontal Scaling — Toll Booths</h1>
+  <p class="subtitle">A highway toll plaza handles a flood of cars by opening many identical booths side by side. A dispatcher waves each car to a free booth. Add booths and traffic flows — that's scaling out.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Cars through</div><div class="stat-v accent" id="statCars">0</div></div>
+  <div class="stat"><div class="stat-k">Waiting on highway</div><div class="stat-v good" id="statWait">0</div></div>
+  <div class="stat"><div class="stat-k">Open booths</div><div class="stat-v" id="statB">1</div></div>
+</div>
+<div class="wireline" style="left:11%;width:21%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:10%;top:55%"><div class="box">🚗</div><div class="lbl"><span class="k">Highway</span></div></div>
+<div class="node abs" data-show="1" style="left:33%;top:55%"><div class="box">🚦</div><div class="lbl"><span class="k">Dispatcher</span></div></div>
+<div class="nlbl" style="left:64%;top:13%">Toll booths</div>
+<div class="nlbl" style="left:90%;top:84%">Through</div>
+<div id="booths"></div>
+<div class="acts">
+  <button class="act" id="actAddBooth">🟢 Open a booth</button>
+  <button class="act" id="actRemoveBooth">🔴 Close a booth</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const HX=10, DX=33, BX=64, OUTX=90;
+  let booths=[], waiting=0, cars=0;
+  const wrap=document.getElementById('booths');
+  const elC=document.getElementById('statCars'), elW=document.getElementById('statWait'), elB=document.getElementById('statB');
+  function ys(n){const a=[],top=28,bot=82;for(let i=0;i<n;i++)a.push(n===1?55:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(booths.length);
+    booths.forEach((b,i)=>{ b.y=y[i]; const el=document.createElement('div'); el.className='wbox'+(b.busy?' busy':''); el.textContent='🛑'; el.style.left=BX+'%'; el.style.top=y[i]+'%'; wrap.appendChild(el); b.el=el; });
+    elB.textContent=booths.length; }
+  function setWait(v){ waiting=Math.max(0,v); elW.textContent=waiting; elW.className='stat-v '+(waiting>8?'bad':waiting>3?'warn':'good'); }
+  function arrive(){ if(document.hidden) return; setWait(waiting+1); }
+  function pump(){ booths.forEach(b=>{ if(!b.busy && waiting>0) serve(b); }); }
+  function serve(b){ setWait(waiting-1); b.busy=true; if(b.el)b.el.classList.add('busy');
+    const leg=460*simRate();
+    const d=document.createElement('div'); d.className='dot'; d.style.left=HX+'%'; d.style.top='55%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=DX+'%'; });
+    setTimeout(()=>{ d.style.left=BX+'%'; d.style.top=b.y+'%'; setTimeout(()=>{
+      d.classList.add('done'); d.style.left=OUTX+'%'; d.style.top='55%'; cars++; elC.textContent=cars;
+      setTimeout(()=>d.remove(),leg); b.busy=false; if(b.el)b.el.classList.remove('busy'); if(waiting>0) serve(b);
+    }, leg+360*simRate()); }, leg);
+  }
+  function addBooth(){ if(booths.length<5){ booths.push({busy:false}); render(); pump(); } }
+  function removeBooth(){ if(booths.length>1){ booths.pop(); render(); } }
+  document.getElementById('actAddBooth').onclick=addBooth;
+  document.getElementById('actRemoveBooth').onclick=removeBooth;
+  booths=[{busy:false}]; render(); setWait(0);
+  setInterval(arrive,520); setInterval(pump,300);
+  return {addBooth,removeBooth};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Rush hour at the toll plaza. One <b>booth</b> is open, and a dispatcher waves cars to it one at a time.", dur:4400},
+  {cap:"Cars arrive faster than a single booth can process — the highway <span class='hl-warn'>backs up.</span>", dur:4200},
+  {cap:"<b>Open a second booth.</b> The dispatcher now sends cars to whichever booth is free — flow doubles.", dur:4400, on(){SIM.addBooth();}},
+  {cap:"Open a third and a fourth. Each identical booth adds capacity, and the backup <span class='hl-good'>clears.</span>", dur:4400, on(){SIM.addBooth();}},
+  {cap:"This is <b>horizontal scaling</b> — scaling <em>out</em> by adding more identical machines, not a bigger one.", dur:4400},
+  {cap:"The dispatcher is a <b>load balancer</b>: it spreads incoming work evenly across all the booths.", dur:4400},
+  {cap:"Bonus: if one booth breaks, the others keep working. Scaling out also buys you fault tolerance.", dur:4400},
+  {cap:"And there's no real ceiling — need more capacity? Just open more booths. That's the big win over going bigger.", dur:4400, on(){SIM.addBooth();}},
+  {cap:"Your turn 👉 <b>🟢 Open a booth</b> when the highway backs up, <b>🔴 Close a booth</b> when traffic's light.", dur:5200},
+  {cap:"Scale out, balance the load, survive failures — the pattern behind nearly every large system on the internet.", dur:4600}
+]});
+
+</script>
+</body></html>

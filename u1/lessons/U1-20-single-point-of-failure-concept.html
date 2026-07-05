@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Single Point of Failure · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.hide{display:none !important}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Single Point of Failure</h1>
+  <p class="subtitle">A SPOF is one component whose failure takes down the whole system. Kill the lone server and everything stops — then add a backup and watch a kill become a non-event.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Uptime</div><div class="stat-v good" id="statUp">100%</div></div>
+  <div class="stat"><div class="stat-k">Served</div><div class="stat-v" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Failed</div><div class="stat-v" id="statFailed">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs hide" id="lbNode" style="left:34%;top:55%"><div class="box">⚖️</div><div class="lbl"><span class="k">Balancer</span></div></div>
+<div class="node abs" id="srvA" data-show="1" style="left:55%;top:55%"><div class="box srv-A">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="node abs hide" id="srvB" style="left:55%;top:74%"><div class="box srv-B">🖥️</div><div class="lbl"><span class="k">Backup</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:55%"><div class="box">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actKill">💥 Kill server</button>
+  <button class="act ok" id="actBackup">➕ Add backup</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const U={x:12,y:55}, DB={x:88,y:55};
+  let redundant=false, served=0, failed=0, running=false;
+  const servers=[{id:'A',x:55,y:55,alive:true,present:true},{id:'B',x:55,y:74,alive:true,present:false}];
+  const elUp=document.getElementById('statUp'), elS=document.getElementById('statServed'), elF=document.getElementById('statFailed');
+  function elOf(id){ return scene.querySelector('.srv-'+id); }
+  function fmt(){ const tot=served+failed, av=tot?served/tot:1; elUp.textContent=Math.round(av*100)+'%'; elUp.className='stat-v '+(av>=0.99?'good':av>=0.5?'warn':'bad'); elS.textContent=served; elF.textContent=failed; }
+  function target(){ const avail=servers.filter(s=>s.present&&s.alive); if(redundant) return avail[0]||null; return servers[0].alive?servers[0]:null; }
+  function spawn(){
+    if(document.hidden) return;
+    const t=target();
+    const d=document.createElement('div'); d.className='dot'; d.style.left=U.x+'%'; d.style.top=U.y+'%'; scene.appendChild(d);
+    const leg=560*simRate();
+    if(!t){ requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='42%'; }); setTimeout(()=>{ d.classList.add('fail'); failed++; fmt(); setTimeout(()=>d.remove(),500); }, leg); return; }
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1), top '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=t.x+'%'; d.style.top=t.y+'%'; });
+    setTimeout(()=>{ if(!t.alive){ d.classList.add('fail'); failed++; fmt(); setTimeout(()=>d.remove(),500); return; }
+      d.style.left=DB.x+'%'; d.style.top=DB.y+'%';
+      setTimeout(()=>{ served++; d.classList.add('done'); fmt(); setTimeout(()=>d.remove(),250); }, leg); }, leg);
+  }
+  function loop(){ if(running){ spawn(); setTimeout(loop, 520*simRate()); } }
+  function kill(){ const a=servers.find(s=>s.present&&s.alive); if(!a)return; a.alive=false; const e=elOf(a.id); if(e)e.classList.add('crash'); }
+  function backup(){ if(redundant)return; redundant=true; servers[1].present=true;
+    document.getElementById('srvB').classList.remove('hide'); document.getElementById('lbNode').classList.remove('hide');
+    document.getElementById('srvA').style.top='36%'; servers[0].y=36; }
+  function reset(){ servers.forEach(s=>{s.alive=true; const e=elOf(s.id); if(e)e.classList.remove('crash');}); }
+  function start(){ if(!running){running=true; loop();} }
+  document.getElementById('actKill').onclick=()=>kill();
+  document.getElementById('actBackup').onclick=()=>{ reset(); backup(); };
+  fmt(); start();
+  return {kill,backup,reset};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Every request flows through a <b>single server</b> on its way to the database. Right now, all green.", dur:4000},
+  {cap:"It's working perfectly — so it's tempting to leave it exactly like this.", dur:3600},
+  {cap:"But watch what happens when that one server <span class='hl-bad'>crashes.</span>", dur:3400, on(){SIM.kill();}},
+  {cap:"<span class='hl-bad'>The whole system is down.</span> Every request fails — uptime collapses to zero.", dur:4200},
+  {cap:"That lone server was a <b>single point of failure</b>: one weak link whose death stops everything.", dur:4400},
+  {cap:"The cure is <b>redundancy</b>. Add a backup server and a balancer in front of the pair.", dur:4200, on(){SIM.backup();}},
+  {cap:"Now requests are served again — and the two servers share the load behind the balancer.", dur:4000},
+  {cap:"Kill one now and the other simply carries on. A failure became a <span class='hl-good'>non-event.</span>", dur:4200, on(){SIM.kill();}},
+  {cap:"Your turn 👉 <b>💥 Kill server</b> to feel the outage, then <b>➕ Add backup</b> and kill again — no outage.", dur:5200, on(){SIM.reset();}},
+  {cap:"Design rule: hunt down every SPOF — server, database, network link — and give each one a standby.", dur:4400}
+]});
+
+</script>
+</body></html>

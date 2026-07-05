@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back-of-the-Envelope Estimation · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.calcbox{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:160px; height:120px; border-radius:16px; background:linear-gradient(180deg,#fff,#eef4fb); border:1.5px solid var(--line2); display:flex; align-items:center; justify-content:center; font-size:52px; box-shadow:0 12px 28px -16px rgba(40,70,120,.5); z-index:2}
+.inlabel{position:absolute; left:12%; transform:translateX(-50%); text-align:center; font-family:var(--fmono); font-size:12px; color:var(--muted); z-index:2}
+.inlabel b{display:block; color:var(--ink); font-size:18px; margin-top:2px}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Back-of-the-Envelope Estimation</h1>
+  <p class="subtitle">Before building, do the rough math. A few multiplications turn 'how many users' into how many servers, how much storage, and how much bandwidth you'll need.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests / sec</div><div class="stat-v accent" id="statQPS">—</div><div class="stat-sub">DAU × actions ÷ 86,400</div></div>
+  <div class="stat"><div class="stat-k">Storage / day</div><div class="stat-v" id="statStore">—</div></div>
+  <div class="stat"><div class="stat-k">Bandwidth</div><div class="stat-v" id="statBW">—</div></div>
+</div>
+<div class="wireline" style="left:14%;width:26%;top:50%"></div>
+<div class="wireline" style="left:60%;width:24%;top:50%"></div>
+<div class="inlabel" style="top:50%">Daily users<b id="duLbl">—</b><span id="plLbl" style="font-size:11px">payload —</span></div>
+<div class="calcbox">🧮</div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box">📐</div><div class="lbl"><span class="k">Capacity</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actUsers">👥 ×10 users</button>
+  <button class="act" id="actPayload">📦 ×2 payload</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let dau=100000, payloadKB=2, running=false;
+  const actions=20, writeFrac=0.1;
+  const elQ=document.getElementById('statQPS'), elS=document.getElementById('statStore'), elB=document.getElementById('statBW');
+  const duLbl=document.getElementById('duLbl'), plLbl=document.getElementById('plLbl');
+  function hum(n,unit){ const u=['','K','M','B']; let i=0; while(n>=1000&&i<u.length-1){n/=1000;i++;} return n.toFixed(n<10&&i>0?1:0)+u[i]+(unit||''); }
+  function humB(bytes){ const u=['B','KB','MB','GB','TB']; let i=0; while(bytes>=1024&&i<u.length-1){bytes/=1024;i++;} return bytes.toFixed(bytes<10&&i>0?1:0)+' '+u[i]; }
+  function fmt(){
+    const qps=dau*actions/86400;
+    const storeDay=dau*actions*writeFrac*payloadKB*1024;     // bytes/day
+    const bw=qps*payloadKB*1024;                              // bytes/sec
+    elQ.textContent=hum(qps)+' /s'; elS.textContent=humB(storeDay)+'/day'; elB.textContent=humB(bw)+'/s';
+    duLbl.textContent=hum(dau); plLbl.textContent='payload '+payloadKB+' KB';
+  }
+  function flow(){ if(document.hidden) return; const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=620*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='86%'; setTimeout(()=>d.remove(),leg); }, leg); }
+  function loop(){ if(!running)return; dau=Math.round(dau*1.04); fmt(); flow(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actUsers').onclick=()=>{ dau*=10; fmt(); };
+  document.getElementById('actPayload').onclick=()=>{ payloadKB*=2; fmt(); };
+  fmt(); running=true; loop();
+  return {fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Back-of-the-envelope estimation</b> sizes a system before you write a line of code — with rough math, not exact numbers.", dur:4400},
+  {cap:"Start with one input: <b>daily active users</b>. Everything else is a multiplication away.", dur:4000},
+  {cap:"<b>Requests/sec (QPS)</b> ≈ users × actions ÷ 86,400 seconds in a day. That tells you how many servers you need.", dur:4600},
+  {cap:"<b>Storage/day</b> ≈ users × writes × payload size. That tells you how fast your database grows.", dur:4400},
+  {cap:"<b>Bandwidth</b> ≈ QPS × payload size. That tells you the network pipe you must provision.", dur:4400},
+  {cap:"Now 10× the users 👥 — watch every number jump together. Order-of-magnitude thinking in action.", dur:4400, on(){SIM.fmt();}},
+  {cap:"Double the <b>payload</b> 📦 and storage and bandwidth both climb — but QPS doesn't. Different inputs, different effects.", dur:4600},
+  {cap:"You're not after precision — you're after the right <em>power of ten</em>, so you don't under- or over-build.", dur:4400},
+  {cap:"Your turn 👉 <b>👥 ×10 users</b> and <b>📦 ×2 payload</b> and watch the capacity numbers respond live.", dur:5200},
+  {cap:"A minute of estimation up front saves weeks of rework. Always know your rough QPS, storage and bandwidth.", dur:4600}
+]});
+
+</script>
+</body></html>

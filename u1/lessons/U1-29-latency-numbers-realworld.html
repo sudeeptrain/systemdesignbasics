@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latency Numbers — Recall vs the Post · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.src{position:absolute; right:8%; transform:translateY(-50%); width:150px; display:flex; align-items:center; gap:8px; justify-content:flex-end; z-index:2}
+.src .ic{font-size:26px} .src .t{font-family:var(--fmono); font-size:11px; color:var(--faint); text-align:right}
+.src.hot .ic{filter:drop-shadow(0 0 6px rgba(31,111,230,.5))}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Latency Numbers — Recall vs the Post</h1>
+  <p class="subtitle">Finding a fact has wildly different costs: remembering it is instant, checking a notebook on your desk takes a moment, the town library takes a trip, and mailing off for it takes days. Storage tiers feel the same.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Last lookup</div><div class="stat-v good" id="statMs">—</div></div>
+  <div class="stat"><div class="stat-k">Source</div><div class="stat-v accent" id="statSrc">—</div></div>
+  <div class="stat"><div class="stat-k">Lookups</div><div class="stat-v" id="statLookups">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:11%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="src s-0" style="top:18%"><div class="t">Memory<br>~instant</div><div class="ic">🧠</div></div>
+<div class="src s-1" style="top:39%"><div class="t">Desk notebook<br>seconds</div><div class="ic">📓</div></div>
+<div class="src s-2" style="top:61%"><div class="t">Town library<br>an hour</div><div class="ic">🏛️</div></div>
+<div class="src s-3" style="top:82%"><div class="t">Mail order<br>days</div><div class="ic">📮</div></div>
+<div class="acts">
+  <button class="act ok" id="actNear">⚡ Ask memory</button>
+  <button class="act" id="actFar">📮 Mail off for it</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const tiers=[
+    {n:'Memory',y:18,leg:300,ms:'~1 ns',cls:'good'},
+    {n:'Notebook',y:39,leg:620,ms:'~100 ns',cls:'good'},
+    {n:'Library',y:61,leg:1200,ms:'~10 ms',cls:'warn'},
+    {n:'Mail',y:82,leg:2000,ms:'~150 ms',cls:'bad'}
+  ];
+  let lookups=0, running=false, idx=0;
+  const els=[0,1,2,3].map(i=>scene.querySelector('.s-'+i));
+  const elMs=document.getElementById('statMs'), elSrc=document.getElementById('statSrc'), elL=document.getElementById('statLookups');
+  function query(t){ if(document.hidden) return;
+    const tier=tiers[t]; lookups++; elL.textContent=lookups;
+    els.forEach((e,i)=>e.classList.toggle('hot',i===t));
+    const d=document.createElement('div'); d.className='dot'; d.style.left='11%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=tier.leg*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='88%'; d.style.top=tier.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='11%'; d.style.top='50%';
+      elMs.textContent=tier.ms; elMs.className='stat-v '+tier.cls; elSrc.textContent=tier.n; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function loop(){ if(!running)return; query(idx%4); idx++; setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actNear').onclick=()=>query(0);
+  document.getElementById('actFar').onclick=()=>query(3);
+  running=true; loop();
+  return {query};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You need a fact. Where you get it from changes the cost <b>enormously</b> — by factors of millions.", dur:4400},
+  {cap:"If it's in your <b>memory</b>, recall is essentially <span class='hl-good'>instant.</span> No trip at all.", dur:4200, on(){SIM.query(0);}},
+  {cap:"If it's in a <b>notebook on your desk</b>, you glance down — a moment slower, but still fast.", dur:4200, on(){SIM.query(1);}},
+  {cap:"If you must walk to the <b>town library</b>, that's a real journey — vastly slower than the desk.", dur:4400, on(){SIM.query(2);}},
+  {cap:"And if you have to <b>mail off</b> for it? Now you're waiting <span class='hl-bad'>days</span> for one answer.", dur:4400, on(){SIM.query(3);}},
+  {cap:"Computers have the exact same ladder: CPU registers, RAM, SSD, then the network — each tier far slower than the last.", dur:4800},
+  {cap:"That's why <b>caching</b> matters: keep hot data 'in memory' or 'on the desk', not out at the post office.", dur:4600},
+  {cap:"A rough rule every engineer memorises: memory is ~100× faster than disk, and disk far faster than network.", dur:4600},
+  {cap:"Your turn 👉 <b>⚡ Ask memory</b> vs <b>📮 Mail off for it</b> and feel the gulf between the nearest and farthest tier.", dur:5200},
+  {cap:"Know the latency ladder. Good design keeps frequent data close and only makes the long trip when it truly must.", dur:4800}
+]});
+
+</script>
+</body></html>

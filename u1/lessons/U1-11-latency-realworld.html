@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latency — Texting a Friend · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.srv{transition:none}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Latency — Texting a Friend</h1>
+  <p class="subtitle">Text someone across town and the reply feels instant; text someone overseas and you feel the lag. That delay you feel is latency — and it's mostly about distance, not the message.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Round-trip lag</div><div class="stat-v warn" id="statMs">— ms</div></div>
+  <div class="stat"><div class="stat-k">Friend is</div><div class="stat-v accent" id="statDist">Nearby</div></div>
+  <div class="stat"><div class="stat-k">Texts sent</div><div class="stat-v" id="statN">0</div></div>
+</div>
+<div class="wireline" id="wire" style="left:12%;width:48%;top:58%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:58%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" id="srvNode" data-show="1" style="left:60%;top:58%"><div class="box srv">🧑</div><div class="lbl"><span class="k">Friend</span></div></div>
+<div class="acts">
+  <button class="act" id="actSend">💬 Send a text</button>
+  <button class="act" id="actDist">🌍 Friend moves overseas</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const UX=12, Y=58, MSPP=11;
+  let srvX=60, n=0;
+  const srvNode=document.getElementById('srvNode'), wire=document.getElementById('wire');
+  const elMs=document.getElementById('statMs'), elN=document.getElementById('statN'), elD=document.getElementById('statDist'), btnD=document.getElementById('actDist');
+  function modelMs(){ return Math.round((srvX-UX)*MSPP*2); }
+  function place(){ srvNode.style.left=srvX+'%'; wire.style.width=(srvX-UX)+'%';
+    const far=srvX>70; elD.textContent=far?'Overseas 🌍':'Nearby 🏠'; elMs.textContent='~'+modelMs()+' ms';
+    btnD.textContent=far?'🏠 Friend moves nearby':'🌍 Friend moves overseas'; }
+  function send(){
+    if(document.hidden) return;
+    n++; elN.textContent=n;
+    const leg=(srvX-UX)*MSPP*simRate()*1.3;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=UX+'%'; d.style.top=Y+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms linear'; d.style.left=srvX+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.transition='left '+leg+'ms linear'; d.style.left=UX+'%';
+      setTimeout(()=>{ elMs.textContent=modelMs()+' ms'; d.remove(); }, leg+90); }, leg+70);
+  }
+  function loop(){ send(); setTimeout(loop, 2800*simRate()); }
+  function toggleDist(){ srvX = srvX>70?60:86; place(); }
+  document.getElementById('actSend').onclick=send;
+  btnD.onclick=toggleDist;
+  place(); loop();
+  return {send,toggleDist};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Latency</b> is the time for one message to travel to your friend and the reply to come back.", dur:4200},
+  {cap:"You hit send; the text races down the wire to a friend across town, and the reply zips back. Feels instant.", dur:4200, on(){SIM.send();}},
+  {cap:"That whole out-and-back time — even when it's tiny — <em>is</em> the latency.", dur:4000},
+  {cap:"Latency is mostly about <b>distance and hops</b>: more miles and more relays mean more milliseconds.", dur:4200},
+  {cap:"Now your friend <b>moves overseas</b> 🌍. Same text, but watch the round trip get visibly longer.", dur:4400, on(){SIM.toggleDist();}},
+  {cap:"Nothing about the message changed — only the distance. <span class='hl-warn'>Farther = higher latency.</span>", dur:4200},
+  {cap:"Bring them back nearby 🏠 — or route through a closer server — and the lag drops right back down.", dur:4200, on(){SIM.toggleDist();}},
+  {cap:"This is exactly why apps put servers and caches close to users: shorten the path, shrink the lag.", dur:4200},
+  {cap:"Your turn 👉 <b>💬 Send a text</b> to time it, and <b>🌍 move your friend</b> to feel distance become delay.", dur:5200},
+  {cap:"Latency is about one message's wait. Throughput — how many texts per second — is a totally separate question.", dur:4600}
+]});
+
+</script>
+</body></html>

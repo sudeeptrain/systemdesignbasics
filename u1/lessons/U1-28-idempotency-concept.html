@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idempotency · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.dot.ignored{background:var(--faint); box-shadow:0 0 0 3px rgba(101,120,142,.18)}
+.idtag{position:absolute; font-family:var(--fmono); font-size:11px; color:var(--faint); transform:translate(-50%,-50%); z-index:5}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Idempotency</h1>
+  <p class="subtitle">An idempotent operation gives the same result no matter how many times it runs. Networks cause retries — an idempotency key makes duplicates safe so nobody gets charged twice.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests sent</div><div class="stat-v accent" id="statRequests">0</div></div>
+  <div class="stat"><div class="stat-k">Times charged</div><div class="stat-v" id="statCharges">0</div></div>
+  <div class="stat"><div class="stat-k">Idempotency key</div><div class="stat-v good" id="statKey">ON</div></div>
+</div>
+<div class="wireline" style="left:14%;width:24%;top:55%"></div>
+<div class="wireline" style="left:47%;width:24%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:45%;top:55%"><div class="box">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="node abs" data-show="1" style="left:80%;top:55%"><div class="box">💳</div><div class="lbl"><span class="k">Payments</span></div></div>
+<div class="acts">
+  <button class="act" id="actRetry">🔁 Retry last request</button>
+  <button class="act" id="actKey">🔑 Idempotency key ON/OFF</button>
+</div>
+<div class="legend">
+  <div><span class="sw" style="background:var(--good)"></span>charged once (correct)</div>
+  <div><span class="sw" style="background:var(--faint)"></span>duplicate ignored (key on)</div>
+  <div><span class="sw" style="background:var(--bad)"></span>double charge (key off)</div>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let nextId=42, lastId=null, processed={}, requests=0, charges=0, key=true, running=false;
+  const elR=document.getElementById('statRequests'), elCh=document.getElementById('statCharges'), elK=document.getElementById('statKey');
+  function send(id,isRetry){
+    if(document.hidden) return;
+    requests++; elR.textContent=requests; lastId=id;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='55%'; scene.appendChild(d);
+    const tag=document.createElement('div'); tag.className='idtag'; tag.textContent='#'+id; tag.style.left='12%'; tag.style.top='48%'; scene.appendChild(tag);
+    const leg=560*simRate();
+    const moveTag=(x)=>{ tag.style.transition='left '+leg+'ms'; tag.style.left=x+'%'; };
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left='45%'; moveTag(45); });
+    setTimeout(()=>{ d.style.left='80%'; moveTag(80);
+      setTimeout(()=>{
+        const dup = !!processed[id];
+        if(dup && key){ d.classList.add('ignored'); }
+        else { if(dup && !key){ d.classList.add('fail'); } else { d.classList.add('done'); }
+               processed[id]=true; charges++; elCh.textContent=charges; }
+        setTimeout(()=>{ d.remove(); tag.remove(); },450);
+      }, leg);
+    }, leg);
+  }
+  function newReq(){ send(nextId++,false); }
+  function retry(){ if(lastId!=null) send(lastId,true); else newReq(); }
+  function loop(){ if(!running)return; newReq(); setTimeout(loop, 2800*simRate()); }
+  function toggleKey(){ key=!key; elK.textContent=key?'ON':'OFF'; elK.className='stat-v '+(key?'good':'bad'); }
+  document.getElementById('actRetry').onclick=retry;
+  document.getElementById('actKey').onclick=toggleKey;
+  running=true; loop();
+  return {newReq,retry,toggleKey};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Idempotency</b> means an operation can run many times but the effect happens <em>once</em>. Money makes this vivid.", dur:4400},
+  {cap:"The client sends <b>Pay #42</b>. The server processes it and Payments <span class='hl-good'>charges once.</span>", dur:4200, on(){SIM.newReq();}},
+  {cap:"But networks are flaky. The client doesn't hear back, so it <b>retries</b> the same request id.", dur:4200, on(){SIM.retry();}},
+  {cap:"With the <b>idempotency key ON</b>, the server recognises #42 as already done and <span class='hl-good'>ignores the duplicate</span> — still one charge.", dur:4600},
+  {cap:"Retry it five more times — doesn't matter. Same id, same single charge. That's idempotency.", dur:4400, on(){SIM.retry();}},
+  {cap:"Now turn the <b>key OFF</b> and retry. The server can't tell it's a duplicate…", dur:4200, on(){SIM.toggleKey();}},
+  {cap:"…so it charges <span class='hl-bad'>again</span>. The customer just paid twice for one purchase.", dur:4400, on(){SIM.retry();}},
+  {cap:"The fix: attach a unique key to each request and have the server dedupe on it.", dur:4200, on(){SIM.toggleKey();}},
+  {cap:"Your turn 👉 <b>🔁 Retry</b> with the <b>🔑 key</b> ON (safe) then OFF (double charge). Watch the charge counter.", dur:5400},
+  {cap:"Make money-moving and resource-creating operations idempotent — retries are inevitable, double effects shouldn't be.", dur:4600}
+]});
+
+</script>
+</body></html>
