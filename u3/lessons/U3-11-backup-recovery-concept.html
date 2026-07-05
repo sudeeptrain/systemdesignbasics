@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backup &amp; Recovery · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.dr.active .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Backup &amp; Recovery</h1>
+  <p class="subtitle">Backups are point-in-time copies of your database. Pair a periodic full backup with the write-ahead log and you can recover from disaster by restoring the backup, then replaying the log up to the moment things broke — losing almost nothing.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Changes since backup</div><div class="stat-v warn" id="statWrites">0</div><div class="stat-sub">replayed from the log on restore</div></div>
+  <div class="stat"><div class="stat-k">Last backup age</div><div class="stat-v" id="statAge">—</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statStatus">Healthy</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:24%;top:34%"><div class="box prim">🗄️</div><div class="lbl"><span class="k">Live database</span></div></div>
+<div class="node abs" data-show="1" style="left:24%;top:82%"><div class="box">💾</div><div class="lbl"><span class="k">Backup + WAL</span></div></div>
+<div class="node abs dr" data-show="1" style="left:78%;top:58%"><div class="box">🗄️</div><div class="lbl"><span class="k">Restored DB</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actBackup">💾 Take a backup</button>
+  <button class="act bad" id="actRestore">🔥 Disaster → restore</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const PRIM={x:24,y:34}, BK={x:24,y:82}, DR={x:78,y:58};
+  let since=0, down=false, age=0, running=true;
+  const elW=document.getElementById('statWrites'), elAge=document.getElementById('statAge'), elStatus=document.getElementById('statStatus');
+  const primEl=scene.querySelector('.prim'), drEl=scene.querySelector('.dr');
+  function fmt(){ elW.textContent=since; elW.className='stat-v '+(since>10?'bad':since>4?'warn':'good'); elAge.textContent=age+'s ago'; }
+  function dot(cls,fx,fy,tx,ty,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms cubic-bezier(.45,0,.25,1), top '+ms+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),300); }, ms); }
+  function change(){ if(document.hidden||down) return; since++; age++; fmt(); if(primEl){primEl.classList.add('ping'); setTimeout(()=>primEl.classList.remove('ping'),250);} }
+  function backup(){ if(down) return; dot('', PRIM.x,PRIM.y, BK.x,BK.y, 520*simRate(), ()=>{ since=0; age=0; fmt(); }); }
+  function restore(){ if(down) return; down=true; elStatus.textContent='RESTORING'; elStatus.className='stat-v bad'; if(primEl)primEl.classList.add('crash');
+    const rto=1500*simRate();
+    // restore backup → DR, then replay WAL (the 'since' changes)
+    dot('', BK.x,BK.y, DR.x,DR.y, rto, ()=>{ drEl.classList.add('active');
+      const n=Math.min(6,since); for(let k=0;k<n;k++){ setTimeout(()=>{ dot('done', BK.x,BK.y, DR.x,DR.y, 420*simRate()); }, 200+k*260*simRate()); }
+      setTimeout(()=>{ drEl.querySelector('.box').classList.add('done'); elStatus.textContent='Recovered ✓'; elStatus.className='stat-v good'; }, 200+n*260*simRate()+400);
+    });
+  }
+  function recover(){ down=false; since=0; age=0; if(primEl)primEl.classList.remove('crash'); drEl.classList.remove('active'); elStatus.textContent='Healthy'; elStatus.className='stat-v good'; fmt(); }
+  function loop(){ if(!running)return; change(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actBackup').onclick=backup;
+  document.getElementById('actRestore').onclick=()=>{ if(down) recover(); else restore(); };
+  fmt(); loop(); setInterval(()=>{ if(!down) backup(); }, 5200);
+  return {backup,restore,recover};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Hardware fails, people fat-finger a DELETE, datacentres flood. <b>Backup &amp; recovery</b> is your safety net for all of it.", dur:4800},
+  {cap:"The live database is constantly changing. Every change that isn't yet backed up is data <span class='hl-warn'>at risk.</span>", dur:4400},
+  {cap:"So you take <b>backups</b> on a schedule — a full point-in-time copy — and reset the at-risk counter.", dur:4600, on(){SIM.backup();}},
+  {cap:"Between backups the at-risk pile grows. But here's the trick: you also keep the <b>write-ahead log</b> of every change.", dur:4800},
+  {cap:"Now <span class='hl-bad'>disaster strikes</span> — the live database is gone.", dur:3800, on(){SIM.restore();}},
+  {cap:"<b>Recovery, step 1:</b> restore the last full backup onto fresh hardware. That gets you back to the backup's moment.", dur:4600},
+  {cap:"<b>Step 2:</b> replay the write-ahead log <em>forward</em> from that backup — re-applying every change made since.", dur:4800},
+  {cap:"Backup + log replay means you recover to almost the exact instant of failure — losing seconds of data, not days.", dur:4600},
+  {cap:"Your turn 👉 <b>💾 Take backups</b> to shrink the at-risk window, then <b>🔥 trigger disaster</b> to watch restore + replay.", dur:5200},
+  {cap:"A backup you've never tested isn't a backup. Rehearse the restore — recovery time and data loss are what actually matter.", dur:4800}
+]});
+
+</script>
+</body></html>

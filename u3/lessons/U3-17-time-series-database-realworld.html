@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time-Series — A Fitness Tracker · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.axis{position:absolute; left:8%; right:6%; bottom:30%; height:2px; background:var(--line2); z-index:1}
+.tick{position:absolute; bottom:26%; font-family:var(--fmono); font-size:10px; color:var(--faint); z-index:2}
+.pt5{position:absolute; width:9px; height:9px; border-radius:50%; transform:translate(-50%,50%); background:var(--bad); z-index:3; transition:.3s}
+.pt5.agg{background:var(--violet); width:13px; height:13px}
+.window{position:absolute; bottom:30%; height:40%; background:rgba(31,111,230,.1); border:1.5px solid var(--accent); border-radius:6px; z-index:2; opacity:0; transition:.3s}
+.window.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Time-Series — A Fitness Tracker</h1>
+  <p class="subtitle">Your smartwatch records your heart rate every few seconds, forever forward in time. You ask things like "my heart rate during this morning's run," and old data gets summarized to per-minute, then per-hour, to save space. That's a time-series database.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Readings recorded</div><div class="stat-v accent" id="statPoints">0</div></div>
+  <div class="stat"><div class="stat-k">In window (last query)</div><div class="stat-v" id="statRange">—</div></div>
+  <div class="stat"><div class="stat-k">Old data</div><div class="stat-v good" id="statOld">every-second detail</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:13%">❤️ heart rate over time (always appending)</div>
+<div class="axis"></div>
+<div class="tick" style="left:10%">earlier</div>
+<div class="tick" style="right:7%">now →</div>
+<div class="window" id="win"></div>
+<div id="points"></div>
+<div class="acts">
+  <button class="act ok" id="actRange">🔎 Query a workout window</button>
+  <button class="act" id="actDownsample">📉 Summarize old days</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ptsEl=document.getElementById('points'), win=document.getElementById('win');
+  let points=[], count=0, running=false, downsampled=false;
+  const elP=document.getElementById('statPoints'), elR=document.getElementById('statRange'), elO=document.getElementById('statOld');
+  function valY(){ return 32 + Math.random()*34; }
+  function ingest(){ if(document.hidden) return; count++; elP.textContent=count;
+    points.forEach(p=>{ p.x-=6; if(p.x<8){ p.el.remove(); p.dead=true; } });
+    points=points.filter(p=>!p.dead);
+    const x=92, y=valY(); const el=document.createElement('div'); el.className='pt5'; el.style.left=x+'%'; el.style.bottom=y+'%'; ptsEl.appendChild(el);
+    points.push({x,y,el}); points.forEach(p=>{ p.el.style.left=p.x+'%'; });
+  }
+  function range(){ if(document.hidden) return; win.classList.add('on'); const lx=20+Math.random()*30; win.style.left=lx+'%'; win.style.width='26%';
+    const inRange=points.filter(p=>p.x>=lx && p.x<=lx+26); points.forEach(p=>p.el.style.boxShadow=''); inRange.forEach(p=>{ p.el.style.boxShadow='0 0 0 4px rgba(31,111,230,.25)'; });
+    elR.textContent=inRange.length+' readings'; elR.className='stat-v accent'; setTimeout(()=>{ win.classList.remove('on'); points.forEach(p=>p.el.style.boxShadow=''); }, 1400*simRate());
+  }
+  function downsample(){ downsampled=true; elO.textContent='rolled up to per-minute'; elO.className='stat-v warn';
+    const old=points.filter(p=>p.x<45).sort((a,b)=>a.x-b.x);
+    old.forEach((p,i)=>{ if(i%2===1){ p.el.remove(); p.dead=true; } else { p.el.classList.add('agg'); } });
+    points=points.filter(p=>!p.dead);
+  }
+  function loop(){ if(!running)return; ingest(); setTimeout(loop, 500*simRate()); }
+  document.getElementById('actRange').onclick=range;
+  document.getElementById('actDownsample').onclick=downsample;
+  running=true; loop();
+  return {ingest,range,downsample};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your smartwatch logs your <b>heart rate</b> every few seconds, all day. It's a perfect example of <b>time-series data.</b>", dur:4600},
+  {cap:"The shape is special: readings <b>only ever arrive in order</b>, you never edit an old beat, and they pile up endlessly. Watch them stream.", dur:4800},
+  {cap:"A time-series database is built for this. Recording the newest reading is its happy path — extremely fast appends.", dur:4600},
+  {cap:"And your questions are almost always over a <b>time window</b> — \"my heart rate during this morning's run.\"", dur:4600, on(){SIM.range();}},
+  {cap:"Because the data is laid out by time, grabbing a window is just slicing a stretch of the timeline. <span class='hl-good'>Quick.</span>", dur:4600, on(){SIM.range();}},
+  {cap:"Months of per-second data would be huge, so the watch <b>summarizes</b> old readings — per-second becomes per-minute, then per-hour.", dur:4800, on(){SIM.downsample();}},
+  {cap:"You keep fine detail for today, coarser averages for last month, and just trends for last year. Space stays under control.", dur:4600},
+  {cap:"Eventually really old data is dropped entirely — a <b>retention policy</b> — so storage doesn't grow forever.", dur:4400},
+  {cap:"Your turn 👉 <b>🔎 Query a workout window</b> over the stream and <b>📉 summarize</b> the old readings.", dur:5200},
+  {cap:"Fitness trackers, server metrics, stock ticks — all time-series: append-heavy, time-ranged data that ordinary databases handle poorly.", dur:4800}
+]});
+
+</script>
+</body></html>

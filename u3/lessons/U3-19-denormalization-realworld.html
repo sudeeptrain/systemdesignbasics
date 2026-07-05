@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Denormalization — A Meal Kit · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tnode{position:absolute; transform:translate(-50%,-50%); width:110px; text-align:center; font-family:var(--fmono); font-size:11px; padding:9px; border-radius:9px; border:1.5px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.tnode.lit{border-color:var(--accent); box-shadow:0 0 0 4px rgba(31,111,230,.16)}
+.tnode.hit{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Denormalization — A Meal Kit</h1>
+  <p class="subtitle">To cook dinner the tidy way, you fetch each ingredient from a different shop — no waste, but lots of trips. A meal kit packs everything for one recipe into a single box: open it and cook, no running around — at the cost of some duplicated, pre-portioned items.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Meals made</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Shops visited (last)</div><div class="stat-v" id="statTables">—</div></div>
+  <div class="stat"><div class="stat-k">Approach</div><div class="stat-v" id="statMode">Shop around</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🍳</div><div class="lbl"><span class="k">Cook</span></div></div>
+<div id="tables"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Shop around / Meal kit</button>
+  <button class="act ok" id="actRead">🍽️ Make the dish</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('tables');
+  let mode='norm', reads=0, running=false;
+  const elR=document.getElementById('statReads'), elT=document.getElementById('statTables'), elM=document.getElementById('statMode');
+  const norm=[{x:42,y:26,t:'🥕 Veg shop'},{x:70,y:26,t:'🧀 Dairy'},{x:42,y:74,t:'🍖 Butcher'},{x:70,y:74,t:'🧂 Spices'}];
+  const denorm=[{x:60,y:50,t:'📦 Meal kit\n(all-in-one)'}];
+  function render(){ wrap.innerHTML=''; const set= mode==='norm'?norm:denorm;
+    set.forEach((n,i)=>{ const el=document.createElement('div'); el.className='tnode tn-'+i; el.style.left=n.x+'%'; el.style.top=n.y+'%'; el.textContent=n.t; wrap.appendChild(el); n.el=el; });
+    elM.textContent=mode==='norm'?'Shop around':'Meal kit'; elM.className='stat-v '+(mode==='norm'?'accent':'warn'); }
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads;
+    const set= mode==='norm'?norm:denorm;
+    if(mode==='norm'){ set.forEach((n,k)=>setTimeout(()=>{ const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+        requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left=n.x+'%'; d.style.top=n.y+'%'; });
+        setTimeout(()=>{ d.classList.add('done'); if(n.el){n.el.classList.add('lit'); setTimeout(()=>n.el.classList.remove('lit'),400);} setTimeout(()=>d.remove(),240); }, 420*simRate()); }, k*260*simRate()));
+      elT.textContent='4 (trips!)'; elT.className='stat-v warn';
+    } else { const n=set[0]; const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left=n.x+'%'; d.style.top=n.y+'%'; });
+      setTimeout(()=>{ d.classList.add('done'); if(n.el){n.el.classList.add('hit'); setTimeout(()=>n.el.classList.remove('hit'),400);} d.style.left='13%'; setTimeout(()=>d.remove(),420*simRate()); }, 420*simRate());
+      elT.textContent='1 (one box)'; elT.className='stat-v good';
+    }
+  }
+  function setMode(m){ mode=m; render(); }
+  function loop(){ if(!running)return; read(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='norm'?'denorm':'norm');
+  document.getElementById('actRead').onclick=read;
+  render(); running=true; loop();
+  return {read,setMode,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The tidy way to cook keeps each ingredient in its proper shop — veg shop, dairy, butcher, spice store. No waste, no duplication.", dur:4800},
+  {cap:"But to make <em>one dish</em>, you must visit <b>all four shops</b> and gather the pieces. That's a normalized database doing joins.", dur:4800, on(){SIM.read();}},
+  {cap:"Watch the cook run to four shops for a single meal. Correct and lean — but those trips add up, especially when you cook often.", dur:4800, on(){SIM.read();}},
+  {cap:"<b>Denormalization</b> is the <b>meal kit</b>: pack everything for one recipe into a single box, ready to go.", dur:4600, on(){SIM.setMode('denorm');}},
+  {cap:"Now making the dish is <b>one trip</b> — open the box and cook. <span class='hl-good'>No running around</span>, no joins.", dur:4600, on(){SIM.read();}},
+  {cap:"That's how read-heavy systems serve pages fast: pre-pack the data into the exact shape you'll read.", dur:4600, on(){SIM.read();}},
+  {cap:"The cost: the carrots are now pre-portioned into <em>every</em> kit. If the supplier changes, you must update all the boxes.", dur:4800},
+  {cap:"So denormalize <b>selectively</b> — for the meals you make constantly — and accept the duplication and extra restocking work.", dur:4600, on(){SIM.setMode('norm');}},
+  {cap:"Your turn 👉 flip <b>🔀 Shop around / Meal kit</b> and <b>🍽️ make the dish</b> to compare four trips with one box.", dur:5200},
+  {cap:"Normalize to avoid duplication; denormalize to avoid trips. Real systems use both, guided by what they read most.", dur:4800}
+]});
+
+</script>
+</body></html>

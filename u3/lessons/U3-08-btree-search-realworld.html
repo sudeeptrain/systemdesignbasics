@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B-Tree Search — A Dictionary · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bn{position:absolute; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:600; padding:6px 9px; border-radius:8px; border:1.5px solid var(--line2); background:#fff; z-index:3; transition:.2s; white-space:nowrap}
+.bn.lit{border-color:var(--accent); background:#eaf2fe; box-shadow:0 0 0 4px rgba(31,111,230,.16)}
+.bn.hit{border-color:var(--good); background:#e7f7ef; box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.bedge{position:absolute; height:2px; background:var(--line2); transform-origin:left center; z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">B-Tree Search — A Dictionary</h1>
+  <p class="subtitle">To find "quokka" in a dictionary you don't read from page one. You open near the back (Q is late), then narrow to the right page, then scan the column. A few smart jumps beat flipping every page — that's exactly how a B-tree searches.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Word lookups</div><div class="stat-v accent" id="statSearches">0</div></div>
+  <div class="stat"><div class="stat-k">Jumps to find</div><div class="stat-v good" id="statHops">—</div></div>
+  <div class="stat"><div class="stat-k">Page-by-page would take</div><div class="stat-v" id="statLin">—</div></div>
+</div>
+<div id="tree"></div>
+<div class="acts">
+  <button class="act ok" id="actSearch">🔎 Look up a word (jumps)</button>
+  <button class="act" id="actScan">🐌 Flip every page</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const tree=document.getElementById('tree');
+  const root={x:50,y:20,label:'A–I · J–R · S–Z'};
+  const branch=[{x:22,y:48,label:'A·D·G'},{x:50,y:48,label:'J·M·P'},{x:78,y:48,label:'S·V·Y'}];
+  const leaves=[]; for(let b=0;b<3;b++){ for(let l=0;l<3;l++){ leaves.push({x:10+ (b*3+l)*11, y:80, v:'•' }); } }
+  let searches=0, running=false;
+  const elS=document.getElementById('statSearches'), elH=document.getElementById('statHops'), elL=document.getElementById('statLin');
+  function node(o,cls){ const n=document.createElement('div'); n.className='bn'+(cls?' '+cls:''); n.style.left=o.x+'%'; n.style.top=o.y+'%'; n.textContent=o.label!==undefined?o.label:o.v; tree.appendChild(n); o.el=n; return n; }
+  function edge(a,b){ const w=scene.clientWidth||900,h=scene.clientHeight||460; const ax=a.x/100*w,ay=a.y/100*h,bx=b.x/100*w,by=b.y/100*h;
+    const e=document.createElement('div'); e.className='bedge'; e.style.left=a.x+'%'; e.style.top=a.y+'%'; e.style.width=Math.hypot(bx-ax,by-ay)+'px'; e.style.transform='rotate('+(Math.atan2(by-ay,bx-ax)*180/Math.PI)+'deg)'; tree.appendChild(e); }
+  function render(){ tree.innerHTML='';
+    branch.forEach(b=>edge(root,b)); branch.forEach((b,bi)=>{ for(let l=0;l<3;l++) edge(b,leaves[bi*3+l]); });
+    node(root); branch.forEach(b=>node(b)); leaves.forEach(lf=>node(lf)); }
+  function search(){ if(document.hidden) return; searches++; elS.textContent=searches;
+    render(); const li=Math.floor(Math.random()*9); const bi=Math.floor(li/3); const target=leaves[li];
+    const path=[root,branch[bi],target]; let i=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=root.x+'%'; d.style.top=root.y+'%'; scene.appendChild(d);
+    const leg=520*simRate();
+    const step=()=>{ const o=path[i]; if(o.el) o.el.classList.add(i===path.length-1?'hit':'lit');
+      d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=o.x+'%'; d.style.top=o.y+'%';
+      if(i>=path.length-1){ setTimeout(()=>{ d.classList.add('done'); elH.textContent='3'; elH.className='stat-v good'; elL.textContent='~'+(li+1)+' pages'; setTimeout(()=>d.remove(),300); }, leg); return; }
+      i++; setTimeout(step, leg); };
+    step();
+  }
+  function scan(){ if(document.hidden) return; render(); let i=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=leaves[0].x+'%'; d.style.top='80%'; scene.appendChild(d);
+    const step=()=>{ if(i>=9){ d.classList.add('done'); elL.textContent='9 pages 🐌'; elL.className='stat-v bad'; setTimeout(()=>d.remove(),300); return; }
+      if(leaves[i].el) leaves[i].el.classList.add('lit'); d.style.transition='left .18s'; d.style.left=leaves[i].x+'%'; i++; setTimeout(step, 200*simRate()); };
+    step();
+  }
+  function loop(){ if(!running)return; search(); setTimeout(loop, 2400*simRate()); }
+  document.getElementById('actSearch').onclick=search;
+  document.getElementById('actScan').onclick=scan;
+  render(); running=true; loop();
+  return {search,scan};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Find \"quokka\" in a fat dictionary. You'd <em>never</em> start at page one and flip forward. You use the alphabet to jump.", dur:4800},
+  {cap:"A dictionary is sorted, with <b>guide words</b> at the top of each section — signposts saying what's where.", dur:4600},
+  {cap:"\"Q\" is near the back, so you <b>open there first</b>, then narrow to the right page, then scan the column. Three smart jumps.", dur:4800, on(){SIM.search();}},
+  {cap:"Each jump <b>throws away most of the book.</b> You're never looking at A–P once you know the word starts with Q.", dur:4600, on(){SIM.search();}},
+  {cap:"That's precisely a <b>B-tree</b>: sorted signposts that let you skip huge chunks and land on the entry in a few hops.", dur:4600},
+  {cap:"Compare <b>flipping every page</b> one by one until you stumble on the word. Exhausting — and that's a linear scan.", dur:4400, on(){SIM.scan();}},
+  {cap:"The beauty: a bigger dictionary needs barely more jumps. Double the pages, and you add maybe one extra hop.", dur:4600},
+  {cap:"That's why B-trees stay fast even on tables with hundreds of millions of rows — a handful of hops, always.", dur:4600},
+  {cap:"Your turn 👉 <b>🔎 Look up a word</b> with smart jumps and <b>🐌 flip every page</b> to feel the difference.", dur:5200},
+  {cap:"A B-tree is a dictionary's sorted, signposted structure: keep data ordered and you find anything in just a few jumps.", dur:4800}
+]});
+
+</script>
+</body></html>

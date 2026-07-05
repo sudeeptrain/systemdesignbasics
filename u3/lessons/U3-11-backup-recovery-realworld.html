@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backup &amp; Recovery — Video-Game Saves · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.dr.active .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Backup &amp; Recovery — Video-Game Saves</h1>
+  <p class="subtitle">You save your game at checkpoints, and the game also quietly logs your recent moves. If it crashes, you reload the last checkpoint and the log replays what you did since — so you lose minutes, not your whole playthrough.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Moves since checkpoint</div><div class="stat-v warn" id="statWrites">0</div><div class="stat-sub">replayed from the log on reload</div></div>
+  <div class="stat"><div class="stat-k">Last save age</div><div class="stat-v" id="statAge">—</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statStatus">Playing</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:24%;top:34%"><div class="box prim">🎮</div><div class="lbl"><span class="k">Live game</span></div></div>
+<div class="node abs" data-show="1" style="left:24%;top:82%"><div class="box">💾</div><div class="lbl"><span class="k">Save + move log</span></div></div>
+<div class="node abs dr" data-show="1" style="left:78%;top:58%"><div class="box">🎮</div><div class="lbl"><span class="k">Reloaded game</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actBackup">💾 Save at a checkpoint</button>
+  <button class="act bad" id="actRestore">🔥 Crash → reload</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const PRIM={x:24,y:34}, BK={x:24,y:82}, DR={x:78,y:58};
+  let since=0, down=false, age=0, running=true;
+  const elW=document.getElementById('statWrites'), elAge=document.getElementById('statAge'), elStatus=document.getElementById('statStatus');
+  const primEl=scene.querySelector('.prim'), drEl=scene.querySelector('.dr');
+  function fmt(){ elW.textContent=since; elW.className='stat-v '+(since>10?'bad':since>4?'warn':'good'); elAge.textContent=age+'s ago'; }
+  function dot(cls,fx,fy,tx,ty,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms cubic-bezier(.45,0,.25,1), top '+ms+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),300); }, ms); }
+  function move(){ if(document.hidden||down) return; since++; age++; fmt(); if(primEl){primEl.classList.add('ping'); setTimeout(()=>primEl.classList.remove('ping'),250);} }
+  function backup(){ if(down) return; dot('', PRIM.x,PRIM.y, BK.x,BK.y, 520*simRate(), ()=>{ since=0; age=0; fmt(); }); }
+  function restore(){ if(down) return; down=true; elStatus.textContent='RELOADING'; elStatus.className='stat-v bad'; if(primEl)primEl.classList.add('crash');
+    const rto=1500*simRate();
+    dot('', BK.x,BK.y, DR.x,DR.y, rto, ()=>{ drEl.classList.add('active');
+      const n=Math.min(6,since); for(let k=0;k<n;k++){ setTimeout(()=>{ dot('done', BK.x,BK.y, DR.x,DR.y, 420*simRate()); }, 200+k*260*simRate()); }
+      setTimeout(()=>{ drEl.querySelector('.box').classList.add('done'); elStatus.textContent='Back in game ✓'; elStatus.className='stat-v good'; }, 200+n*260*simRate()+400);
+    });
+  }
+  function recover(){ down=false; since=0; age=0; if(primEl)primEl.classList.remove('crash'); drEl.classList.remove('active'); elStatus.textContent='Playing'; elStatus.className='stat-v good'; fmt(); }
+  function loop(){ if(!running)return; move(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actBackup').onclick=backup;
+  document.getElementById('actRestore').onclick=()=>{ if(down) recover(); else restore(); };
+  fmt(); loop(); setInterval(()=>{ if(!down) backup(); }, 5200);
+  return {backup,restore,recover};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're deep into a game. Lose all that progress to a crash and you'd be furious. Saves are your <b>backup &amp; recovery.</b>", dur:4800},
+  {cap:"As you play, every move since your last save is progress <span class='hl-warn'>at risk</span> — not yet written to a checkpoint.", dur:4400},
+  {cap:"So you <b>save at a checkpoint.</b> Your progress is copied to disk, and the 'at risk' counter resets to zero.", dur:4600, on(){SIM.backup();}},
+  {cap:"Between saves, the at-risk pile grows. But cleverly, the game also <b>logs your recent moves</b> as you make them.", dur:4800},
+  {cap:"Then — <span class='hl-bad'>crash!</span> The game dies.", dur:3600, on(){SIM.restore();}},
+  {cap:"<b>Recovery, step 1:</b> reload the last checkpoint. That gets you back to your most recent save.", dur:4400},
+  {cap:"<b>Step 2:</b> the game <b>replays the move log</b> from that checkpoint — redoing what you did since. You barely lose anything.", dur:4800},
+  {cap:"Checkpoint + move log = recover to almost the exact moment of the crash. Lose minutes, not hours.", dur:4600, on(){SIM.recover();}},
+  {cap:"Your turn 👉 <b>💾 Save at checkpoints</b> to shrink the at-risk moves, then <b>🔥 crash</b> to watch reload + replay.", dur:5200},
+  {cap:"Databases work exactly this way: periodic backups plus a log of recent changes, replayed to recover with minimal loss.", dur:4800}
+]});
+
+</script>
+</body></html>

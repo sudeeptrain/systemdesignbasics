@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sharding — A Class Register by Surname · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.shard.scaling .box{border-color:var(--good) !important; box-shadow:0 0 0 4px rgba(18,163,104,.18) !important}
+.keytag{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--faint); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Sharding — A Class Register by Surname</h1>
+  <p class="subtitle">One teacher can't mark 500 students. So you split the register: surnames A–F go to Ms. Rao, G–M to Mr. Khan, and so on. A simple rule sends each student to the right teacher, and adding a teacher just reshuffles one slice of the alphabet.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Students filed</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Teachers</div><div class="stat-v" id="statShards">2</div></div>
+  <div class="stat"><div class="stat-k">Routed by</div><div class="stat-v good" id="statKey">surname letter</div></div>
+</div>
+<div class="wireline" style="left:16%;width:18%;top:50%"></div>
+<div class="node abs" data-show="1" style="left:38%;top:50%"><div class="box">📋</div><div class="lbl"><span class="k">Office</span></div></div>
+<div id="shards"></div>
+<div class="acts">
+  <button class="act ok" id="actAddShard">➕ Add a teacher</button>
+  <button class="act" id="actWrite">🧑‍🎓 File a student</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('shards');
+  const ranges=[['A','F'],['G','M'],['N','S'],['T','Z'],['0','9']];
+  let shards=[{rows:0},{rows:0}], writes=0, running=false;
+  const elW=document.getElementById('statWrites'), elS=document.getElementById('statShards');
+  function ys(n){const a=[],top=20,bot=84;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(shards.length);
+    shards.forEach((s,i)=>{ s.y=y[i]; const el=document.createElement('div'); el.className='node abs vis shard sh-'+i; el.style.left='74%'; el.style.top=y[i]+'%';
+      el.innerHTML='<div class="box sm">🧑‍🏫</div><div class="lbl"><span class="k">Teacher '+(i+1)+'</span></div>'; wrap.appendChild(el); s.el=el;
+      const kt=document.createElement('div'); kt.className='keytag'; kt.style.left='84%'; kt.style.top=(s.y-2)+'%'; kt.textContent=ranges[i][0]+'–'+ranges[i][1]; wrap.appendChild(kt);
+      const ct=document.createElement('div'); ct.className='keytag'; ct.style.left='84%'; ct.style.top=(s.y+6)+'%'; ct.style.color='var(--accent-d)'; ct.textContent=s.rows+' students'; wrap.appendChild(ct); s.ct=ct;
+    }); elS.textContent=shards.length; }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes;
+    const idx=Math.floor(Math.random()*shards.length); const s=shards[idx];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='38%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='74%'; d.style.top=s.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); s.rows++; if(s.ct)s.ct.textContent=s.rows+' students'; if(s.el){s.el.classList.add('active'); setTimeout(()=>s.el.classList.remove('active'),200);} setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function addShard(){ if(shards.length<5){ shards.push({rows:0}); render(); const el=shards[shards.length-1].el; if(el){el.classList.add('scaling'); setTimeout(()=>el.classList.remove('scaling'),900*simRate());} } }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actAddShard').onclick=addShard;
+  document.getElementById('actWrite').onclick=write;
+  render(); running=true; loop();
+  return {write,addShard,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"One teacher marking 500 students is overwhelmed. The school's fix: <b>split the register.</b>", dur:4400},
+  {cap:"Each teacher takes a <b>slice of the alphabet</b> — surnames A–F to one, G–M to another. That slice is a shard.", dur:4600},
+  {cap:"A simple rule — the <b>first letter of the surname</b> — decides which teacher each student goes to.", dur:4600, on(){SIM.write();}},
+  {cap:"The office applies that same rule every time, sending each student straight to the right teacher. No teacher sees them all.", dur:4600, on(){SIM.write();}},
+  {cap:"So the workload <b>spreads evenly</b> — each teacher handles a fraction of the students. That's the whole point of sharding.", dur:4600, on(){SIM.write();}},
+  {cap:"Too many students still? <b>Add a teacher</b> and hand them a slice of the alphabet — the ranges just redistribute.", dur:4400, on(){SIM.addShard();}},
+  {cap:"This is exactly how databases shard: split the rows by a key, route each one by a rule, add machines for more capacity.", dur:4600, on(){SIM.write();}},
+  {cap:"The gotcha: choose the split well. If half the school is surnamed \"Patel,\" that one teacher is swamped — a hot shard.", dur:4600},
+  {cap:"Your turn 👉 <b>➕ Add teachers</b> and <b>🧑‍🎓 file students</b> to watch the rule route them across shards.", dur:5200},
+  {cap:"Sharding splits one big dataset across many keepers by a key — spreading load so no single one is overwhelmed.", dur:4800}
+]});
+
+</script>
+</body></html>

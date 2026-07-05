@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Design Lifecycle · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stg{position:absolute; transform:translate(-50%,-50%); width:120px; text-align:center; font-family:var(--fmono); font-size:11px; padding:9px; border-radius:9px; border:1.5px solid var(--line2); background:#fff; z-index:2; transition:.3s}
+.stg.cur{border-color:var(--accent); background:#eaf2fe; box-shadow:0 0 0 4px rgba(31,111,230,.16)}
+.stg.done{border-color:var(--good); background:#e7f7ef}
+.arrow{position:absolute; font-family:var(--fmono); color:var(--faint); z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Database Design Lifecycle</h1>
+  <p class="subtitle">Good schemas aren't guessed — they're designed in stages: gather requirements, sketch a conceptual ER model, turn it into a logical schema, map it to physical tables and indexes, then deploy. And it loops: real use sends you back to refine.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Design passes</div><div class="stat-v accent" id="statPasses">0</div></div>
+  <div class="stat"><div class="stat-k">Current stage</div><div class="stat-v" id="statStage">Requirements</div></div>
+  <div class="stat"><div class="stat-k">Revisions</div><div class="stat-v" id="statIter">0</div></div>
+</div>
+<div class="stg s-0" style="left:14%;top:32%">📋<br>Requirements</div>
+<div class="stg s-1" style="left:38%;top:32%">🗺️<br>Conceptual (ER)</div>
+<div class="stg s-2" style="left:62%;top:32%">📐<br>Logical schema</div>
+<div class="stg s-3" style="left:86%;top:32%">🗄️<br>Physical + indexes</div>
+<div class="stg s-4" style="left:50%;top:72%">🚀<br>Live database</div>
+<div class="acts">
+  <button class="act ok" id="actAdvance">➡️ Advance a stage</button>
+  <button class="act" id="actRevise">🔁 Real use → revise</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const stages=['Requirements','Conceptual (ER)','Logical schema','Physical + indexes','Live database'];
+  const pos=[[14,32],[38,32],[62,32],[86,32],[50,72]];
+  const boxes=[0,1,2,3,4].map(i=>scene.querySelector('.s-'+i));
+  let cur=0, passes=0, iter=0, running=false;
+  const elP=document.getElementById('statPasses'), elS=document.getElementById('statStage'), elI=document.getElementById('statIter');
+  function render(){ boxes.forEach((b,i)=>{ b.classList.toggle('cur',i===cur); b.classList.toggle('done',i<cur); }); elS.textContent=stages[cur]; }
+  function advance(){ if(document.hidden) return;
+    const from=pos[cur]; const next=Math.min(cur+1,4); const to=pos[next];
+    const d=document.createElement('div'); d.className='dot'; d.style.left=from[0]+'%'; d.style.top=from[1]+'%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=to[0]+'%'; d.style.top=to[1]+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),240); }, leg);
+    if(cur>=4){ passes++; elP.textContent=passes; cur=0; } else { cur=next; }
+    render();
+  }
+  function revise(){ iter++; elI.textContent=iter; elI.className='stat-v warn'; cur=1; render();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='72%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .5s, top .5s'; d.style.left='38%'; d.style.top='32%'; }); setTimeout(()=>d.remove(),600); }
+  function loop(){ if(!running)return; advance(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAdvance').onclick=advance;
+  document.getElementById('actRevise').onclick=revise;
+  render(); running=true; loop();
+  return {advance,revise,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You don't invent a database schema on the spot. <b>Database design</b> is a deliberate journey through clear stages.", dur:4600},
+  {cap:"<b>Stage 1 — Requirements:</b> what data do we store, who uses it, what questions must it answer? Everything starts here.", dur:4600, on(){SIM.advance();}},
+  {cap:"<b>Stage 2 — Conceptual model:</b> sketch the entities and relationships — an ER diagram — independent of any database.", dur:4600, on(){SIM.advance();}},
+  {cap:"<b>Stage 3 — Logical schema:</b> turn that into concrete tables, columns, keys, and relationships. Still no vendor specifics.", dur:4600, on(){SIM.advance();}},
+  {cap:"<b>Stage 4 — Physical design:</b> map to a real database — data types, indexes, partitions — tuned for how it'll actually be used.", dur:4800, on(){SIM.advance();}},
+  {cap:"<b>Stage 5 — Deploy.</b> The database goes live and starts serving the application. One full pass complete.", dur:4400, on(){SIM.advance();}},
+  {cap:"But it's never truly finished. Real traffic reveals slow queries and missing fields — so you <b>loop back and revise.</b>", dur:4800, on(){SIM.revise();}},
+  {cap:"Each pass through the cycle improves the schema. Database design is iterative, not a one-shot decision.", dur:4400, on(){SIM.advance();}},
+  {cap:"Your turn 👉 <b>➡️ Advance the stages</b> and <b>🔁 revise</b> to feel the design loop in motion.", dur:5200, on(){SIM.render();}},
+  {cap:"Requirements → conceptual → logical → physical → live, then refine. Skipping stages is how you end up redesigning later.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Denormalization · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tnode{position:absolute; transform:translate(-50%,-50%); width:108px; text-align:center; font-family:var(--fmono); font-size:11px; padding:9px; border-radius:9px; border:1.5px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.tnode.lit{border-color:var(--accent); box-shadow:0 0 0 4px rgba(31,111,230,.16)}
+.tnode.hit{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Denormalization</h1>
+  <p class="subtitle">Normalization removes duplication but forces joins to reassemble data. Denormalization does the opposite on purpose: it copies related data into one table so a read needs no joins — faster reads, at the cost of redundancy and trickier writes.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reads</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Tables touched (last)</div><div class="stat-v" id="statTables">—</div></div>
+  <div class="stat"><div class="stat-k">Model</div><div class="stat-v" id="statMode">Normalized</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🔎</div><div class="lbl"><span class="k">Read</span></div></div>
+<div id="tables"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Normalized / Denormalized</button>
+  <button class="act ok" id="actRead">🔎 Read an order page</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('tables');
+  let mode='norm', reads=0, running=false;
+  const elR=document.getElementById('statReads'), elT=document.getElementById('statTables'), elM=document.getElementById('statMode');
+  const norm=[{x:42,y:26,t:'Orders'},{x:70,y:26,t:'Customers'},{x:42,y:74,t:'Products'},{x:70,y:74,t:'Prices'}];
+  const denorm=[{x:60,y:50,t:'OrderView\n(all-in-one)'}];
+  function render(){ wrap.innerHTML=''; const set= mode==='norm'?norm:denorm;
+    set.forEach((n,i)=>{ const el=document.createElement('div'); el.className='tnode tn-'+i; el.style.left=n.x+'%'; el.style.top=n.y+'%'; el.textContent=n.t; wrap.appendChild(el); n.el=el; });
+    elM.textContent=mode==='norm'?'Normalized':'Denormalized'; elM.className='stat-v '+(mode==='norm'?'accent':'warn'); }
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads;
+    const set= mode==='norm'?norm:denorm;
+    if(mode==='norm'){ set.forEach((n,k)=>setTimeout(()=>{ const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+        requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left=n.x+'%'; d.style.top=n.y+'%'; });
+        setTimeout(()=>{ d.classList.add('done'); if(n.el){n.el.classList.add('lit'); setTimeout(()=>n.el.classList.remove('lit'),400);} setTimeout(()=>d.remove(),240); }, 420*simRate()); }, k*260*simRate()));
+      elT.textContent='4 (joins!)'; elT.className='stat-v warn';
+    } else { const n=set[0]; const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left=n.x+'%'; d.style.top=n.y+'%'; });
+      setTimeout(()=>{ d.classList.add('done'); if(n.el){n.el.classList.add('hit'); setTimeout(()=>n.el.classList.remove('hit'),400);} d.style.left='13%'; setTimeout(()=>d.remove(),420*simRate()); }, 420*simRate());
+      elT.textContent='1 (no join)'; elT.className='stat-v good';
+    }
+  }
+  function setMode(m){ mode=m; render(); }
+  function loop(){ if(!running)return; read(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='norm'?'denorm':'norm');
+  document.getElementById('actRead').onclick=read;
+  render(); running=true; loop();
+  return {read,setMode,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Normalization</b> keeps each fact in one place — but that scatters an order's data across several tables.", dur:4600},
+  {cap:"To show one order page, the database must <b>join</b> Orders, Customers, Products, and Prices back together.", dur:4600, on(){SIM.read();}},
+  {cap:"Watch the read fan out to <b>four tables.</b> Correct and tidy — but joins cost time, especially at scale.", dur:4600, on(){SIM.read();}},
+  {cap:"<b>Denormalization</b> makes a deliberate trade: copy the related data into <em>one</em> wide table, duplication and all.", dur:4800, on(){SIM.setMode('denorm');}},
+  {cap:"Now the same order page is a <b>single read</b> of one row — <span class='hl-good'>no joins at all.</span> Much faster.", dur:4600, on(){SIM.read();}},
+  {cap:"This is how read-heavy systems and NoSQL stores serve pages quickly: pre-join the data into the shape you read.", dur:4600, on(){SIM.read();}},
+  {cap:"But you pay for it: the customer's name now lives in many rows, so a change must be written to all of them.", dur:4600},
+  {cap:"So denormalize <b>selectively</b> — for hot read paths where join cost hurts — and accept the extra write work.", dur:4400, on(){SIM.setMode('norm');}},
+  {cap:"Your turn 👉 flip <b>🔀 Normalized / Denormalized</b> and <b>🔎 read</b> to compare four-table joins with a one-row read.", dur:5200},
+  {cap:"Normalize for write integrity, denormalize for read speed. Real systems mix both, guided by their query patterns.", dur:4800}
+]});
+
+</script>
+</body></html>

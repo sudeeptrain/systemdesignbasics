@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Normalization — A Contacts Book · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.panel{position:absolute; width:40%; top:20%; z-index:2}
+.panel .h{font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); margin-bottom:5px}
+.rec{font-family:var(--fmono); font-size:11px; padding:4px 7px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:4px; transition:.3s}
+.rec .dup{color:var(--bad)}
+.cust-panel{opacity:0; transition:.4s} .cust-panel.on{opacity:1}
+.redbar{position:absolute; left:50%; bottom:12%; transform:translateX(-50%); width:60%; height:16px; border:1.5px solid var(--line2); border-radius:9px; background:#eef5fd; overflow:hidden; z-index:2}
+.redfill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#f08070,#d83a2e); transition:width .4s, background .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Normalization — A Contacts Book</h1>
+  <p class="subtitle">Imagine writing a friend's full address onto every letter you log. Move house, and you'd have to correct hundreds of entries. Instead you keep one contacts book with each address stored once, and your letters just reference the name.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Letter entries</div><div class="stat-v accent" id="statRows">0</div></div>
+  <div class="stat"><div class="stat-k">Repeated addresses</div><div class="stat-v bad" id="statDup">0</div></div>
+  <div class="stat"><div class="stat-k">Tidiness</div><div class="stat-v warn" id="statForm">Messy</div></div>
+</div>
+<div class="panel" style="left:6%"><div class="h">✉️ Letters log</div><div id="orders"></div></div>
+<div class="panel cust-panel" id="custPanel" style="right:6%"><div class="h">📒 Contacts book</div><div id="custs"></div></div>
+<div class="nlbl" style="left:50%;bottom:24%">duplication (same address re-written)</div>
+<div class="redbar"><div class="redfill" id="redfill"></div></div>
+<div class="acts">
+  <button class="act ok" id="actNormalize">🔀 Tidy up (normalize)</button>
+  <button class="act" id="actAddRow">➕ Log a letter</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ordersEl=document.getElementById('orders'), custsEl=document.getElementById('custs');
+  const custPanel=document.getElementById('custPanel'), redfill=document.getElementById('redfill');
+  const elR=document.getElementById('statRows'), elDup=document.getElementById('statDup'), elForm=document.getElementById('statForm');
+  const forms=['Messy','Tidier','Tidier','Tidy ✓'];
+  const people=[['Ann','12 Oak St'],['Ben','5 Elm Rd'],['Ann','12 Oak St'],['Cara','9 Bay Ln'],['Ben','5 Elm Rd'],['Ann','12 Oak St']];
+  let rows=0, normLevel=0, running=false;
+  function render(){ ordersEl.innerHTML=''; const norm = normLevel>=3;
+    for(let i=0;i<rows;i++){ const p=people[i%people.length]; const r=document.createElement('div'); r.className='rec';
+      r.innerHTML = norm ? ('letter #'+(i+1)+' · to <b>'+p[0]+'</b>') : ('letter #'+(i+1)+' · <span class="dup">'+p[0]+', '+p[1]+'</span>');
+      ordersEl.appendChild(r); }
+    custsEl.innerHTML=''; if(norm){ [['Ann','12 Oak St'],['Ben','5 Elm Rd'],['Cara','9 Bay Ln']].forEach(c=>{ const r=document.createElement('div'); r.className='rec'; r.innerHTML='<b>'+c[0]+'</b> · '+c[1]; custsEl.appendChild(r); }); }
+    custPanel.classList.toggle('on',norm);
+    const dup = norm?0:Math.max(0,rows-3); elDup.textContent=dup; elDup.className='stat-v '+(dup>0?'bad':'good');
+    elForm.textContent=forms[normLevel]; elForm.className='stat-v '+(normLevel>=3?'good':'warn');
+    const red = norm?0:Math.min(100, rows*14); redfill.style.width=red+'%'; redfill.style.background=red>0?'linear-gradient(90deg,#f08070,#d83a2e)':'linear-gradient(90deg,#3fcf8e,#0f8f5b)'; }
+  function addRow(){ if(rows<6){ rows++; elR.textContent=rows;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='6%'; d.style.top='30%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .4s'; d.style.left='26%'; }); setTimeout(()=>{d.classList.add('done'); d.remove();},420*simRate()); render(); } }
+  function normalize(){ if(normLevel<3){ normLevel++; if(normLevel===3){ const d=document.createElement('div'); d.className='dot done'; d.style.left='26%'; d.style.top='50%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s'; d.style.left='74%';}); setTimeout(()=>d.remove(),600); } render(); } }
+  function loop(){ if(!running)return; if(rows<6) addRow(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actNormalize').onclick=normalize;
+  document.getElementById('actAddRow').onclick=addRow;
+  render(); running=true; loop();
+  return {addRow,normalize,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You keep a log of letters you send. For each one, you scribble the recipient's <b>full name and address.</b>", dur:4600, on(){SIM.addRow();}},
+  {cap:"Write to Ann three times and you copy out <span class='hl-bad'>\"Ann, 12 Oak St\"</span> three times. The duplication piles up.", dur:4600, on(){SIM.addRow();}},
+  {cap:"Now Ann moves house. You must hunt down and fix <em>every</em> letter entry — miss one and your records contradict themselves.", dur:4800, on(){SIM.addRow();}},
+  {cap:"The tidy fix — <b>normalization</b> — is to keep a separate <b>contacts book</b> where each address is written exactly once.", dur:4600},
+  {cap:"Split the data: addresses move into the contacts book, and each letter just references the <b>name.</b>", dur:4600, on(){SIM.normalize();}},
+  {cap:"Watch the duplication vanish. The letters log gets lean; the contacts book holds each person once.", dur:4400, on(){SIM.normalize();}},
+  {cap:"Ann moves again? Update <b>one line</b> in the contacts book and every letter instantly points to the new address.", dur:4600, on(){SIM.normalize();}},
+  {cap:"One fact, one place. That's the entire goal of normalization — no contradictions, no hunting down copies.", dur:4400},
+  {cap:"Your turn 👉 <b>➕ Log letters</b> to build up duplication, then <b>🔀 Tidy up</b> to split it into a contacts book.", dur:5200, on(){SIM.render();}},
+  {cap:"Normalization stores each fact once and links to it — a few lookups in exchange for clean, contradiction-free data.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACID — Booking a Concert Ticket · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.op{position:absolute; transform:translate(-50%,-50%); width:96px; text-align:center; font-family:var(--fmono); font-size:11px; padding:7px; border-radius:8px; border:1.5px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.op.ok{border-color:var(--good); background:#e7f7ef}
+.op.bad{border-color:var(--bad); background:#fdeceb}
+.disk{position:absolute; left:50%; bottom:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">ACID — Booking a Concert Ticket</h1>
+  <p class="subtitle">Booking a seat is two steps: reserve the seat AND charge your card. They must both succeed or both undo — you should never be charged without a seat, or hold a seat for free. That all-or-nothing guarantee is what a transaction provides.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Bookings</div><div class="stat-v accent" id="statTxns">0</div></div>
+  <div class="stat"><div class="stat-k">Confirmed</div><div class="stat-v good" id="statOk">0</div></div>
+  <div class="stat"><div class="stat-k">Cancelled clean</div><div class="stat-v" id="statRb">0</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:12%">One booking = 2 steps, all-or-nothing</div>
+<div class="op o-0" style="left:30%;top:42%">🎫 reserve<br>seat 14B</div>
+<div class="op o-1" style="left:70%;top:42%">💳 charge<br>card $80</div>
+<div class="disk" id="disk">🧾 confirmed: nothing yet</div>
+<div class="acts">
+  <button class="act ok" id="actCommit">✅ Complete the booking</button>
+  <button class="act bad" id="actCrash">💥 Card declined mid-booking</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ops=[scene.querySelector('.o-0'),scene.querySelector('.o-1')];
+  let txns=0, ok=0, rb=0, busy=false, running=false;
+  const elT=document.getElementById('statTxns'), elOk=document.getElementById('statOk'), elRb=document.getElementById('statRb'), disk=document.getElementById('disk');
+  function clear(){ ops.forEach(o=>o.className=o.className.replace(/\b(ok|bad)\b/g,'').trim()); }
+  function run(crash){ busy=true; txns++; elT.textContent=txns; clear(); disk.textContent='🧾 confirmed: nothing yet';
+    setTimeout(()=>{ ops[0].classList.add('ok');
+      if(crash){ setTimeout(()=>{ ops[0].classList.remove('ok'); ops[0].classList.add('bad'); ops[1].classList.add('bad');
+          disk.textContent='💥 card declined → seat released, $0 charged'; disk.style.color='var(--bad)';
+          const d=document.createElement('div'); d.className='dot fail'; d.style.left='50%'; d.style.top='42%'; scene.appendChild(d); setTimeout(()=>d.remove(),520*simRate());
+          rb++; elRb.textContent=rb; elRb.className='stat-v warn'; setTimeout(()=>{disk.style.color='';busy=false;},600); }, 700*simRate());
+      } else {
+        setTimeout(()=>{ ops[1].classList.add('ok');
+          setTimeout(()=>{ disk.textContent='🧾 confirmed: seat + payment — booked ✓'; disk.style.color='var(--good)';
+            const d=document.createElement('div'); d.className='dot done'; d.style.left='30%'; d.style.top='42%'; scene.appendChild(d);
+            requestAnimationFrame(()=>{ d.style.transition='left .5s, top .5s'; d.style.left='50%'; d.style.top='80%'; }); setTimeout(()=>d.remove(),600);
+            ok++; elOk.textContent=ok; setTimeout(()=>{disk.style.color='';busy=false;},700); }, 500*simRate());
+        }, 600*simRate());
+      }
+    }, 500*simRate());
+  }
+  function loop(){ if(!running)return; if(!busy) run(false); setTimeout(loop, 3400*simRate()); }
+  document.getElementById('actCommit').onclick=()=>run(false);
+  document.getElementById('actCrash').onclick=()=>run(true);
+  running=true; loop();
+  return {commit:()=>run(false),crash:()=>run(true)};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You book a concert seat. Behind that one click are <b>two steps</b>: reserve seat 14B, and charge your card $80.", dur:4600},
+  {cap:"They must travel together. Charge you with no seat, or hold a seat with no payment — both are disasters.", dur:4600},
+  {cap:"A <b>transaction</b> ties the two into one all-or-nothing unit. Complete the booking and watch them commit together.", dur:4600, on(){SIM.commit();}},
+  {cap:"Seat reserved <em>and</em> card charged — then <b>confirmed</b> as one. You get a ticket; the books balance.", dur:4400},
+  {cap:"And once confirmed, it stays confirmed — even if the website crashes a second later. That's <b>durability.</b>", dur:4400},
+  {cap:"Now the failure case: the seat is reserved, but your <span class='hl-bad'>card is declined.</span>", dur:4000, on(){SIM.crash();}},
+  {cap:"The system <b>rolls back</b>: the seat is released and you're charged nothing. No half-booking left dangling.", dur:4600},
+  {cap:"That's ACID for you: <b>A</b>tomic (both or neither), <b>C</b>onsistent, <b>I</b>solated from other bookings, <b>D</b>urable once done.", dur:4800},
+  {cap:"Your turn 👉 <b>✅ Complete a booking</b>, then trigger a <b>💥 declined card</b> to watch the clean rollback.", dur:5200},
+  {cap:"Anything involving money or scarce resources — seats, inventory, transfers — needs this all-or-nothing promise. That's ACID.", dur:4800}
+]});
+
+</script>
+</body></html>
