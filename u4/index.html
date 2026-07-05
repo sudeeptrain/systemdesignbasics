@@ -1,0 +1,329 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Design — Unit 4 Animations</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css">
+<style>.hero{max-width:1000px;margin:0 auto 18px;text-align:center}.grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);box-shadow:0 10px 24px -18px rgba(40,70,120,.5);transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}.card .t{font-family:var(--fdisp);font-weight:600;font-size:16px}
+.card .badge{font-family:var(--fmono);font-size:10.5px;color:var(--faint)}.card.real{border-left:4px solid var(--pink)}.card.concept{border-left:4px solid var(--accent)}
+body{display:block;padding:26px 26px 48px}</style>
+<style>.mnav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;align-items:center;padding:9px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 15px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:6px 14px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a class="cur">▶ Animated Lessons</a><a href="study.html">📊 Study Slides</a></div><div style="width:100%"><div class="hero"><h1 class="title" style="font-size:30px">System Design · Unit 4 — Networking, APIs, Security &amp; DevOps</h1>
+<p class="subtitle" style="margin:0 auto">106 interactive, projector-ready lessons. Each plays in any browser — press ▶ and use the in-scene buttons.</p></div>
+<div class="grid"><a class="card concept" href="lessons/U4-01-tcp-handshake-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">TCP Three-Way Handshake</span></a>
+<a class="card real" href="lessons/U4-01-tcp-handshake-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">TCP Handshake — A Phone Call Greeting</span></a>
+<a class="card concept" href="lessons/U4-02-tcp-vs-udp-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">TCP vs UDP</span></a>
+<a class="card real" href="lessons/U4-02-tcp-vs-udp-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">TCP vs UDP — Registered Post vs Postcards</span></a>
+<a class="card concept" href="lessons/U4-03-http-request-lifecycle-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">HTTP Request Lifecycle</span></a>
+<a class="card real" href="lessons/U4-03-http-request-lifecycle-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">HTTP Lifecycle — Ordering at a Counter</span></a>
+<a class="card concept" href="lessons/U4-04-http-versions-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">HTTP/1 vs HTTP/2 vs HTTP/3</span></a>
+<a class="card real" href="lessons/U4-04-http-versions-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">HTTP Versions — Lanes on a Highway</span></a>
+<a class="card concept" href="lessons/U4-05-websocket-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">WebSocket Connection</span></a>
+<a class="card real" href="lessons/U4-05-websocket-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">WebSocket — An Open Phone Line</span></a>
+<a class="card concept" href="lessons/U4-06-dns-resolution-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">DNS Resolution</span></a>
+<a class="card real" href="lessons/U4-06-dns-resolution-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">DNS — Looking Up a Phone Number</span></a>
+<a class="card concept" href="lessons/U4-07-cdn-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CDN (Push vs Pull)</span></a>
+<a class="card real" href="lessons/U4-07-cdn-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CDN — Local Library Branches</span></a>
+<a class="card concept" href="lessons/U4-08-tls-handshake-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">TLS Handshake</span></a>
+<a class="card real" href="lessons/U4-08-tls-handshake-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">TLS — A Sealed Diplomatic Pouch</span></a>
+<a class="card concept" href="lessons/U4-09-rest-api-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">REST API</span></a>
+<a class="card real" href="lessons/U4-09-rest-api-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">REST — A Standard Restaurant Menu</span></a>
+<a class="card concept" href="lessons/U4-10-graphql-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">GraphQL</span></a>
+<a class="card real" href="lessons/U4-10-graphql-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">GraphQL — À La Carte vs a Set Plate</span></a>
+<a class="card concept" href="lessons/U4-11-grpc-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">gRPC</span></a>
+<a class="card real" href="lessons/U4-11-grpc-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">gRPC — Two Pros Talking in Shorthand</span></a>
+<a class="card concept" href="lessons/U4-12-webhooks-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Webhooks</span></a>
+<a class="card real" href="lessons/U4-12-webhooks-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Webhooks — A Doorbell, Not a Peephole</span></a>
+<a class="card concept" href="lessons/U4-13-api-gateway-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">API Gateway</span></a>
+<a class="card real" href="lessons/U4-13-api-gateway-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">API Gateway — A Building Reception Desk</span></a>
+<a class="card concept" href="lessons/U4-14-rate-limiting-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Rate Limiting</span></a>
+<a class="card real" href="lessons/U4-14-rate-limiting-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Rate Limiting — A Nightclub Bouncer</span></a>
+<a class="card concept" href="lessons/U4-15-api-versioning-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">API Versioning</span></a>
+<a class="card real" href="lessons/U4-15-api-versioning-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">API Versioning — A New Edition of a Textbook</span></a>
+<a class="card concept" href="lessons/U4-16-client-server-architecture-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Client-Server Architecture</span></a>
+<a class="card real" href="lessons/U4-16-client-server-architecture-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Client-Server — Diners and the Kitchen</span></a>
+<a class="card concept" href="lessons/U4-17-l4-vs-l7-load-balancer-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">L4 vs L7 Load Balancer</span></a>
+<a class="card real" href="lessons/U4-17-l4-vs-l7-load-balancer-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">L4 vs L7 — Sorting Mail by Zip vs by Reading It</span></a>
+<a class="card concept" href="lessons/U4-18-consistent-hashing-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Consistent Hashing</span></a>
+<a class="card real" href="lessons/U4-18-consistent-hashing-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Consistent Hashing — Hosts Around a Round Table</span></a>
+<a class="card concept" href="lessons/U4-19-health-checks-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Health Checks</span></a>
+<a class="card real" href="lessons/U4-19-health-checks-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Health Checks — A Shift Manager's Roll-Call</span></a>
+<a class="card concept" href="lessons/U4-20-global-load-balancing-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Global Load Balancing</span></a>
+<a class="card real" href="lessons/U4-20-global-load-balancing-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Global Load Balancing — Your Nearest Branch</span></a>
+<a class="card concept" href="lessons/U4-21-authentication-flow-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Authentication Flow</span></a>
+<a class="card real" href="lessons/U4-21-authentication-flow-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Authentication — Showing ID at the Door</span></a>
+<a class="card concept" href="lessons/U4-22-authorization-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Authorization</span></a>
+<a class="card real" href="lessons/U4-22-authorization-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Authorization — A Hotel Keycard</span></a>
+<a class="card concept" href="lessons/U4-23-oauth-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">OAuth 2.0 Login</span></a>
+<a class="card real" href="lessons/U4-23-oauth-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">OAuth — A Valet Key for Your Car</span></a>
+<a class="card concept" href="lessons/U4-24-jwt-flow-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">JWT Flow</span></a>
+<a class="card real" href="lessons/U4-24-jwt-flow-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">JWT — A Festival Wristband</span></a>
+<a class="card concept" href="lessons/U4-25-sso-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">SSO (Single Sign-On)</span></a>
+<a class="card real" href="lessons/U4-25-sso-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">SSO — One Conference Badge</span></a>
+<a class="card concept" href="lessons/U4-26-malware-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Malware Attack &amp; Defense</span></a>
+<a class="card real" href="lessons/U4-26-malware-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Malware — Catching a Cold (and Good Hygiene)</span></a>
+<a class="card concept" href="lessons/U4-27-firewall-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Firewall</span></a>
+<a class="card real" href="lessons/U4-27-firewall-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Firewall — A Gated Community Guard</span></a>
+<a class="card concept" href="lessons/U4-28-cicd-deployment-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CI/CD Deployment</span></a>
+<a class="card real" href="lessons/U4-28-cicd-deployment-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CI/CD — A Car Assembly Line</span></a>
+<a class="card concept" href="lessons/U4-29-monitoring-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Monitoring (Prometheus &amp; Grafana)</span></a>
+<a class="card real" href="lessons/U4-29-monitoring-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Monitoring — A Car Dashboard</span></a>
+<a class="card concept" href="lessons/U4-30-forward-vs-reverse-proxy-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Forward vs Reverse Proxy</span></a>
+<a class="card real" href="lessons/U4-30-forward-vs-reverse-proxy-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Forward vs Reverse Proxy — Personal Shopper vs Receptionist</span></a>
+<a class="card concept" href="lessons/U4-31-quic-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">QUIC</span></a>
+<a class="card real" href="lessons/U4-31-quic-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">QUIC — A Courier Who Knows You, Not Your Address</span></a>
+<a class="card concept" href="lessons/U4-32-server-sent-events-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Server-Sent Events (SSE)</span></a>
+<a class="card real" href="lessons/U4-32-server-sent-events-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">SSE — A Live Radio Broadcast</span></a>
+<a class="card concept" href="lessons/U4-33-realtime-techniques-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Short Poll · Long Poll · SSE · WebSocket</span></a>
+<a class="card real" href="lessons/U4-33-realtime-techniques-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Getting News — Four Ways to Stay Updated</span></a>
+<a class="card concept" href="lessons/U4-34-message-queues-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Message Queues</span></a>
+<a class="card real" href="lessons/U4-34-message-queues-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Message Queues — A Deli Ticket Counter</span></a>
+<a class="card concept" href="lessons/U4-35-kafka-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Apache Kafka</span></a>
+<a class="card real" href="lessons/U4-35-kafka-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Kafka — A Newspaper Archive You Can Re-read</span></a>
+<a class="card concept" href="lessons/U4-36-dead-letter-queue-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Dead Letter Queue (DLQ)</span></a>
+<a class="card real" href="lessons/U4-36-dead-letter-queue-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Dead Letter Queue — The Returns Bin</span></a>
+<a class="card concept" href="lessons/U4-37-idempotency-keys-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Idempotency Keys in APIs</span></a>
+<a class="card real" href="lessons/U4-37-idempotency-keys-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Idempotency Keys — A Coat-Check Ticket</span></a>
+<a class="card concept" href="lessons/U4-38-api-pagination-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">API Pagination (offset vs cursor)</span></a>
+<a class="card real" href="lessons/U4-38-api-pagination-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Pagination — Page Numbers vs a Bookmark</span></a>
+<a class="card concept" href="lessons/U4-39-mtls-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">mTLS (Mutual TLS)</span></a>
+<a class="card real" href="lessons/U4-39-mtls-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">mTLS — Two Spies Trading Passwords</span></a>
+<a class="card concept" href="lessons/U4-40-service-discovery-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Service Discovery</span></a>
+<a class="card real" href="lessons/U4-40-service-discovery-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Service Discovery — A Taxi Dispatch Board</span></a>
+<a class="card concept" href="lessons/U4-41-sticky-vs-stateless-sessions-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Sticky vs Stateless Sessions</span></a>
+<a class="card real" href="lessons/U4-41-sticky-vs-stateless-sessions-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Sticky vs Stateless — Your Regular Barista</span></a>
+<a class="card concept" href="lessons/U4-42-web-security-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Web Security: XSS, CSRF, SQLi</span></a>
+<a class="card real" href="lessons/U4-42-web-security-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Web Security — Don't Trust Notes from Strangers</span></a>
+<a class="card concept" href="lessons/U4-43-ddos-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">DDoS Attacks &amp; Mitigation</span></a>
+<a class="card real" href="lessons/U4-43-ddos-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">DDoS — A Mob Jamming the Phone Line</span></a>
+<a class="card concept" href="lessons/U4-44-waf-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">WAF (Web Application Firewall)</span></a>
+<a class="card real" href="lessons/U4-44-waf-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">WAF — A Bouncer Who Checks Your Bag</span></a>
+<a class="card concept" href="lessons/U4-45-encryption-at-rest-in-transit-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Encryption at Rest &amp; in Transit</span></a>
+<a class="card real" href="lessons/U4-45-encryption-at-rest-in-transit-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Encryption — A Sealed Envelope and a Locked Diary</span></a>
+<a class="card concept" href="lessons/U4-46-secrets-management-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Secrets Management (Vault)</span></a>
+<a class="card real" href="lessons/U4-46-secrets-management-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Secrets Management — A Bank Safe-Deposit Box</span></a>
+<a class="card concept" href="lessons/U4-47-rbac-vs-abac-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">RBAC vs ABAC</span></a>
+<a class="card real" href="lessons/U4-47-rbac-vs-abac-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">RBAC vs ABAC — Job Title vs House Rules</span></a>
+<a class="card concept" href="lessons/U4-48-zero-trust-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Zero Trust Architecture</span></a>
+<a class="card real" href="lessons/U4-48-zero-trust-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Zero Trust — ID Checked at Every Door</span></a>
+<a class="card concept" href="lessons/U4-49-containers-docker-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Containers (Docker)</span></a>
+<a class="card real" href="lessons/U4-49-containers-docker-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Containers — A Shipping Container</span></a>
+<a class="card concept" href="lessons/U4-50-kubernetes-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Container Orchestration (Kubernetes)</span></a>
+<a class="card real" href="lessons/U4-50-kubernetes-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Kubernetes — A Stage Manager with Understudies</span></a>
+<a class="card concept" href="lessons/U4-51-terraform-iac-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Infrastructure as Code (Terraform)</span></a>
+<a class="card real" href="lessons/U4-51-terraform-iac-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Infrastructure as Code — A LEGO Instruction Booklet</span></a>
+<a class="card concept" href="lessons/U4-52-deployment-strategies-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Deployment Strategies</span></a>
+<a class="card real" href="lessons/U4-52-deployment-strategies-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Deployment Strategies — Refreshing a Restaurant's Menu</span></a>
+<a class="card concept" href="lessons/U4-53-feature-flags-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Feature Flags</span></a>
+<a class="card real" href="lessons/U4-53-feature-flags-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Feature Flags — A Theatre Soft Opening</span></a></div></div></body></html>
