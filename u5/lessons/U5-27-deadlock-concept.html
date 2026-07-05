@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deadlock · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.res2{position:absolute; width:46px; height:46px; border-radius:10px; border:2px solid var(--violet); background:#f1edff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:11px; font-weight:700; color:var(--violet); z-index:3; transition:.25s}
+.res2.locked{border-color:var(--bad); background:#fdeceb; color:var(--bad)}
+.arrow2{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--faint); z-index:2; transition:.3s}
+.proc2 .box{transition:.3s}
+.proc2.stuck .box{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Deadlock</h1>
+  <p class="subtitle">A deadlock is when processes are stuck forever, each holding a resource the other needs. It requires four conditions at once: mutual exclusion, hold-and-wait, no preemption, and circular wait. Break any one and the deadlock can't form — that's how we prevent it.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Deadlocks</div><div class="stat-v accent" id="statDeadlocks">0</div></div>
+  <div class="stat"><div class="stat-k">State</div><div class="stat-v good" id="statState">running</div></div>
+  <div class="stat"><div class="stat-k">Circular wait?</div><div class="stat-v good" id="statCirc">no</div></div>
+</div>
+<div class="node abs proc2 p-a" data-show="1" style="left:18%;top:32%"><div class="box sm">🅰️</div><div class="lbl"><span class="k">Process A</span></div></div>
+<div class="node abs proc2 p-b" data-show="1" style="left:18%;top:74%"><div class="box sm">🅱️</div><div class="lbl"><span class="k">Process B</span></div></div>
+<div class="res2 r-1" style="left:64%;top:30%">R1</div>
+<div class="res2 r-2" style="left:64%;top:70%">R2</div>
+<div class="arrow2" id="aw1" style="left:34%;top:30%">A holds R1</div>
+<div class="arrow2" id="aw2" style="left:34%;top:74%">B holds R2</div>
+<div class="arrow2" id="aw3" style="left:46%;top:50%"></div>
+<div class="acts">
+  <button class="act bad" id="actDeadlock">🔒 Each grabs, then wants the other</button>
+  <button class="act ok" id="actPrevent">🛡️ Break a condition</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let deadlocks=0, running=false;
+  const elD=document.getElementById('statDeadlocks'), elS=document.getElementById('statState'), elC=document.getElementById('statCirc');
+  const r1=scene.querySelector('.r-1'), r2=scene.querySelector('.r-2'), pa=scene.querySelector('.p-a'), pb=scene.querySelector('.p-b');
+  const aw3=document.getElementById('aw3');
+  function deadlock(){ if(document.hidden) return;
+    r1.classList.add('locked'); r2.classList.add('locked');
+    // A wants R2, B wants R1 → circular
+    aw3.innerHTML='A wants R2 ↘ · B wants R1 ↗ — circular!'; aw3.style.color='var(--bad)';
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='30%'; d.style.top='32%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s, top .5s';d.style.left='60%';d.style.top='70%';}); setTimeout(()=>{d.classList.add('fail'); setTimeout(()=>d.remove(),300);},520);
+    const e=document.createElement('div'); e.className='dot fail'; e.style.left='30%'; e.style.top='74%'; scene.appendChild(e); requestAnimationFrame(()=>{e.style.transition='left .5s, top .5s';e.style.left='60%';e.style.top='30%';}); setTimeout(()=>{e.classList.add('fail'); setTimeout(()=>e.remove(),300);},520);
+    pa.classList.add('stuck'); pb.classList.add('stuck');
+    deadlocks++; elD.textContent=deadlocks; elS.textContent='DEADLOCKED'; elS.className='stat-v bad'; elC.textContent='yes'; elC.className='stat-v bad';
+  }
+  function prevent(){ if(document.hidden) return;
+    r1.classList.remove('locked'); r2.classList.remove('locked'); pa.classList.remove('stuck'); pb.classList.remove('stuck');
+    aw3.innerHTML='ordered locking → no cycle'; aw3.style.color='var(--good)';
+    elS.textContent='running'; elS.className='stat-v good'; elC.textContent='no'; elC.className='stat-v good';
+    // both proceed successfully
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='30%'; d.style.top='32%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s';d.style.left='62%';}); setTimeout(()=>d.remove(),520);
+    const e=document.createElement('div'); e.className='dot done'; e.style.left='30%'; e.style.top='74%'; scene.appendChild(e); requestAnimationFrame(()=>{e.style.transition='left .5s';e.style.left='62%';}); setTimeout(()=>e.remove(),520);
+  }
+  function loop(){ if(!running)return; if(elS.textContent==='DEADLOCKED') prevent(); else if(Math.random()<0.5) deadlock(); else prevent(); setTimeout(loop, 2400*simRate()); }
+  document.getElementById('actDeadlock').onclick=deadlock;
+  document.getElementById('actPrevent').onclick=prevent;
+  running=true; loop();
+  return {deadlock,prevent};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>deadlock</b> is the ultimate traffic jam: two processes frozen forever, each waiting on something the other will never release.", dur:4600},
+  {cap:"Picture two resources, R1 and R2, and two processes. <b>A grabs R1; B grabs R2.</b> So far, fine.", dur:4600},
+  {cap:"Now <b>A also needs R2</b> (held by B), and <b>B also needs R1</b> (held by A). Each waits for the other. Watch it lock up.", dur:4400, on(){SIM.deadlock();}},
+  {cap:"That's a <span class='hl-bad'>circular wait</span> — a cycle of dependencies with no exit. Both processes are stuck for good. Deadlocked.", dur:4800},
+  {cap:"It takes <b>four conditions at once:</b> mutual exclusion, hold-and-wait, no preemption, and circular wait. All four — or no deadlock.", dur:4800},
+  {cap:"That's also the cure: <b>break any one condition</b> and a deadlock simply can't form.", dur:4200, on(){SIM.prevent();}},
+  {cap:"The classic fix breaks <b>circular wait</b>: make everyone acquire resources in the <b>same global order</b> (always R1 before R2). No cycle is possible.", dur:4800, on(){SIM.prevent();}},
+  {cap:"Other tactics: take all locks at once (no hold-and-wait), allow timeouts/preemption, or <b>detect</b> cycles and kill a victim to recover.", dur:4800},
+  {cap:"Your turn 👉 trigger the <b>🔒 circular grab</b> to deadlock the pair, then <b>🛡️ break a condition</b> to set them free.", dur:5200, on(){SIM.deadlock();}},
+  {cap:"Deadlock needs four conditions together — mutual exclusion, hold-and-wait, no preemption, circular wait. Break one (e.g. ordered locking) to prevent it.", dur:4800}
+]});
+
+</script>
+</body></html>

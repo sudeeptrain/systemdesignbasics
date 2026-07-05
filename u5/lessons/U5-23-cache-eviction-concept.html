@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Eviction (LRU / LFU) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.slots{position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); display:flex; gap:9px; z-index:2}
+.slot{width:52px; height:56px; border-radius:10px; border:2px solid var(--line2); background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:var(--fmono); font-weight:700; color:var(--accent-d); transition:.25s}
+.slot .id{font-size:15px} .slot .meta{font-size:8px; color:var(--muted); font-weight:400}
+.slot.hit{border-color:var(--good); background:#e7f7ef}
+.slot.evict{border-color:var(--bad); background:#fdeceb}
+.slot.victim{box-shadow:0 0 0 3px rgba(185,115,11,.3)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache Eviction (LRU / LFU)</h1>
+  <p class="subtitle">A cache has limited space, so when it's full and a new item arrives, something must go. An eviction policy decides which: LRU drops the least-recently-used entry; LFU drops the least-frequently-used. The goal is to throw out what you're least likely to need again.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Hits</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Policy</div><div class="stat-v" id="statPol">LRU</div></div>
+  <div class="stat"><div class="stat-k">Evictions</div><div class="stat-v" id="statEv">0</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:22%">cache (4 slots, full)</div>
+<div class="slots" id="slots"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">🔑 Access a key</button>
+  <button class="act" id="actMode">🔀 LRU / LFU</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CAP=4; let slots=[], policy='lru', hits=0, ev=0, running=false, kc=0;
+  const slotsEl=document.getElementById('slots'), elH=document.getElementById('statHits'), elP=document.getElementById('statPol'), elE=document.getElementById('statEv');
+  function victimIdx(){ if(policy==='lru'){ let mi=0,m=Infinity; slots.forEach((s,k)=>{ if(s.last<m){m=s.last;mi=k;} }); return mi; } else { let mi=0,m=Infinity; slots.forEach((s,k)=>{ if(s.cnt<m){m=s.cnt;mi=k;} }); return mi; } }
+  function render(flash){ const vi = slots.length===CAP? victimIdx() : -1; slotsEl.innerHTML=''; for(let k=0;k<CAP;k++){ const s=slots[k]; const d=document.createElement('div'); d.className='slot'+(flash&&flash.idx===k?(' '+flash.cls):'')+(k===vi?' victim':''); d.innerHTML='<span class="id">'+(s?('K'+s.id):'·')+'</span><span class="meta">'+(s?(policy==='lru'?('t'+s.last):('×'+s.cnt)):'')+'</span>'; slotsEl.appendChild(d); } }
+  let clock=0;
+  function access(id){ if(document.hidden) return; if(id===undefined) id = Math.random()<0.5 ? (slots.length?slots[Math.floor(Math.random()*slots.length)].id : kc++) : kc++; clock++;
+    const existing=slots.find(s=>s.id===id);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ if(existing){ hits++; elH.textContent=hits; existing.last=clock; existing.cnt++; d.classList.add('done'); render({idx:slots.indexOf(existing),cls:'hit'}); setTimeout(()=>d.remove(),leg); }
+      else { d.classList.add('fail'); if(slots.length>=CAP){ const vi=victimIdx(); slots.splice(vi,1); ev++; elE.textContent=ev; elE.className='stat-v warn'; } slots.push({id, last:clock, cnt:1}); render({idx:slots.length-1,cls:'evict'}); setTimeout(()=>d.remove(),360); } }, leg);
+  }
+  function setMode(){ policy=policy==='lru'?'lfu':'lru'; elP.textContent=policy.toUpperCase(); elP.className='stat-v '+(policy==='lru'?'accent':'good'); render(); }
+  function loop(){ if(!running)return; access(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access();
+  document.getElementById('actMode').onclick=setMode;
+  render(); running=true; loop();
+  return {access,setMode,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A cache can't grow forever. When it's <b>full</b> and a new item needs in, an old one must be <b>evicted.</b> The policy picks the loser.", dur:4600},
+  {cap:"Here are four cache slots. Accessing a key already present is a <span class='hl-good'>hit</span> — and it refreshes that entry's stats.", dur:4400, on(){SIM.access();SIM.access();}},
+  {cap:"Accessing a key that's not cached is a miss — it gets added, filling the slots until they're full.", dur:4400, on(){SIM.access();SIM.access();SIM.access();}},
+  {cap:"Now full. A new key arrives, so the <b>LRU</b> policy evicts the entry with the oldest last-use time (the victim, highlighted).", dur:4800, on(){SIM.access();}},
+  {cap:"LRU's bet: if you haven't touched it in a while, you probably won't soon. It protects whatever you've used most recently.", dur:4600, on(){SIM.access();}},
+  {cap:"Switch to <b>LFU.</b> Now the victim is chosen by <b>frequency</b> — the entry with the lowest access count goes.", dur:4400, on(){SIM.setMode();}},
+  {cap:"LFU protects your <b>hot keys</b> — ones hit many times — even if they weren't touched in the last few accesses. Different bet, different victim.", dur:4800, on(){SIM.access();SIM.access();}},
+  {cap:"There's no universal winner: LRU suits recency-heavy patterns, LFU suits stable hot sets. Real caches (Redis) offer both, plus hybrids.", dur:4800, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>🔑 Access keys</b> to fill and evict, and <b>🔀 flip LRU / LFU</b> to watch the victim choice change.", dur:5200, on(){SIM.setMode();}},
+  {cap:"Cache eviction frees space when full: LRU drops least-recently-used, LFU drops least-frequently-used. Pick the policy that matches your access pattern.", dur:4800}
+]});
+
+</script>
+</body></html>

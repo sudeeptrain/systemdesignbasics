@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Cache — Books Split Across Library Branches · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.nodes2{position:absolute; right:8%; top:18%; width:30%; display:flex; flex-direction:column; gap:8px; z-index:2}
+.cnode{display:flex; align-items:center; gap:8px; font-family:var(--fmono); font-size:11px; padding:7px 9px; border-radius:8px; border:1.5px solid var(--accent); background:#eef4ff; color:var(--accent-d); transition:.25s}
+.cnode.hit{border-color:var(--good); background:#e7f7ef}
+.cnode.dead{border-color:var(--bad); background:#fdeceb; opacity:.6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Distributed Cache — Books Split Across Library Branches</h1>
+  <p class="subtitle">One library can't hold every book or seat every reader. A city library system splits the collection across branches by a clear rule — say, by the title's first letter. You know instantly which branch holds your book, the load spreads evenly, and you can open new branches to grow.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Book requests</div><div class="stat-v accent" id="statOps">0</div></div>
+  <div class="stat"><div class="stat-k">Branches</div><div class="stat-v" id="statNodes">3</div></div>
+  <div class="stat"><div class="stat-k">Books per branch</div><div class="stat-v good" id="statSpread">even</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">🧑</div><div class="lbl"><span class="k">Reader<br>which branch?</span></div></div>
+<div class="nlbl" style="left:80%;top:10%">library branches</div>
+<div class="nodes2" id="nodes"></div>
+<div class="acts">
+  <button class="act ok" id="actGet">📖 Request a book → branch</button>
+  <button class="act" id="actAddNode">➕ Open a branch</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('nodes');
+  let nodes=[{c:0,alive:true},{c:0,alive:true},{c:0,alive:true}], ops=0, running=false, kc=0;
+  const elO=document.getElementById('statOps'), elN=document.getElementById('statNodes'), elS=document.getElementById('statSpread');
+  function ys(n){const a=[],top=24,bot=82;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; nodes.forEach((nd,i)=>{ nd.y=ys(nodes.length)[i]; const el=document.createElement('div'); el.className='cnode cn-'+i+(nd.alive?'':' dead'); el.innerHTML='<span>📚 branch '+i+'</span><span style="margin-left:auto">'+nd.c+' books</span>'; wrap.appendChild(el); nd.el=el; });
+    elN.textContent=nodes.filter(n=>n.alive).length; }
+  function get(){ if(document.hidden) return; ops++; elO.textContent=ops; const key=kc++;
+    const live=nodes.map((n,i)=>i).filter(i=>nodes[i].alive); const idx=live[key%live.length];
+    const nd=nodes[idx]; const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='66%'; d.style.top=nd.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); nd.c++; if(nd.el){nd.el.classList.add('hit'); setTimeout(()=>nd.el.classList.remove('hit'),250);} render(); setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function addNode(){ if(nodes.length<5){ nodes.push({c:0,alive:true}); render(); const el=nodes[nodes.length-1].el; if(el){el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),500);} } }
+  function loop(){ if(!running)return; get(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actGet').onclick=get;
+  document.getElementById('actAddNode').onclick=addNode;
+  render(); running=true; loop();
+  return {get,addNode,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"One library can't shelve every book or seat every reader. A city <b>library system</b> spreads the collection across branches — just like a distributed cache.", dur:4800},
+  {cap:"The collection is <b>split:</b> each branch holds a slice of the books. No single branch has everything — together they hold it all.", dur:4600},
+  {cap:"How do you know which branch has your book? A <b>simple rule</b> — say, the title's first letter — so any reader works out the same branch instantly.", dur:4800, on(){SIM.get();}},
+  {cap:"Pick a book, apply the rule, head straight to its branch. Because the rule spreads titles evenly, each branch carries a <b>fair share</b> of books and visitors.", dur:4600, on(){SIM.get();SIM.get();}},
+  {cap:"Getting crowded? <b>Open a new branch.</b> The collection redistributes a little, and each branch's load drops.", dur:4800, on(){SIM.addNode();}},
+  {cap:"Watch the requests now spread across more branches — more total shelf space and more readers served, just by opening locations. That's scaling out.", dur:4600, on(){SIM.get();SIM.get();}},
+  {cap:"For safety, popular sections are usually <b>copied to a backup branch</b>, so if one closes for repairs, its books aren't lost to everyone.", dur:4600, on(){SIM.get();}},
+  {cap:"This is exactly how Redis Cluster works — thousands of 'slots' mapped across servers, with replicas and automatic failover.", dur:4600, on(){SIM.addNode();}},
+  {cap:"Your turn 👉 <b>📖 Request books</b> to watch them route to branches, and <b>➕ open a branch</b> to spread the load wider.", dur:5200},
+  {cap:"A distributed cache splits keys across nodes by a hashing rule — scaling capacity and throughput, with replicas for resilience. Branch libraries, in software.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Invalidation · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.db .box,.cache .box{transition:.3s}
+.ver{position:absolute; font-family:var(--fmono); font-size:11px; font-weight:700; transform:translateX(-50%); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache Invalidation</h1>
+  <p class="subtitle">A cache holds a copy of the source data. When the source changes, that copy is stale — and serving it gives users wrong answers. Invalidation removes or refreshes the stale entry. "There are only two hard things in computer science: cache invalidation and naming things."</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reads served</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Cache state</div><div class="stat-v good" id="statState">fresh</div></div>
+  <div class="stat"><div class="stat-k">Stale served</div><div class="stat-v good" id="statStale">0</div></div>
+</div>
+<div class="node abs db" data-show="1" style="left:16%;top:44%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Source</span></div></div>
+<div class="ver" style="left:16%;top:66%;color:var(--accent-d)" id="dbver">source: v1</div>
+<div class="node abs cache" data-show="1" style="left:50%;top:44%"><div class="box">⚡</div><div class="lbl"><span class="k">Cache</span></div></div>
+<div class="ver" style="left:50%;top:70%;color:var(--good)" id="cver">cache: v1</div>
+<div class="node abs" data-show="1" style="left:84%;top:44%"><div class="box sm">🧑</div><div class="lbl"><span class="k">User</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actUpdate">✏️ Update the source</button>
+  <button class="act ok" id="actInvalidate">🧹 Invalidate cache</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let dbv=1, cv=1, empty=false, reads=0, stale=0, running=false;
+  const elR=document.getElementById('statReads'), elS=document.getElementById('statState'), elSt=document.getElementById('statStale'), dbver=document.getElementById('dbver'), cver=document.getElementById('cver');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function fmt(){ dbver.textContent='source: v'+dbv; cver.textContent= empty?'cache: empty':'cache: v'+cv; const st = empty?'empty': (cv<dbv?'STALE':'fresh'); elS.textContent=st; elS.className='stat-v '+(st==='STALE'?'bad':st==='fresh'?'good':''); cver.style.color = st==='STALE'?'var(--bad)':'var(--good)'; }
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads;
+    if(empty){ // miss → load fresh from source
+      const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='44%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='16%';});
+      setTimeout(()=>{ cv=dbv; empty=false; fmt(); if(cache){cache.classList.add('busy'); setTimeout(()=>cache.classList.remove('busy'),200);} d.classList.add('done'); d.style.left='84%'; setTimeout(()=>d.remove(),420); }, 420*simRate()); return;
+    }
+    const d=document.createElement('div'); d.className='dot'; d.style.left='84%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),200);}
+      if(cv<dbv){ d.classList.add('fail'); stale++; elSt.textContent=stale; elSt.className='stat-v bad'; }
+      else d.classList.add('done');
+      d.style.left='84%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function update(){ dbv++; if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),250);} fmt(); }
+  function invalidate(){ empty=true; if(cache){cache.classList.add('crash'); setTimeout(()=>cache.classList.remove('crash'),300);} fmt(); }
+  function loop(){ if(!running)return; const r=Math.random(); if(r<0.2) update(); else if(r<0.3 && cv<dbv) invalidate(); else read(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actUpdate').onclick=update;
+  document.getElementById('actInvalidate').onclick=invalidate;
+  fmt(); running=true; loop();
+  return {read,update,invalidate};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A cache is a <b>copy</b> of data that really lives somewhere else. That copy is only useful while it still matches the source.", dur:4600},
+  {cap:"Right now both agree: source is v1, cache is v1. A read is served from cache — fast and <span class='hl-good'>correct.</span>", dur:4400, on(){SIM.read();}},
+  {cap:"Now someone <b>updates the source</b> — it becomes v2. But the cache still holds v1.", dur:4000, on(){SIM.update();}},
+  {cap:"The cache is now <span class='hl-bad'>stale.</span> If we keep reading from it, users get the <b>old v1</b> — a wrong answer served fast. The worst kind.", dur:4800, on(){SIM.read();}},
+  {cap:"Every stale read is a bug. This is why invalidation matters: the cache must learn that its copy is no longer valid.", dur:4600, on(){SIM.read();}},
+  {cap:"<b>Invalidate</b> the entry — evict it from the cache.", dur:3400, on(){SIM.invalidate();}},
+  {cap:"Now the next read <b>misses</b>, reloads the fresh v2 from the source, and re-populates the cache. Correctness restored.", dur:4600, on(){SIM.read();}},
+  {cap:"How do you know when to invalidate? <b>TTL</b> (expire after N seconds), <b>write-invalidate</b> (clear on every update), or <b>event-driven</b> (the source notifies).", dur:5000},
+  {cap:"Each trades freshness against load — and getting it wrong means stale data or a hammered source. That's why it's famously hard.", dur:4600, on(){SIM.update();SIM.invalidate();}},
+  {cap:"Your turn 👉 <b>✏️ Update the source</b> (cache goes stale) then <b>🧹 invalidate</b> to force a fresh reload.", dur:5200},
+  {cap:"Cache invalidation keeps the copy honest: when the source changes, evict or refresh the stale entry — via TTL, write-invalidate, or events.", dur:4800}
+]});
+
+</script>
+</body></html>

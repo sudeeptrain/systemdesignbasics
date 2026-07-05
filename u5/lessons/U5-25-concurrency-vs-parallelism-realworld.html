@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concurrency vs Parallelism — One Chef or Many · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.core{position:absolute; width:120px; height:38px; border-radius:9px; border:2px solid var(--accent); background:#eef4ff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:11px; color:var(--accent-d); z-index:2; transition:.3s}
+.core.busy{border-color:var(--good); background:#e7f7ef}
+.tasklane{position:absolute; left:8%; font-family:var(--fmono); font-size:10px; color:var(--muted); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Concurrency vs Parallelism — One Chef or Many</h1>
+  <p class="subtitle">One chef cooking three dishes by rotating between them — stir this, flip that, check the oven — is concurrency: only one pair of hands, but everything progresses. Three chefs at three stoves cooking at the same instant is parallelism. One is clever scheduling; the other is more hands.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Dishes plated</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">One chef (rotating)</div></div>
+  <div class="stat"><div class="stat-k">Chefs cooking</div><div class="stat-v" id="statCores">1</div></div>
+</div>
+<div id="cores"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 One chef / Many chefs</button>
+  <button class="act ok" id="actAddTask">➕ Fire an order</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const coresWrap=document.getElementById('cores');
+  let mode='conc', done=0, running=false;
+  const elD=document.getElementById('statDone'), elM=document.getElementById('statMode'), elC=document.getElementById('statCores');
+  function render(){ coresWrap.innerHTML=''; const n = mode==='conc'?1:2; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='core c-'+i; c.style.left='40%'; c.style.top=(34+i*26)+'%'; c.textContent='🧑‍🍳 Chef '+(i+1); coresWrap.appendChild(c); } elC.textContent=n; }
+  function task(lane){ if(document.hidden) return; const n = mode==='conc'?1:2; const core = mode==='conc'?0:(lane%n); const cy=34+core*26+4;
+    const c=scene.querySelector('.c-'+core);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='10%'; d.style.top=cy+'%'; scene.appendChild(d);
+    const leg=(mode==='conc'?520:380)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='46%'; });
+    setTimeout(()=>{ if(c){c.classList.add('busy'); setTimeout(()=>c.classList.remove('busy'),180);} d.classList.add('done'); d.style.left='84%'; setTimeout(()=>d.remove(),leg); done++; elD.textContent=done; }, leg);
+  }
+  function add(){ if(mode==='conc'){ task(0); setTimeout(()=>task(0), 220*simRate());
+    } else { task(0); task(1); } }
+  function setMode(){ mode=mode==='conc'?'par':'conc'; elM.textContent=mode==='conc'?'One chef (rotating)':'Many chefs (at once)'; elM.className='stat-v '+(mode==='conc'?'warn':'good'); render(); }
+  function loop(){ if(!running)return; add(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actMode').onclick=setMode;
+  document.getElementById('actAddTask').onclick=add;
+  render(); running=true; loop();
+  return {add,setMode,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Concurrency</b> and <b>parallelism</b> sound identical but aren't. The whole difference is one question: how many dishes are <em>actually being cooked at the same instant?</em>", dur:4800},
+  {cap:"<b>One chef</b> juggling several dishes — stir this, flip that, check the oven — is concurrency. One pair of hands, rotating fast between pans.", dur:4800, on(){SIM.add();}},
+  {cap:"At any single instant the chef touches only <em>one</em> pan, yet every dish <b>keeps progressing.</b> The rotating is so quick it looks simultaneous.", dur:4800, on(){SIM.add();}},
+  {cap:"It's clever scheduling: while one pot simmers untended (waiting), the chef works another dish — no one stove ever stalls the whole kitchen.", dur:4600, on(){SIM.add();}},
+  {cap:"<b>Parallelism</b> is different — <b>several chefs, each at their own stove</b>, cooking at the <em>same real moment.</em> Switch the mode.", dur:4800, on(){SIM.setMode();}},
+  {cap:"Now two dishes genuinely cook <span class='hl-good'>at once</span>, side by side. Two chefs can plate roughly twice as many dishes per hour.", dur:4800, on(){SIM.add();}},
+  {cap:"Parallelism needs more chefs (more cores); concurrency can be done by a single skilled chef just by rotating cleverly.", dur:4600, on(){SIM.add();}},
+  {cap:"They combine beautifully: a well-organized kitchen (concurrent) puts its dishes on multiple stoves (parallel) the moment more chefs show up.", dur:4800},
+  {cap:"Your turn 👉 flip <b>🔀 One chef / Many chefs</b> and <b>➕ fire orders</b> to compare one cook rotating with several cooking at once.", dur:5200, on(){SIM.setMode();}},
+  {cap:"Concurrency = one chef juggling many dishes (clever rotation, one set of hands). Parallelism = many chefs cooking at once (more hands). Related, not the same.", dur:4800}
+]});
+
+</script>
+</body></html>

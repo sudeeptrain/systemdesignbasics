@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Read-Through &amp; Write-Around Cache · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache .box,.db .box{transition:.3s}
+.note{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Read-Through &amp; Write-Around Cache</h1>
+  <p class="subtitle">Read-through: the cache itself loads from the database on a miss — the app just asks the cache, which handles the fetch. Write-around: writes go straight to the database, bypassing the cache, so write-only data doesn't evict hot read data. They pair well for read-heavy, write-rarely-read workloads.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reads served</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Cache loads (auto)</div><div class="stat-v" id="statLoads">0</div></div>
+  <div class="stat"><div class="stat-k">Writes via cache</div><div class="stat-v good" id="statWvc">0 (bypassed)</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:42%"><div class="box">📱</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="node abs cache" data-show="1" style="left:50%;top:42%"><div class="box">⚡</div><div class="lbl"><span class="k">Cache</span></div></div>
+<div class="node abs db" data-show="1" style="left:84%;top:42%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="note" id="note">app talks only to the cache for reads</div>
+<div class="acts">
+  <button class="act ok" id="actRead">📖 Read (through the cache)</button>
+  <button class="act bad" id="actWrite">✏️ Write (around the cache)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let cached=new Set(), reads=0, loads=0, running=false, busy=false, kc=0;
+  const elR=document.getElementById('statReads'), elL=document.getElementById('statLoads'), note=document.getElementById('note');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function read(){ if(busy||document.hidden) return; busy=true; reads++; elR.textContent=reads; const k = Math.random()<0.5 && cached.size? [...cached][0] : kc++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cached.has(k)){ note.textContent='cache hit → return'; note.style.color='var(--good)'; if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),180);} d.classList.add('done'); d.style.left='16%'; setTimeout(()=>{d.remove(); busy=false;},leg); }
+      else { note.textContent='miss → CACHE loads from DB itself'; note.style.color='var(--warn)'; d.classList.add('fail');
+        d.style.left='84%'; setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),200);} cached.add(k); loads++; elL.textContent=loads; elL.className='stat-v warn';
+          const g=document.createElement('div'); g.className='dot done'; g.style.left='84%'; g.style.top='54%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .55s';g.style.left='16%';}); setTimeout(()=>{g.remove(); busy=false;},560); }, leg); } }, leg);
+  }
+  function write(){ if(document.hidden) return; note.textContent='write goes straight to DB (skips cache)'; note.style.color='var(--bad)';
+    // app → DB directly, bypassing the cache entirely
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='30%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),220);} d.classList.add('done'); setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function loop(){ if(!running)return; if(!busy){ if(Math.random()<0.7) read(); else write(); } setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actRead').onclick=read;
+  document.getElementById('actWrite').onclick=write;
+  running=true; loop();
+  return {read,write};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Cache-aside makes the <em>app</em> manage the cache. <b>Read-through</b> hands that job to the cache itself — the app just asks and gets data.", dur:4800},
+  {cap:"On a <b>hit</b>, the cache returns the value directly. Simple — the app never even knows whether it was a hit or miss.", dur:4600, on(){SIM.read();}},
+  {cap:"On a <b>miss</b>, the difference shows: the <b>cache</b> — not the app — goes to the database, loads the value, stores it, and returns it.", dur:4800, on(){SIM.read();}},
+  {cap:"So the app's code stays clean: one call to the cache, always. The cache library owns the loading logic. The next read is a hit.", dur:4600, on(){SIM.read();}},
+  {cap:"Now writes. <b>Write-around</b> sends every write <b>straight to the database</b>, deliberately <em>bypassing</em> the cache.", dur:4600, on(){SIM.write();}},
+  {cap:"Why skip the cache on writes? Because freshly written data is often <b>not read soon</b> — caching it would just evict genuinely hot entries.", dur:4800, on(){SIM.write();}},
+  {cap:"So write-around keeps the cache full of <b>what's actually being read</b>. The data only enters the cache later, lazily, if someone reads it.", dur:4800, on(){SIM.read();}},
+  {cap:"The trade-off: a read right after a write is a guaranteed miss (the value isn't cached yet). Fine when writes are rarely read back.", dur:4600},
+  {cap:"Your turn 👉 <b>📖 Read through</b> the cache (it auto-loads on miss) and <b>✏️ write around</b> it (straight to DB).", dur:5200},
+  {cap:"Read-through: the cache loads misses itself. Write-around: writes skip the cache to protect hot data. A clean combo for read-heavy workloads.", dur:4800}
+]});
+
+</script>
+</body></html>

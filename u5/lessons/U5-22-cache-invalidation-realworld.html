@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Invalidation — The Outdated Printed Menu · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.db .box,.cache .box{transition:.3s}
+.ver{position:absolute; font-family:var(--fmono); font-size:11px; font-weight:700; transform:translateX(-50%); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Cache Invalidation — The Outdated Printed Menu</h1>
+  <p class="subtitle">The printed menu is a copy of the real prices. When the kitchen raises a price, the printed copy is suddenly wrong — and charging from it short-changes the café. You have to pull or reprint the menu. Knowing exactly when to do that is famously tricky.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders taken</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Menu state</div><div class="stat-v good" id="statState">correct</div></div>
+  <div class="stat"><div class="stat-k">Wrong prices charged</div><div class="stat-v good" id="statStale">0</div></div>
+</div>
+<div class="node abs db" data-show="1" style="left:16%;top:44%"><div class="box sm">🍳</div><div class="lbl"><span class="k">Kitchen prices</span></div></div>
+<div class="ver" style="left:16%;top:66%;color:var(--accent-d)" id="dbver">real: v1</div>
+<div class="node abs cache" data-show="1" style="left:50%;top:44%"><div class="box">📋</div><div class="lbl"><span class="k">Printed menu</span></div></div>
+<div class="ver" style="left:50%;top:70%;color:var(--good)" id="cver">menu: v1</div>
+<div class="node abs" data-show="1" style="left:84%;top:44%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Customer</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actUpdate">✏️ Kitchen changes a price</button>
+  <button class="act ok" id="actInvalidate">🧹 Pull the old menu</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let dbv=1, cv=1, empty=false, reads=0, stale=0, running=false;
+  const elR=document.getElementById('statReads'), elS=document.getElementById('statState'), elSt=document.getElementById('statStale'), dbver=document.getElementById('dbver'), cver=document.getElementById('cver');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function fmt(){ dbver.textContent='real: v'+dbv; cver.textContent= empty?'menu: reprinting':'menu: v'+cv; const st = empty?'reprinting': (cv<dbv?'WRONG':'correct'); elS.textContent=st; elS.className='stat-v '+(st==='WRONG'?'bad':st==='correct'?'good':''); cver.style.color = st==='WRONG'?'var(--bad)':'var(--good)'; }
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads;
+    if(empty){ const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='44%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='16%';});
+      setTimeout(()=>{ cv=dbv; empty=false; fmt(); if(cache){cache.classList.add('busy'); setTimeout(()=>cache.classList.remove('busy'),200);} d.classList.add('done'); d.style.left='84%'; setTimeout(()=>d.remove(),420); }, 420*simRate()); return;
+    }
+    const d=document.createElement('div'); d.className='dot'; d.style.left='84%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),200);}
+      if(cv<dbv){ d.classList.add('fail'); stale++; elSt.textContent=stale; elSt.className='stat-v bad'; }
+      else d.classList.add('done');
+      d.style.left='84%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function update(){ dbv++; if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),250);} fmt(); }
+  function invalidate(){ empty=true; if(cache){cache.classList.add('crash'); setTimeout(()=>cache.classList.remove('crash'),300);} fmt(); }
+  function loop(){ if(!running)return; const r=Math.random(); if(r<0.2) update(); else if(r<0.3 && cv<dbv) invalidate(); else read(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actUpdate').onclick=update;
+  document.getElementById('actInvalidate').onclick=invalidate;
+  fmt(); running=true; loop();
+  return {read,update,invalidate};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A printed menu is a <b>copy</b> of the kitchen's real prices. It's only useful while the two still match.", dur:4600},
+  {cap:"Right now they agree: real prices v1, menu v1. You take an order off the menu — fast and <span class='hl-good'>correct.</span>", dur:4400, on(){SIM.read();}},
+  {cap:"Now the <b>kitchen raises a price</b> — the real prices are v2. But the printed menu still says v1.", dur:4000, on(){SIM.update();}},
+  {cap:"The menu is now <span class='hl-bad'>wrong.</span> Keep charging from it and you undercharge every table — a quiet, confident mistake. The worst kind.", dur:4800, on(){SIM.read();}},
+  {cap:"Every wrong-price order is a loss. This is why you must invalidate: the menu has to learn its copy is out of date.", dur:4600, on(){SIM.read();}},
+  {cap:"<b>Pull the old menu</b> from the tables.", dur:3400, on(){SIM.invalidate();}},
+  {cap:"Now the next order forces a <b>fresh reprint</b> from the real prices, and the menu is correct again. Money no longer left on the table.", dur:4600, on(){SIM.read();}},
+  {cap:"When should you reprint? <b>On a schedule</b> (every morning), <b>on every price change</b>, or <b>when the kitchen pings you.</b> Three real strategies.", dur:5000},
+  {cap:"Each trades freshness against hassle — reprint too rarely and you charge wrong; too often and you waste paper. That's why it's famously hard.", dur:4600, on(){SIM.update();SIM.invalidate();}},
+  {cap:"Your turn 👉 <b>✏️ Change a price</b> (the menu goes wrong) then <b>🧹 pull the old menu</b> to force a fresh reprint.", dur:5200},
+  {cap:"Cache invalidation keeps the copy honest: when the real prices change, pull or reprint the stale menu — on a timer, on change, or on notice.", dur:4800}
+]});
+
+</script>
+</body></html>

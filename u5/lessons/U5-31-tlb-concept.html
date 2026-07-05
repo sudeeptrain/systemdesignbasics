@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLB (Translation Lookaside Buffer) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tlb{position:absolute; left:46%; top:42%; transform:translate(-50%,-50%); width:110px; text-align:center; font-family:var(--fmono); font-size:10px; padding:8px; border-radius:10px; border:2px solid var(--good); background:#e7f7ef; color:#0c7a4d; z-index:3; min-height:40px}
+.pt2{position:absolute; left:82%; top:72%; transform:translate(-50%,-50%); width:90px; text-align:center; font-family:var(--fmono); font-size:10px; padding:8px; border-radius:9px; border:1.5px solid var(--muted); background:#f4f6f9; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">TLB (Translation Lookaside Buffer)</h1>
+  <p class="subtitle">Paging means every memory access needs a page-table lookup — which is itself a memory access. The TLB is a tiny, ultra-fast cache of recent page→frame translations. On a TLB hit the address is resolved instantly; on a miss the OS walks the page table, then caches the result.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Address lookups</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">TLB hits</div><div class="stat-v good" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">TLB misses</div><div class="stat-v" id="statMiss">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box sm">🧠</div><div class="lbl"><span class="k">CPU</span></div></div>
+<div class="tlb" id="tlb">⚡ TLB<br>(recent maps)</div>
+<div class="pt2" id="pt2">📒 page table<br>(in RAM, slow)</div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📄 Access a page</button>
+  <button class="act bad" id="actFlush">🧹 Flush TLB (context switch)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let tlb=new Set(), accesses=0, hits=0, miss=0, running=false, busy=false, seq=0;
+  const elA=document.getElementById('statAccesses'), elH=document.getElementById('statHits'), elM=document.getElementById('statMiss'), tlbEl=document.getElementById('tlb'), pt=document.getElementById('pt2');
+  function render(){ tlbEl.innerHTML='⚡ TLB<br>'+([...tlb].slice(-3).map(p=>'p'+p+'✓').join(' ')||'(empty)'); }
+  function access(p){ if(busy||document.hidden) return; busy=true; if(p===undefined) p = Math.random()<0.6 && tlb.size? [...tlb][Math.floor(Math.random()*tlb.size)] : (seq++ %6); accesses++; elA.textContent=accesses;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='46%'; });
+    setTimeout(()=>{ if(tlb.has(p)){ hits++; elH.textContent=hits; tlbEl.style.boxShadow='0 0 0 4px rgba(18,163,104,.25)'; setTimeout(()=>tlbEl.style.boxShadow='',250); d.classList.add('done'); d.style.left='14%'; setTimeout(()=>{d.remove(); busy=false;},leg); }
+      else { miss++; elM.textContent=miss; elM.className='stat-v warn'; d.classList.add('fail'); // walk page table
+        d.style.left='82%'; d.style.top='72%'; setTimeout(()=>{ if(pt){pt.style.boxShadow='0 0 0 4px rgba(120,120,120,.25)'; setTimeout(()=>pt.style.boxShadow='',250);} tlb.add(p); render();
+          const g=document.createElement('div'); g.className='dot done'; g.style.left='82%'; g.style.top='72%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .5s, top .5s';g.style.left='14%';g.style.top='42%';}); setTimeout(()=>{g.remove(); busy=false;},520); d.remove(); }, leg); } }, leg);
+  }
+  function flush(){ tlb.clear(); render(); tlbEl.style.boxShadow='0 0 0 4px rgba(216,58,46,.25)'; setTimeout(()=>tlbEl.style.boxShadow='',300); }
+  function loop(){ if(!running)return; if(!busy) access(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access();
+  document.getElementById('actFlush').onclick=flush;
+  render(); running=true; loop();
+  return {access,flush,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Paging is elegant, but it hides a tax: <b>every</b> memory access first needs a <b>page-table lookup</b> to translate the address — and the table is in slow RAM.", dur:4800},
+  {cap:"That would mean two memory trips per access. The fix is the <b>TLB</b> — a tiny, lightning-fast cache of recent <b>page→frame</b> translations.", dur:4800},
+  {cap:"On the first access to a page, the TLB is empty for it — a <b>miss.</b> The CPU must <b>walk the page table</b> in RAM, the slow path.", dur:4800, on(){SIM.access(0);}},
+  {cap:"After the walk, that translation is <b>stored in the TLB</b> for next time. The slow lookup happens once per page, not every access.", dur:4600},
+  {cap:"Now access that same page again — <span class='hl-good'>TLB hit!</span> The translation is right there, resolved in a single cycle. No page-table walk.", dur:4800, on(){SIM.access(0);}},
+  {cap:"Because programs reuse the same pages (locality), the TLB hit rate is very high — usually well over 99%. It quietly makes paging fast.", dur:4600, on(){SIM.access();}},
+  {cap:"But the TLB is small. On a <b>context switch</b>, the new process has different mappings, so the TLB is often <b>flushed.</b>", dur:4400, on(){SIM.flush();}},
+  {cap:"After a flush, the first accesses all miss again — part of why context switches are costly. Then it warms back up.", dur:4600, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>📄 Access pages</b> (miss then hit) and <b>🧹 flush the TLB</b> to watch the misses return.", dur:5200},
+  {cap:"The TLB caches recent page-table translations so paging stays fast: hit = instant, miss = walk the table then cache it. Flushed on context switch.", dur:4800}
+]});
+
+</script>
+</body></html>

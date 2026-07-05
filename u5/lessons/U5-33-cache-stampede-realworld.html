@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Stampede — The Rush When the Sign Comes Down · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache3 .box,.db3 .box{transition:.3s}
+.db3.overload .box{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2}
+.lockbadge{position:absolute; left:50%; top:72%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Cache Stampede — The Rush When the Sign Comes Down</h1>
+  <p class="subtitle">A shop posts the day's special on a board so nobody has to ask. The instant that board is taken down to update it, every waiting customer rushes the one clerk at once to ask the price — overwhelming them. The fix: let one person ask while the rest wait for the new board.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Clerk interruptions</div><div class="stat-v accent" id="statDbHits">0</div></div>
+  <div class="stat"><div class="stat-k">Mitigation</div><div class="stat-v bad" id="statMit">off</div></div>
+  <div class="stat"><div class="stat-k">Board</div><div class="stat-v good" id="statKey">posted</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:46%"><div class="box sm">👥</div><div class="lbl"><span class="k">Customers</span></div></div>
+<div class="node abs cache3" data-show="1" style="left:48%;top:46%"><div class="box">📋</div><div class="lbl"><span class="k">Price board</span></div></div>
+<div class="node abs db3" data-show="1" style="left:85%;top:46%"><div class="box">🧑‍💼</div><div class="lbl"><span class="k">The one clerk</span></div></div>
+<div class="lockbadge" id="lockbadge">board is posted — everyone just reads it</div>
+<div class="acts">
+  <button class="act bad" id="actExpire">⏰ Board comes down (rush!)</button>
+  <button class="act ok" id="actMitigate">🔒 One asks, rest wait</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let dbHits=0, mit=false, running=false;
+  const elDb=document.getElementById('statDbHits'), elMit=document.getElementById('statMit'), elKey=document.getElementById('statKey'), lockbadge=document.getElementById('lockbadge');
+  const cache=scene.querySelector('.cache3'), db=scene.querySelector('.db3');
+  function served(){ for(let k=0;k<3;k++) setTimeout(()=>{ if(document.hidden)return; const d=document.createElement('div'); d.className='dot done'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='48%';}); setTimeout(()=>d.remove(),420); }, k*120*simRate());
+  }
+  function expire(){ if(document.hidden) return; elKey.textContent='down'; elKey.className='stat-v bad';
+    if(!mit){ lockbadge.textContent='💥 board down → everyone mobs the clerk at once!'; lockbadge.style.color='var(--bad)';
+      for(let k=0;k<6;k++) setTimeout(()=>{ const d=document.createElement('div'); d.className='dot fail'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s';d.style.left='85%';}); setTimeout(()=>{ dbHits++; elDb.textContent=dbHits; elDb.className='stat-v bad'; if(db){db.classList.add('overload'); setTimeout(()=>db.classList.remove('overload'),500);} d.remove(); },520); }, k*80*simRate());
+      setTimeout(()=>{ elKey.textContent='posted'; elKey.className='stat-v good'; lockbadge.textContent='new board up — everyone reads it again'; lockbadge.style.color='var(--muted)'; }, 1600*simRate());
+    } else { lockbadge.textContent='🔒 one customer asks; the rest wait for the new board'; lockbadge.style.color='var(--good)';
+      const lead=document.createElement('div'); lead.className='dot'; lead.style.left='13%'; lead.style.top='46%'; scene.appendChild(lead); requestAnimationFrame(()=>{lead.style.transition='left .5s';lead.style.left='85%';});
+      setTimeout(()=>{ dbHits++; elDb.textContent=dbHits; lead.classList.add('done'); lead.remove(); elKey.textContent='posted'; elKey.className='stat-v good';
+        for(let k=0;k<5;k++) setTimeout(()=>{ const d=document.createElement('div'); d.className='dot done'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='48%';}); setTimeout(()=>d.remove(),420); }, k*110*simRate());
+      }, 560*simRate());
+    }
+  }
+  function mitigate(){ mit=!mit; elMit.textContent=mit?'one-asks ✓':'off'; elMit.className='stat-v '+(mit?'good':'bad'); }
+  function loop(){ if(!running)return; served(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actExpire').onclick=expire;
+  document.getElementById('actMitigate').onclick=mitigate;
+  running=true; loop();
+  return {expire,mitigate,served};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A shop posts the day's special on a <b>price board</b> so nobody has to bother the clerk — hundreds read it happily. The clerk barely looks up.", dur:4800, on(){SIM.served();}},
+  {cap:"Then the <b>board is taken down</b> to be updated. For a moment there's no posted price. Watch the waiting crowd.", dur:4000, on(){SIM.expire();}},
+  {cap:"<b>Everyone</b> who wanted the price now has nowhere to read it — so they <span class='hl-bad'>all mob the single clerk at once</span> to ask. A thundering herd.", dur:4800},
+  {cap:"The clerk, fine with the odd question, is suddenly swamped by the same question from a hundred people at once. They <b>seize up.</b>", dur:4800, on(){SIM.expire();}},
+  {cap:"The cruel irony: the board existed to <em>protect</em> the clerk — but taking it down caused the exact swarm it was meant to prevent.", dur:4600},
+  {cap:"The classic fix: <b>let just one person ask.</b> Turn it on.", dur:4400, on(){SIM.mitigate();}},
+  {cap:"Now <b>one customer</b> asks the clerk and the price gets re-posted, while everyone else <b>waits a beat</b> and then reads the new board. One question, not a hundred.", dur:4800, on(){SIM.expire();}},
+  {cap:"Other tricks: <b>stagger</b> when different boards get updated so they don't all come down together, or quietly <b>reprint a board early</b> before the old one expires.", dur:4800},
+  {cap:"Your turn 👉 <b>⏰ Take the board down</b> to cause a rush, then switch on <b>🔒 one-asks</b> and take it down again.", dur:5200},
+  {cap:"A cache stampede is everyone asking at once the instant the board's gone. Tame it with one-asks-the-rest-wait, staggered updates, or early reprints.", dur:4800}
+]});
+
+</script>
+</body></html>

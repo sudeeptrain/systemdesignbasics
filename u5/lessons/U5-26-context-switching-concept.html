@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Context Switching · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cpu2{position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); width:120px; height:46px; border-radius:10px; border:2px solid var(--accent); background:#eef4ff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:3; transition:.25s}
+.cpu2.saving{border-color:var(--warn); background:#fff7e9; color:#9a5b00}
+.bar{position:absolute; left:14%; top:70%; width:72%; height:22px; border-radius:7px; background:#eef5fd; overflow:hidden; border:1.5px solid var(--line2); display:flex; z-index:2}
+.seg{height:100%; transition:width .3s}
+.seg.work{background:linear-gradient(90deg,#3fcf8e,#0f8f5b)}
+.seg.over{background:linear-gradient(90deg,#f0c050,#b9730b)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Context Switching</h1>
+  <p class="subtitle">To switch the CPU from one process to another, the OS must save the first one's state (registers, program counter) and load the second one's. That bookkeeping is pure overhead — no useful work happens during it. Switch too often and the overhead eats your throughput.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Context switches</div><div class="stat-v accent" id="statSwitches">0</div></div>
+  <div class="stat"><div class="stat-k">Switching rate</div><div class="stat-v" id="statRate">moderate</div></div>
+  <div class="stat"><div class="stat-k">Useful work</div><div class="stat-v good" id="statWork">85%</div></div>
+</div>
+<div class="cpu2" id="cpu2">running P1</div>
+<div class="nlbl" style="left:50%;top:60%">CPU time: useful work vs switch overhead</div>
+<div class="bar"><div class="seg work" id="segWork" style="width:85%"></div><div class="seg over" id="segOver" style="width:15%"></div></div>
+<div class="acts">
+  <button class="act ok" id="actSwitch">🔄 Switch process</button>
+  <button class="act" id="actMode">⏱️ Rare / Frequent switching</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let cur=1, switches=0, rate='moderate', running=false, busy=false;
+  const elS=document.getElementById('statSwitches'), elR=document.getElementById('statRate'), elW=document.getElementById('statWork'), cpu=document.getElementById('cpu2'), segW=document.getElementById('segWork'), segO=document.getElementById('segOver');
+  const overheadByRate={rare:5, moderate:15, frequent:42};
+  function paintBar(){ const ov=overheadByRate[rate]; const work=100-ov; segW.style.width=work+'%'; segO.style.width=ov+'%'; elW.textContent=work+'%'; elW.className='stat-v '+(work>80?'good':work>55?'warn':'bad'); elR.textContent=rate; elR.className='stat-v '+(rate==='frequent'?'bad':rate==='moderate'?'warn':'good'); }
+  function doSwitch(){ if(busy||document.hidden) return; busy=true; switches++; elS.textContent=switches;
+    cpu.classList.add('saving'); cpu.textContent='💾 save P'+cur+' / load P'+(cur===1?2:1);
+    // overhead phase — a dot crosses representing wasted bookkeeping
+    const d=document.createElement('div'); d.className='dot'; d.style.left='30%'; d.style.top='38%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='70%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),200); cur=cur===1?2:1; cpu.classList.remove('saving'); cpu.textContent='running P'+cur; busy=false; }, leg);
+  }
+  function setMode(){ rate = rate==='rare'?'moderate': rate==='moderate'?'frequent':'rare'; paintBar(); }
+  function loop(){ if(!running)return; if(!busy && (rate==='frequent'||Math.random()<0.5)) doSwitch(); setTimeout(loop, (rate==='frequent'?700:1400)*simRate()); }
+  document.getElementById('actSwitch').onclick=doSwitch;
+  document.getElementById('actMode').onclick=setMode;
+  paintBar(); running=true; loop();
+  return {doSwitch,setMode,paintBar};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The CPU runs one process at a time. To create the illusion of many running 'at once', the OS keeps <b>switching between them</b> — at a cost.", dur:4800},
+  {cap:"Each process has a <b>context:</b> its register values, program counter, stack pointer — the exact snapshot of where it was.", dur:4600},
+  {cap:"To switch, the OS must <b>save</b> the current process's context and <b>load</b> the next one's. Watch that handover.", dur:4400, on(){SIM.doSwitch();}},
+  {cap:"During that save/load, the CPU does <span class='hl-warn'>no useful work</span> — it's pure bookkeeping overhead. The bar shows work vs overhead.", dur:4800, on(){SIM.doSwitch();}},
+  {cap:"There's a hidden cost too: the new process's data isn't in the CPU caches yet, so it suffers extra cache misses right after switching.", dur:4800},
+  {cap:"With <b>rare</b> switching, overhead is tiny — almost all CPU time is useful work. Set the rate low.", dur:4200, on(){SIM.setMode();}},
+  {cap:"But switch <b>too frequently</b> and overhead balloons — the CPU spends much of its time just shuffling contexts, not running code.", dur:4800, on(){SIM.setMode();SIM.setMode();}},
+  {cap:"That's the scheduler's tension: short time slices feel responsive but waste cycles switching; long slices are efficient but less responsive.", dur:4800, on(){SIM.doSwitch();}},
+  {cap:"Your turn 👉 <b>🔄 Switch processes</b> and cycle <b>⏱️ rare / frequent</b> to watch overhead eat into useful work.", dur:5200, on(){SIM.setMode();}},
+  {cap:"A context switch saves one process's state and loads another's — necessary for multitasking, but pure overhead. Switch wisely, not constantly.", dur:4800}
+]});
+
+</script>
+</body></html>

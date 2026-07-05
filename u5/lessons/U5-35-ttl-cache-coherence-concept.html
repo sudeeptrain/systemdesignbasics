@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTL Strategies &amp; Cache Coherence · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rep{position:absolute; width:54px; text-align:center; font-family:var(--fmono); font-size:10px; z-index:3}
+.rep .box{transition:.3s}
+.rep.stale .box{border-color:var(--bad); background:#fdeceb}
+.rep.fresh .box{border-color:var(--good); background:#e7f7ef}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">TTL Strategies &amp; Cache Coherence</h1>
+  <p class="subtitle">A TTL (time to live) caps how long a cached entry is trusted. Short TTLs keep data fresh but raise backend load; long TTLs cut load but risk staleness. With many cache replicas, you also need coherence — a write must invalidate or update every copy, or different users see different values.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reads</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">TTL</div><div class="stat-v" id="statTtl">long</div></div>
+  <div class="stat"><div class="stat-k">Replicas in sync</div><div class="stat-v good" id="statSync">yes</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:46%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Source</span></div></div>
+<div class="node abs rep r-0" data-show="1" style="left:52%;top:22%"><div class="box sm">⚡</div><div class="lbl"><span class="k">Cache A</span></div></div>
+<div class="node abs rep r-1" data-show="1" style="left:52%;top:46%"><div class="box sm">⚡</div><div class="lbl"><span class="k">Cache B</span></div></div>
+<div class="node abs rep r-2" data-show="1" style="left:52%;top:70%"><div class="box sm">⚡</div><div class="lbl"><span class="k">Cache C</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:46%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="acts">
+  <button class="act" id="actTTL">⏱️ Short / Long TTL</button>
+  <button class="act ok" id="actSync">🔁 Propagate write (coherence)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let ttl='long', reads=0, stale=[false,false,false], running=false;
+  const elR=document.getElementById('statReads'), elT=document.getElementById('statTtl'), elS=document.getElementById('statSync');
+  function paint(){ for(let k=0;k<3;k++){ const el=scene.querySelector('.r-'+k); if(el){ el.classList.toggle('stale',stale[k]); el.classList.toggle('fresh',!stale[k]); } } const allSync=stale.every(s=>!s)||stale.every(s=>s); const anyStale=stale.some(s=>s); elS.textContent=anyStale?'no — divergent':'yes'; elS.className='stat-v '+(anyStale?'bad':'good'); }
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads; const k=Math.floor(Math.random()*3); const el=scene.querySelector('.r-'+k);
+    const d=document.createElement('div'); d.className='dot'+(stale[k]?' fail':''); d.style.left='88%'; d.style.top='46%'; scene.appendChild(d);
+    const ty=[22,46,70][k]; const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='52%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),180);} if(!stale[k]) d.classList.add('done'); d.style.left='88%'; d.style.top='46%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function write(){ // source changes → replicas go stale unless propagated
+    stale=[true,true,true]; paint();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='40%';}); setTimeout(()=>d.remove(),440);
+  }
+  function setTTL(){ ttl=ttl==='long'?'short':'long'; elT.textContent=ttl; elT.className='stat-v '+(ttl==='short'?'good':'warn');
+    if(ttl==='short'){ stale=[false,false,false]; paint(); } } // short TTL auto-expires staleness quickly
+  function sync(){ // propagate: invalidate/update all replicas
+    [0,1,2].forEach((k,i)=> setTimeout(()=>{ stale[k]=false; const el=scene.querySelector('.r-'+k); if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),200);}
+      const d=document.createElement('div'); d.className='dot done'; d.style.left='40%'; d.style.top='46%'; scene.appendChild(d); const ty=[22,46,70][k]; requestAnimationFrame(()=>{d.style.transition='left .4s, top .4s';d.style.left='52%';d.style.top=ty+'%';}); setTimeout(()=>d.remove(),440); paint(); }, i*180*simRate()));
+  }
+  function loop(){ if(!running)return; const r=Math.random(); if(r<0.2) write(); else read(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actTTL').onclick=setTTL;
+  document.getElementById('actSync').onclick=sync;
+  paint(); running=true; loop();
+  return {read,write,setTTL,sync};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Every cached entry needs an expiry — its <b>TTL</b>, time to live. It's the dial between freshness and load, and it's never free.", dur:4600},
+  {cap:"A <b>long TTL</b> means entries live a long time: very few backend lookups (great for load) but a higher chance of serving <b>stale</b> data.", dur:4800, on(){SIM.read();}},
+  {cap:"A <b>short TTL</b> flips it: data refreshes often so it's nearly always fresh — but the backend gets hit far more. Switch to short.", dur:4800, on(){SIM.setTTL();}},
+  {cap:"There's no perfect number. You tune TTL per data type: a stock price wants seconds; a user's avatar can live for hours.", dur:4600, on(){SIM.read();}},
+  {cap:"Now the harder problem. With <b>multiple cache replicas</b> (A, B, C) serving users, what happens on a write? Back to a longer TTL first.", dur:4600, on(){SIM.setTTL();}},
+  {cap:"The source changes — and suddenly <span class='hl-bad'>all replicas hold stale copies.</span> Different users now read different values. That's incoherence.", dur:4800, on(){SIM.write();}},
+  {cap:"<b>Cache coherence</b> means keeping every copy consistent. A write must <b>propagate</b> — invalidate or update <em>all</em> replicas. Do it.", dur:4600, on(){SIM.sync();}},
+  {cap:"Now every replica is fresh again and all users agree. Systems do this via pub/sub invalidation messages, versioned keys, or short TTLs as a backstop.", dur:4800, on(){SIM.read();}},
+  {cap:"Your turn 👉 flip <b>⏱️ Short / Long TTL</b> and use <b>🔁 Propagate write</b> to pull divergent replicas back into sync.", dur:5200},
+  {cap:"TTL trades freshness against load — tune it per data type. Across replicas, coherence means propagating every write so all copies (and users) agree.", dur:4800}
+]});
+
+</script>
+</body></html>

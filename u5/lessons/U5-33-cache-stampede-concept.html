@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Stampede / Thundering Herd · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache3 .box,.db3 .box{transition:.3s}
+.db3.overload .box{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2}
+.lockbadge{position:absolute; left:50%; top:72%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache Stampede / Thundering Herd</h1>
+  <p class="subtitle">When a hot cached key expires, every request that wanted it misses at the same instant — and they all hammer the database together to recompute it. That sudden surge can overload the very database the cache was protecting. The fix: let just one request rebuild it while the others wait.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">DB recomputes</div><div class="stat-v accent" id="statDbHits">0</div></div>
+  <div class="stat"><div class="stat-k">Mitigation</div><div class="stat-v bad" id="statMit">off</div></div>
+  <div class="stat"><div class="stat-k">Key</div><div class="stat-v good" id="statKey">cached</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:46%"><div class="box sm">👥</div><div class="lbl"><span class="k">Many requests</span></div></div>
+<div class="node abs cache3" data-show="1" style="left:48%;top:46%"><div class="box">⚡</div><div class="lbl"><span class="k">Cache</span></div></div>
+<div class="node abs db3" data-show="1" style="left:85%;top:46%"><div class="box">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="lockbadge" id="lockbadge">key is cached — requests served from cache</div>
+<div class="acts">
+  <button class="act bad" id="actExpire">⏰ Hot key expires (stampede)</button>
+  <button class="act ok" id="actMitigate">🔒 Single-flight lock</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let dbHits=0, mit=false, running=false;
+  const elDb=document.getElementById('statDbHits'), elMit=document.getElementById('statMit'), elKey=document.getElementById('statKey'), lockbadge=document.getElementById('lockbadge');
+  const cache=scene.querySelector('.cache3'), db=scene.querySelector('.db3');
+  function served(){ // normal: requests hit cache
+    for(let k=0;k<3;k++) setTimeout(()=>{ if(document.hidden)return; const d=document.createElement('div'); d.className='dot done'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='48%';}); setTimeout(()=>d.remove(),420); }, k*120*simRate());
+  }
+  function expire(){ if(document.hidden) return; elKey.textContent='expired'; elKey.className='stat-v bad';
+    if(!mit){ // stampede: all 6 requests miss → all go to DB
+      lockbadge.textContent='💥 all requests miss → all hit the DB at once!'; lockbadge.style.color='var(--bad)';
+      for(let k=0;k<6;k++) setTimeout(()=>{ const d=document.createElement('div'); d.className='dot fail'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s';d.style.left='85%';}); setTimeout(()=>{ dbHits++; elDb.textContent=dbHits; elDb.className='stat-v bad'; if(db){db.classList.add('overload'); setTimeout(()=>db.classList.remove('overload'),500);} d.remove(); },520); }, k*80*simRate());
+      setTimeout(()=>{ elKey.textContent='cached'; elKey.className='stat-v good'; lockbadge.textContent='key rebuilt — back to serving from cache'; lockbadge.style.color='var(--muted)'; }, 1600*simRate());
+    } else { // single-flight: one request rebuilds, others wait then hit
+      lockbadge.textContent='🔒 one request rebuilds; others wait'; lockbadge.style.color='var(--good)';
+      const lead=document.createElement('div'); lead.className='dot'; lead.style.left='13%'; lead.style.top='46%'; scene.appendChild(lead); requestAnimationFrame(()=>{lead.style.transition='left .5s';lead.style.left='85%';});
+      setTimeout(()=>{ dbHits++; elDb.textContent=dbHits; lead.classList.add('done'); lead.remove(); elKey.textContent='cached'; elKey.className='stat-v good';
+        for(let k=0;k<5;k++) setTimeout(()=>{ const d=document.createElement('div'); d.className='dot done'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='48%';}); setTimeout(()=>d.remove(),420); }, k*110*simRate());
+      }, 560*simRate());
+    }
+  }
+  function mitigate(){ mit=!mit; elMit.textContent=mit?'single-flight ✓':'off'; elMit.className='stat-v '+(mit?'good':'bad'); }
+  function loop(){ if(!running)return; served(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actExpire').onclick=expire;
+  document.getElementById('actMitigate').onclick=mitigate;
+  running=true; loop();
+  return {expire,mitigate,served};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A single hot key — say the homepage data — is hit thousands of times a second, all served happily from cache. The database barely notices.", dur:4800, on(){SIM.served();}},
+  {cap:"Then that key's <b>TTL expires.</b> For one instant, it's gone from the cache. Watch what the crowd does.", dur:4000, on(){SIM.expire();}},
+  {cap:"<b>Every</b> in-flight request misses at the same moment — and they <span class='hl-bad'>all rush to the database</span> to recompute the same value. A thundering herd.", dur:4800},
+  {cap:"The database, sized to handle the occasional miss, is suddenly hit by hundreds of identical heavy queries at once. It can <b>buckle.</b>", dur:4800, on(){SIM.expire();}},
+  {cap:"The cruel irony: the cache exists to protect the database, but its expiry just caused the exact overload it was meant to prevent.", dur:4600},
+  {cap:"The classic fix is a <b>single-flight lock:</b> only the <em>first</em> request gets to rebuild the key. Turn it on.", dur:4400, on(){SIM.mitigate();}},
+  {cap:"Now one request goes to the DB while the others <b>wait briefly</b> — then they all read the freshly-rebuilt value from cache. One DB hit, not hundreds.", dur:4800, on(){SIM.expire();}},
+  {cap:"Other defenses: <b>stagger TTLs</b> with jitter so keys don't expire together, or <b>refresh early</b> in the background before expiry.", dur:4800},
+  {cap:"Your turn 👉 <b>⏰ Expire the hot key</b> to cause a stampede, then enable the <b>🔒 single-flight lock</b> and expire again.", dur:5200},
+  {cap:"A cache stampede is a synchronized miss that floods the DB. Tame it with single-flight locks, TTL jitter, or early background refresh.", dur:4800}
+]});
+
+</script>
+</body></html>

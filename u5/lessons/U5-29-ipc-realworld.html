@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPC — How Two Neighbors Share · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.chan{position:absolute; left:32%; width:36%; top:50%; height:8px; transform:translateY(-50%); border-radius:5px; background:var(--line2); z-index:1; transition:.3s}
+.chan.pipe{background:linear-gradient(90deg,var(--accent),var(--violet))}
+.chan.shm{background:repeating-linear-gradient(90deg,var(--good) 0 10px,#bfe8d2 10px 20px)}
+.chanlbl{position:absolute; left:50%; top:64%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">IPC — How Two Neighbors Share</h1>
+  <p class="subtitle">Two households can't see into each other's homes. To cooperate they pass notes through the mail slot — safe, but each note is copied and handed over. Or they share a fence-side notice board both can write on directly — instant, but they must take turns to avoid scribbling over each other. That's IPC.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Messages</div><div class="stat-v accent" id="statMsgs">0</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statMech">Passing notes</div></div>
+  <div class="stat"><div class="stat-k">Homes</div><div class="stat-v good" id="statMem">private</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box">🏠</div><div class="lbl"><span class="k">Household A</span></div></div>
+<div class="chan pipe" id="chan"></div>
+<div class="chanlbl" id="chanlbl">notes: copied &amp; handed over</div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box">🏠</div><div class="lbl"><span class="k">Household B</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actSend">✉️ Share a message</button>
+  <button class="act" id="actMode">🔀 Notes / Notice board</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='pipe', msgs=0, running=false;
+  const elM=document.getElementById('statMsgs'), elMech=document.getElementById('statMech'), chan=document.getElementById('chan'), chanlbl=document.getElementById('chanlbl');
+  function send(){ if(document.hidden) return;
+    if(mode==='pipe'){
+      const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=440*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+      setTimeout(()=>{ chan.style.boxShadow='0 0 0 3px rgba(31,111,230,.2)'; setTimeout(()=>chan.style.boxShadow='',200); d.style.left='84%'; setTimeout(()=>{ d.classList.add('done'); msgs++; elM.textContent=msgs; setTimeout(()=>d.remove(),220); }, leg); }, leg);
+    } else {
+      const d=document.createElement('div'); d.className='dot done'; d.style.left='16%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=300*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+      setTimeout(()=>{ chan.style.boxShadow='0 0 0 4px rgba(18,163,104,.22)'; setTimeout(()=>chan.style.boxShadow='',250); const e=document.createElement('div'); e.className='dot done'; e.style.left='50%'; e.style.top='50%'; scene.appendChild(e); requestAnimationFrame(()=>{e.style.transition='left '+leg+'ms';e.style.left='84%';}); setTimeout(()=>e.remove(),leg); msgs++; elM.textContent=msgs; setTimeout(()=>d.remove(),leg); }, leg);
+    }
+  }
+  function setMode(){ mode=mode==='pipe'?'shm':'pipe'; chan.className='chan '+(mode==='pipe'?'pipe':'shm'); elMech.textContent=mode==='pipe'?'Passing notes':'Notice board'; elMech.className='stat-v '+(mode==='pipe'?'accent':'good'); chanlbl.textContent=mode==='pipe'?'notes: copied &amp; handed over':'notice board: same board, no copy'; }
+  function loop(){ if(!running)return; send(); setTimeout(loop, 1000*simRate()); }
+  document.getElementById('actSend').onclick=send;
+  document.getElementById('actMode').onclick=setMode;
+  running=true; loop();
+  return {send,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two households can't peek into each other's homes — that privacy is the whole point. So how do neighbors cooperate? With the everyday version of <b>IPC.</b>", dur:4800},
+  {cap:"The simplest way is <b>passing notes</b> through the mail slot: A writes a note, it's <b>handed across</b>, and B reads it. Safe and clear.", dur:4800, on(){SIM.send();}},
+  {cap:"Each note is copied and delivered — tidy and private. It's exactly how one task pipes its output to the next on the command line.", dur:4600, on(){SIM.send();}},
+  {cap:"But copying every note is slow for lots of data. For that, neighbors share a <b>notice board on the fence</b> both can reach. Switch to it.", dur:4400, on(){SIM.setMode();}},
+  {cap:"They both write on and read the <em>same board</em> — nothing is copied or carried over. The fastest way to share.", dur:4800, on(){SIM.send();}},
+  {cap:"It's the quickest method, but raw: if both reach for the chalk at once they'll scribble over each other, so they must <b>take turns</b> (a lock).", dur:4800, on(){SIM.send();}},
+  {cap:"There are other ways too: a <b>phone call</b> (works even across town — like a socket), a quick <b>knock</b> (a signal), or leaving things in a <b>shared mailbox</b> (a file).", dur:4600},
+  {cap:"The trade-off never changes: passing notes is simple and safe; the shared board is fast but needs taking turns.", dur:4600, on(){SIM.setMode();}},
+  {cap:"Your turn 👉 <b>✉️ Share messages</b> and flip <b>🔀 Notes / Notice board</b> to compare handed-over copies with a shared board.", dur:5200},
+  {cap:"IPC lets separate processes cooperate: notes copied via the kernel (simple), a shared board (fast), a phone call (across machines). Same trade-offs as neighbors.", dur:4800}
+]});
+
+</script>
+</body></html>

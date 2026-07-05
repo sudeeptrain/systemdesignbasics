@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semaphore vs Mutex vs Spinlock — Getting a Desk · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gate2{position:absolute; left:60%; top:44%; transform:translate(-50%,-50%); width:120px; text-align:center; font-family:var(--fmono); font-size:11px; padding:12px 6px; border-radius:10px; border:2px solid var(--accent); background:#eaf2fe; color:var(--accent-d); z-index:3; transition:.25s}
+.cap{position:absolute; left:60%; top:70%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Semaphore vs Mutex vs Spinlock — Getting a Desk</h1>
+  <p class="subtitle">Three ways to manage shared desks. Mutex: one desk with a key — if taken, you go sit and wait to be called. Semaphore: a room with N desks — up to N people work at once. Spinlock: one prized desk you hover right beside, constantly re-checking — great if it frees in seconds, wasteful if not.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Got to work</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statPrim">One desk + key</div></div>
+  <div class="stat"><div class="stat-k">If full, you…</div><div class="stat-v" id="statBlk">wait elsewhere</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:44%"><div class="box sm">🧑</div><div class="lbl"><span class="k">People</span></div></div>
+<div class="gate2" id="gate">🔑 One desk<br>1 seat</div>
+<div class="cap" id="cap">seats free: 1 / 1</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 One desk / N desks / Hover</button>
+  <button class="act ok" id="actAcquire">🧑 Someone wants to work</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const modes=['mutex','sem','spin']; let mi=0, inUse=0, done=0, running=false;
+  const CAP={mutex:1,sem:3,spin:1};
+  const elD=document.getElementById('statDone'), elP=document.getElementById('statPrim'), elB=document.getElementById('statBlk'), gate=document.getElementById('gate'), cap=document.getElementById('cap');
+  function mode(){ return modes[mi]; }
+  function label(){ const m=mode(); const cp=CAP[m]; gate.innerHTML=(m==='mutex'?'🔑 One desk<br>1 seat':m==='sem'?'🪑 Shared room<br>'+cp+' seats':'🌀 Prized desk<br>1 seat'); elP.textContent=m==='mutex'?'One desk + key':m==='sem'?'N shared desks':'Hover &amp; recheck'; elB.textContent=m==='spin'?'hover &amp; recheck':'wait elsewhere'; elB.className='stat-v '+(m==='spin'?'warn':''); cap.textContent='seats free: '+(CAP[m]-inUse)+' / '+CAP[m]; }
+  function acquire(){ if(document.hidden) return; const m=mode(); const cp=CAP[m];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=400*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(inUse<cp){ inUse++; label(); gate.style.borderColor='var(--good)'; setTimeout(()=>gate.style.borderColor='var(--accent)',300);
+        d.classList.add('done'); d.style.left='74%'; setTimeout(()=>{ d.remove(); done++; elD.textContent=done; inUse--; label(); }, 800*simRate()); }
+      else { d.classList.add('fail');
+        if(m==='spin'){ let n=0; const spin=setInterval(()=>{ d.style.left=(48+(n%2)*2)+'%'; n++; if(n>4||inUse<cp){ clearInterval(spin); if(inUse<cp){ d.classList.remove('fail'); inUse++; label(); d.classList.add('done'); d.style.left='74%'; setTimeout(()=>{d.remove(); done++; elD.textContent=done; inUse--; label();},600); } else { setTimeout(()=>d.remove(),200);} } }, 160*simRate());
+        } else { setTimeout(()=>d.remove(),360); } } }, leg);
+  }
+  function setMode(){ mi=(mi+1)%modes.length; inUse=0; label(); }
+  function loop(){ if(!running)return; acquire(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actMode').onclick=setMode;
+  document.getElementById('actAcquire').onclick=acquire;
+  label(); running=true; loop();
+  return {acquire,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Three ways to share desks in a busy office — and they map onto three locking tools: the <b>mutex</b>, the <b>semaphore</b>, and the <b>spinlock.</b>", dur:4800},
+  {cap:"A <b>mutex</b> is one desk with <b>one key.</b> Whoever holds the key sits and works.", dur:4600, on(){SIM.acquire();}},
+  {cap:"Someone who arrives while it's taken is <span class='hl-bad'>blocked</span> — they go <b>sit in the lounge and wait</b> to be called when it frees. They don't hover. Efficient for longer waits.", dur:4800, on(){SIM.acquire();}},
+  {cap:"A <b>semaphore</b> is a <b>room with several desks</b> — say three. Switch to it.", dur:4400, on(){SIM.setMode();}},
+  {cap:"Now three people can work at once; the fourth waits. Perfect when you have a fixed pool of identical spots to hand out.", dur:4800, on(){SIM.acquire();SIM.acquire();SIM.acquire();}},
+  {cap:"(A room with exactly one desk behaves much like the single-key desk — a 'binary' semaphore — though the key adds a notion of ownership.)", dur:4600, on(){SIM.acquire();}},
+  {cap:"A <b>spinlock</b> is one prized desk you <b>hover right beside, constantly re-checking</b> if it's free — never sitting down to wait. Switch to it.", dur:4600, on(){SIM.setMode();}},
+  {cap:"Hovering wastes your energy, but skips the slow get-up-and-come-back — so it <b>wins if the desk frees in seconds.</b> Disastrous if you hover for an hour.", dur:5000, on(){SIM.acquire();SIM.acquire();}},
+  {cap:"Your turn 👉 cycle <b>🔀 the method</b> and send <b>🧑 people</b> in to compare one key, N desks, and hovering.", dur:5200, on(){SIM.setMode();}},
+  {cap:"Mutex: one key, wait in the lounge. Semaphore: N desks at once. Spinlock: hover and re-check — fast for tiny waits, wasteful for long ones. Pick by wait length and count.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copy-on-Write · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pgs{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); display:flex; gap:8px; z-index:2}
+.pgc{width:42px; height:42px; border-radius:9px; border:2px solid var(--accent); background:#eef4ff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:11px; font-weight:700; color:var(--accent-d); transition:.25s}
+.pgc.copied{border-color:var(--good); background:#e7f7ef}
+.pgc.flash{box-shadow:0 0 0 3px rgba(31,111,230,.25)}
+.copybox{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Copy-on-Write</h1>
+  <p class="subtitle">When a process forks, copying all its memory would be wasteful. Copy-on-write shares the parent's pages with the child read-only. Both read the same pages freely; only when one tries to write does the OS copy that single page. You pay for a copy only where it's actually needed.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Pages copied</div><div class="stat-v accent" id="statCopies">0</div></div>
+  <div class="stat"><div class="stat-k">Shared pages</div><div class="stat-v good" id="statShared">4</div></div>
+  <div class="stat"><div class="stat-k">Memory saved</div><div class="stat-v good" id="statSaved">100%</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box sm">👪</div><div class="lbl"><span class="k">Parent</span></div></div>
+<div class="pgs" id="pgs"></div>
+<div class="node abs" data-show="1" style="left:86%;top:42%"><div class="box sm">👶</div><div class="lbl"><span class="k">Child (fork)</span></div></div>
+<div class="copybox" id="copybox">all pages shared read-only</div>
+<div class="acts">
+  <button class="act ok" id="actRead">📖 Read a shared page</button>
+  <button class="act bad" id="actWrite">✏️ Write a page (triggers copy)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const N=4; let pages=[{c:false},{c:false},{c:false},{c:false}], copies=0, running=false;
+  const pgsEl=document.getElementById('pgs'), elC=document.getElementById('statCopies'), elS=document.getElementById('statShared'), elSv=document.getElementById('statSaved'), copybox=document.getElementById('copybox');
+  function render(flash){ pgsEl.innerHTML=''; pages.forEach((p,k)=>{ const d=document.createElement('div'); d.className='pgc'+(p.c?' copied':'')+(flash&&flash.idx===k?' flash':''); d.textContent='P'+k; pgsEl.appendChild(d); }); const shared=pages.filter(p=>!p.c).length; elS.textContent=shared; elSv.textContent=Math.round(shared/N*100)+'%'; }
+  function read(){ if(document.hidden) return; const k=Math.floor(Math.random()*N); copybox.textContent='read P'+k+' — shared, no copy'; copybox.style.color='var(--good)';
+    const fromX = Math.random()<0.5?'14%':'86%'; const d=document.createElement('div'); d.className='dot done'; d.style.left=fromX; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; }); setTimeout(()=>{ render({idx:k}); d.remove(); }, leg);
+  }
+  function write(){ if(document.hidden) return; const idx=pages.findIndex(p=>!p.c); if(idx<0){ copybox.textContent='all pages already private'; copybox.style.color='var(--muted)'; render(); return; }
+    copybox.textContent='write P'+idx+' — copy this page!'; copybox.style.color='var(--bad)';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='86%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=400*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ pages[idx].c=true; copies++; elC.textContent=copies; elC.className='stat-v accent'; render({idx}); d.classList.add('done'); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function loop(){ if(!running)return; if(Math.random()<0.65) read(); else write(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actRead').onclick=read;
+  document.getElementById('actWrite').onclick=write;
+  render(); running=true; loop();
+  return {read,write,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"When a process <b>forks</b> a child, the child is almost a clone of the parent. Copying <em>all</em> its memory up front would be slow and wasteful.", dur:4800},
+  {cap:"<b>Copy-on-write</b> is the clever shortcut: parent and child <b>share the same pages</b>, marked read-only. No copying happens at fork time.", dur:4800},
+  {cap:"Both can <b>read</b> any shared page freely — they're identical, so why duplicate? Reads cost nothing extra.", dur:4600, on(){SIM.read();}},
+  {cap:"As long as nobody writes, all pages stay shared — memory saved is near 100%. Fork becomes almost instant.", dur:4600, on(){SIM.read();}},
+  {cap:"Now one of them <b>writes</b> to a page.", dur:3400, on(){SIM.write();}},
+  {cap:"<em>That</em> triggers the copy: the OS duplicates <b>only that one page</b>, gives the writer its private version, and lets the write proceed.", dur:4800, on(){SIM.write();}},
+  {cap:"Every other page stays shared. You pay for a copy <b>only where data actually diverges</b> — exactly where it's needed, nowhere else.", dur:4600, on(){SIM.read();}},
+  {cap:"This is why <code>fork()</code> is cheap, and it powers things like fast process spawning and memory-efficient snapshots.", dur:4600, on(){SIM.write();}},
+  {cap:"Your turn 👉 <b>📖 Read shared pages</b> (free) and <b>✏️ write</b> one to trigger a per-page copy.", dur:5200},
+  {cap:"Copy-on-write shares pages read-only and copies one only when it's written — fork without the upfront cost. Pay for copies only where they happen.", dur:4800}
+]});
+
+</script>
+</body></html>

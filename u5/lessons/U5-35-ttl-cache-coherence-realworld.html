@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTL &amp; Coherence — Expiry Dates and Synced Branch Menus · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rep{position:absolute; width:54px; text-align:center; font-family:var(--fmono); font-size:10px; z-index:3}
+.rep .box{transition:.3s}
+.rep.stale .box{border-color:var(--bad); background:#fdeceb}
+.rep.fresh .box{border-color:var(--good); background:#e7f7ef}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">TTL &amp; Coherence — Expiry Dates and Synced Branch Menus</h1>
+  <p class="subtitle">An expiry date caps how long you trust the milk: a short date means fresh but frequent shopping; a long one means fewer trips but riskier. And when head office changes a price, every branch's menu must be updated — or customers at different shops get charged different amounts. That's TTL and coherence.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Customers served</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Expiry window</div><div class="stat-v" id="statTtl">long</div></div>
+  <div class="stat"><div class="stat-k">Branches agree</div><div class="stat-v good" id="statSync">yes</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:46%"><div class="box sm">🏢</div><div class="lbl"><span class="k">Head office</span></div></div>
+<div class="node abs rep r-0" data-show="1" style="left:52%;top:22%"><div class="box sm">🏪</div><div class="lbl"><span class="k">Branch A</span></div></div>
+<div class="node abs rep r-1" data-show="1" style="left:52%;top:46%"><div class="box sm">🏪</div><div class="lbl"><span class="k">Branch B</span></div></div>
+<div class="node abs rep r-2" data-show="1" style="left:52%;top:70%"><div class="box sm">🏪</div><div class="lbl"><span class="k">Branch C</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:46%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Customers</span></div></div>
+<div class="acts">
+  <button class="act" id="actTTL">⏱️ Short / Long expiry</button>
+  <button class="act ok" id="actSync">🔁 Push price to all branches</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let ttl='long', reads=0, stale=[false,false,false], running=false;
+  const elR=document.getElementById('statReads'), elT=document.getElementById('statTtl'), elS=document.getElementById('statSync');
+  function paint(){ for(let k=0;k<3;k++){ const el=scene.querySelector('.r-'+k); if(el){ el.classList.toggle('stale',stale[k]); el.classList.toggle('fresh',!stale[k]); } } const anyStale=stale.some(s=>s); elS.textContent=anyStale?'no — differ':'yes'; elS.className='stat-v '+(anyStale?'bad':'good'); }
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads; const k=Math.floor(Math.random()*3); const el=scene.querySelector('.r-'+k);
+    const d=document.createElement('div'); d.className='dot'+(stale[k]?' fail':''); d.style.left='88%'; d.style.top='46%'; scene.appendChild(d);
+    const ty=[22,46,70][k]; const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='52%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),180);} if(!stale[k]) d.classList.add('done'); d.style.left='88%'; d.style.top='46%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function write(){ stale=[true,true,true]; paint();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='40%';}); setTimeout(()=>d.remove(),440);
+  }
+  function setTTL(){ ttl=ttl==='long'?'short':'long'; elT.textContent=ttl; elT.className='stat-v '+(ttl==='short'?'good':'warn');
+    if(ttl==='short'){ stale=[false,false,false]; paint(); } }
+  function sync(){ [0,1,2].forEach((k,i)=> setTimeout(()=>{ stale[k]=false; const el=scene.querySelector('.r-'+k); if(el){el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),200);}
+      const d=document.createElement('div'); d.className='dot done'; d.style.left='40%'; d.style.top='46%'; scene.appendChild(d); const ty=[22,46,70][k]; requestAnimationFrame(()=>{d.style.transition='left .4s, top .4s';d.style.left='52%';d.style.top=ty+'%';}); setTimeout(()=>d.remove(),440); paint(); }, i*180*simRate()));
+  }
+  function loop(){ if(!running)return; const r=Math.random(); if(r<0.2) write(); else read(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actTTL').onclick=setTTL;
+  document.getElementById('actSync').onclick=sync;
+  paint(); running=true; loop();
+  return {read,write,setTTL,sync};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Every stored copy needs an <b>expiry</b> — its TTL, how long you trust it. Like a date on the milk, it's the dial between freshness and effort, and it's never free.", dur:4800},
+  {cap:"A <b>long expiry</b> means copies last ages: very few re-checks (less effort) but a bigger chance you serve something <b>past its best.</b>", dur:4800, on(){SIM.read();}},
+  {cap:"A <b>short expiry</b> flips it: you re-check often so it's almost always fresh — but you're forever running back to head office. Switch to short.", dur:4800, on(){SIM.setTTL();}},
+  {cap:"There's no perfect length. You set it per item: a fish counter's price wants a short date; the laminated dessert menu can last for months.", dur:4600, on(){SIM.read();}},
+  {cap:"Now the harder problem. With <b>several branches</b> (A, B, C) all serving customers, what happens when head office changes a price? Back to a long expiry first.", dur:4600, on(){SIM.setTTL();}},
+  {cap:"Head office updates the price — and suddenly <span class='hl-bad'>every branch's menu is out of date.</span> Customers at different shops get charged differently. That's incoherence.", dur:4800, on(){SIM.write();}},
+  {cap:"<b>Coherence</b> means keeping every branch's menu consistent. The new price must be <b>pushed to all branches</b> at once. Do it.", dur:4600, on(){SIM.sync();}},
+  {cap:"Now every branch agrees again and all customers pay the same. Chains do this with a central broadcast, version-stamped menus, or short expiry dates as a backstop.", dur:4800, on(){SIM.read();}},
+  {cap:"Your turn 👉 flip <b>⏱️ Short / Long expiry</b> and use <b>🔁 Push price to all branches</b> to pull divergent menus back into line.", dur:5200},
+  {cap:"TTL trades freshness against effort — set it per item. Across branches, coherence means pushing every change everywhere so all copies (and customers) agree.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threads vs Processes — Shared Office vs Separate Companies · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.proc{position:absolute; border:2px solid var(--accent); border-radius:12px; background:rgba(31,111,230,.06); z-index:1; transition:.3s}
+.plabel{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--accent-d); z-index:2}
+.mem{position:absolute; font-family:var(--fmono); font-size:9px; color:var(--violet); z-index:2}
+.thr{position:absolute; width:30px; height:30px; border-radius:50%; background:var(--good); display:flex; align-items:center; justify-content:center; font-size:14px; z-index:3; transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Threads vs Processes — Shared Office vs Separate Companies</h1>
+  <p class="subtitle">Coworkers in one open office share the same whiteboard and files — they coordinate instantly, but can scribble over each other's notes. Separate companies each keep their own private offices — safe and independent, but they can only communicate by formally sending things across. Threads vs processes.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Coworkers (in Co. 1)</div><div class="stat-v accent" id="statThreads">1</div></div>
+  <div class="stat"><div class="stat-k">Companies</div><div class="stat-v" id="statProcs">1</div></div>
+  <div class="stat"><div class="stat-k">Files</div><div class="stat-v good" id="statMem">private per company</div></div>
+</div>
+<div id="world"></div>
+<div class="acts">
+  <button class="act ok" id="actAddThread">🧑‍💼 Add a coworker (Co. 1)</button>
+  <button class="act" id="actAddProcess">🏢 Add a company</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const world=document.getElementById('world');
+  let procs=[{threads:1}], running=false;
+  const elT=document.getElementById('statThreads'), elP=document.getElementById('statProcs');
+  function render(flash){ world.innerHTML='';
+    const W=86/procs.length; procs.forEach((p,i)=>{ const left=8+i*W; const box=document.createElement('div'); box.className='proc'; box.style.left=left+'%'; box.style.width=(W-4)+'%'; box.style.top='26%'; box.style.height='52%'; world.appendChild(box);
+      const lab=document.createElement('div'); lab.className='plabel'; lab.style.left=(left+1)+'%'; lab.style.top='22%'; lab.textContent='🏢 Company '+(i+1); world.appendChild(lab);
+      const mem=document.createElement('div'); mem.className='mem'; mem.style.left=(left+1)+'%'; mem.style.top='80%'; mem.textContent='🗂️ shared files'; world.appendChild(mem);
+      for(let t=0;t<p.threads;t++){ const th=document.createElement('div'); th.className='thr'; const cols=Math.min(3,p.threads); const tx=left + 3 + (t%cols)*((W-10)/Math.max(1,cols-0)); const ty=34 + Math.floor(t/cols)*15; th.style.left=tx+'%'; th.style.top=ty+'%'; th.textContent='🧑‍💼'; if(flash&&flash.p===i&&flash.t===t) th.style.boxShadow='0 0 0 4px rgba(18,163,104,.3)'; world.appendChild(th); }
+    });
+    elT.textContent=procs[0].threads; elP.textContent=procs.length; }
+  function addThread(){ procs[0].threads=Math.min(6,procs[0].threads+1); render({p:0,t:procs[0].threads-1}); }
+  function addProcess(){ if(procs.length<3){ procs.push({threads:1}); render({p:procs.length-1,t:0}); } }
+  function loop(){ if(!running)return; render(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actAddThread').onclick=addThread;
+  document.getElementById('actAddProcess').onclick=addProcess;
+  render(); running=true; loop();
+  return {addThread,addProcess,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two ways to get many people working at once: one <b>company with many coworkers</b>, or several <b>separate companies.</b> The difference is what they share.", dur:4600},
+  {cap:"A <b>company</b> has its <b>own private files.</b> Here's Company 1 — one office, one worker inside, with files only this company can see.", dur:4600},
+  {cap:"Add a <b>coworker</b> to it. They sit in the <em>same</em> office and <b>share the same files and whiteboard</b> with their colleagues.", dur:4600, on(){SIM.addThread();}},
+  {cap:"Add more coworkers — all sharing one set of files. Communication is <b>instant:</b> just call across the room or write on the shared board.", dur:4800, on(){SIM.addThread();SIM.addThread();}},
+  {cap:"Coworkers are <b>lightweight to add:</b> no new office, no new systems. Perfect for splitting one big project among many hands.", dur:4600, on(){SIM.addThread();}},
+  {cap:"But shared files are double-edged: two coworkers can <b>scribble over the same document at once</b> — that's a race condition — so they need ground rules (locks).", dur:4800},
+  {cap:"Now spin up a separate <b>company.</b> It gets its <em>own</em> private office — Company 1 can't read Company 2's files, and vice versa.", dur:4800, on(){SIM.addProcess();}},
+  {cap:"That separation is <b>safer</b> (one company's mess can't corrupt another) but <b>heavier:</b> more overhead to set up, and they can only talk by formally sending things across (IPC).", dur:4800, on(){SIM.addProcess();}},
+  {cap:"Your turn 👉 <b>🧑‍💼 Add coworkers</b> (shared files, one company) and <b>🏢 add companies</b> (private files) to feel the trade-off.", dur:5200},
+  {cap:"Process = a private company (safe, heavy). Thread = a coworker sharing the office (fast, but needs ground rules). Choose by safety vs speed.", dur:4800}
+]});
+
+</script>
+</body></html>

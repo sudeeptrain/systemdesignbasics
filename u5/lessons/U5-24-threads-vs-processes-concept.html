@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threads vs Processes · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.proc{position:absolute; border:2px solid var(--accent); border-radius:12px; background:rgba(31,111,230,.06); z-index:1; transition:.3s}
+.plabel{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--accent-d); z-index:2}
+.mem{position:absolute; font-family:var(--fmono); font-size:9px; color:var(--violet); z-index:2}
+.thr{position:absolute; width:30px; height:30px; border-radius:50%; background:var(--good); display:flex; align-items:center; justify-content:center; font-size:14px; z-index:3; transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Threads vs Processes</h1>
+  <p class="subtitle">A process is an isolated program with its own private memory. A thread is a lighter unit of execution that lives inside a process and shares that process's memory with its sibling threads. Processes are safe but heavy; threads are fast and share data but must coordinate carefully.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Threads (in P1)</div><div class="stat-v accent" id="statThreads">1</div></div>
+  <div class="stat"><div class="stat-k">Processes</div><div class="stat-v" id="statProcs">1</div></div>
+  <div class="stat"><div class="stat-k">Memory</div><div class="stat-v good" id="statMem">isolated per process</div></div>
+</div>
+<div id="world"></div>
+<div class="acts">
+  <button class="act ok" id="actAddThread">🧵 Add a thread (to P1)</button>
+  <button class="act" id="actAddProcess">📦 Add a process</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const world=document.getElementById('world');
+  let procs=[{threads:1}], running=false;
+  const elT=document.getElementById('statThreads'), elP=document.getElementById('statProcs');
+  function render(flash){ world.innerHTML='';
+    const W=86/procs.length; procs.forEach((p,i)=>{ const left=8+i*W; const box=document.createElement('div'); box.className='proc'; box.style.left=left+'%'; box.style.width=(W-4)+'%'; box.style.top='26%'; box.style.height='52%'; world.appendChild(box);
+      const lab=document.createElement('div'); lab.className='plabel'; lab.style.left=(left+1)+'%'; lab.style.top='22%'; lab.textContent='📦 Process '+(i+1); world.appendChild(lab);
+      const mem=document.createElement('div'); mem.className='mem'; mem.style.left=(left+1)+'%'; mem.style.top='80%'; mem.textContent='🧠 shared memory'; world.appendChild(mem);
+      for(let t=0;t<p.threads;t++){ const th=document.createElement('div'); th.className='thr'; const cols=Math.min(3,p.threads); const tx=left + 3 + (t%cols)*((W-10)/Math.max(1,cols-0)); const ty=34 + Math.floor(t/cols)*15; th.style.left=tx+'%'; th.style.top=ty+'%'; th.textContent='🧵'; if(flash&&flash.p===i&&flash.t===t) th.style.boxShadow='0 0 0 4px rgba(18,163,104,.3)'; world.appendChild(th); }
+    });
+    elT.textContent=procs[0].threads; elP.textContent=procs.length; }
+  function addThread(){ procs[0].threads=Math.min(6,procs[0].threads+1); render({p:0,t:procs[0].threads-1}); }
+  function addProcess(){ if(procs.length<3){ procs.push({threads:1}); render({p:procs.length-1,t:0}); } }
+  function loop(){ if(!running)return; render(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actAddThread').onclick=addThread;
+  document.getElementById('actAddProcess').onclick=addProcess;
+  render(); running=true; loop();
+  return {addThread,addProcess,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two ways to run things at once: <b>processes</b> and <b>threads.</b> The crucial difference is what they do — and don't — share.", dur:4600},
+  {cap:"A <b>process</b> is a program with its <b>own private memory.</b> Here's Process 1, isolated, with one thread of execution inside it.", dur:4600},
+  {cap:"Add a <b>thread</b> to it. The new thread lives <em>inside</em> the same process and <b>shares its memory</b> with the others.", dur:4600, on(){SIM.addThread();}},
+  {cap:"Add more threads — they all share the one process's memory and resources. That makes communication between them <b>instant</b>: just touch the same variable.", dur:4800, on(){SIM.addThread();SIM.addThread();}},
+  {cap:"Threads are <b>lightweight:</b> cheap to create, quick to switch between. Perfect for splitting one job across CPU cores.", dur:4600, on(){SIM.addThread();}},
+  {cap:"But sharing memory is double-edged: threads can <b>step on each other's data</b> — hello, race conditions — so they need locks to coordinate.", dur:4800},
+  {cap:"Now add a separate <b>process.</b> It gets its <em>own</em> isolated memory — Process 1 can't touch Process 2's data, and vice versa.", dur:4800, on(){SIM.addProcess();}},
+  {cap:"That isolation is <b>safer</b> (a crash in one doesn't corrupt another) but <b>heavier</b>: more memory, slower to start, and they must talk via IPC.", dur:4800, on(){SIM.addProcess();}},
+  {cap:"Your turn 👉 <b>🧵 Add threads</b> (shared memory inside one process) and <b>📦 add processes</b> (isolated memory) to feel the difference.", dur:5200},
+  {cap:"Process = isolated memory, safe but heavy. Thread = shared memory inside a process, fast but needs careful synchronization. Choose by safety vs speed.", dur:4800}
+]});
+
+</script>
+</body></html>

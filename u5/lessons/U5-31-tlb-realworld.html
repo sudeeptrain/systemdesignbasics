@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLB — A Speed-Dial Note vs the Phone Book · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tlb{position:absolute; left:46%; top:42%; transform:translate(-50%,-50%); width:120px; text-align:center; font-family:var(--fmono); font-size:10px; padding:8px; border-radius:10px; border:2px solid var(--good); background:#e7f7ef; color:#0c7a4d; z-index:3; min-height:40px}
+.pt2{position:absolute; left:82%; top:72%; transform:translate(-50%,-50%); width:90px; text-align:center; font-family:var(--fmono); font-size:10px; padding:8px; border-radius:9px; border:1.5px solid var(--muted); background:#f4f6f9; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">TLB — A Speed-Dial Note vs the Phone Book</h1>
+  <p class="subtitle">Every call needs a number, and looking each one up in the fat phone book is slow. So you keep a little speed-dial note of the numbers you call most. A name on the note? Dial instantly. Not on it? Look it up in the book — then add it to the note. The TLB is that speed-dial note for address lookups.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Calls made</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">On the note (fast)</div><div class="stat-v good" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Book look-ups</div><div class="stat-v" id="statMiss">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box sm">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="tlb" id="tlb">⚡ speed-dial note<br>(recent numbers)</div>
+<div class="pt2" id="pt2">📖 phone book<br>(thick, slow)</div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📞 Call someone</button>
+  <button class="act bad" id="actFlush">🧹 Toss the note (new desk)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let tlb=new Set(), accesses=0, hits=0, miss=0, running=false, busy=false, seq=0;
+  const elA=document.getElementById('statAccesses'), elH=document.getElementById('statHits'), elM=document.getElementById('statMiss'), tlbEl=document.getElementById('tlb'), pt=document.getElementById('pt2');
+  function render(){ tlbEl.innerHTML='⚡ speed-dial note<br>'+([...tlb].slice(-3).map(p=>'#'+p+'✓').join(' ')||'(blank)'); }
+  function access(p){ if(busy||document.hidden) return; busy=true; if(p===undefined) p = Math.random()<0.6 && tlb.size? [...tlb][Math.floor(Math.random()*tlb.size)] : (seq++ %6); accesses++; elA.textContent=accesses;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='46%'; });
+    setTimeout(()=>{ if(tlb.has(p)){ hits++; elH.textContent=hits; tlbEl.style.boxShadow='0 0 0 4px rgba(18,163,104,.25)'; setTimeout(()=>tlbEl.style.boxShadow='',250); d.classList.add('done'); d.style.left='14%'; setTimeout(()=>{d.remove(); busy=false;},leg); }
+      else { miss++; elM.textContent=miss; elM.className='stat-v warn'; d.classList.add('fail');
+        d.style.left='82%'; d.style.top='72%'; setTimeout(()=>{ if(pt){pt.style.boxShadow='0 0 0 4px rgba(120,120,120,.25)'; setTimeout(()=>pt.style.boxShadow='',250);} tlb.add(p); render();
+          const g=document.createElement('div'); g.className='dot done'; g.style.left='82%'; g.style.top='72%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .5s, top .5s';g.style.left='14%';g.style.top='42%';}); setTimeout(()=>{g.remove(); busy=false;},520); d.remove(); }, leg); } }, leg);
+  }
+  function flush(){ tlb.clear(); render(); tlbEl.style.boxShadow='0 0 0 4px rgba(216,58,46,.25)'; setTimeout(()=>tlbEl.style.boxShadow='',300); }
+  function loop(){ if(!running)return; if(!busy) access(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access();
+  document.getElementById('actFlush').onclick=flush;
+  render(); running=true; loop();
+  return {access,flush,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Every call needs a number, and digging through the fat <b>phone book</b> each time is slow. Paging has the same tax — every memory access needs a lookup.", dur:4800},
+  {cap:"The fix: keep a little <b>speed-dial note</b> of the numbers you call most. That note is the <b>TLB</b> — a tiny, instant list of recent lookups.", dur:4800},
+  {cap:"The first time you call someone, they're not on the note — a <b>miss.</b> You flip through the slow phone book to find them.", dur:4800, on(){SIM.access(0);}},
+  {cap:"Having found it, you <b>jot it on the speed-dial note</b> for next time. The slow search happens once per contact, not every call.", dur:4600},
+  {cap:"Call that same person again — <span class='hl-good'>it's on the note!</span> You dial instantly, no book at all.", dur:4800, on(){SIM.access(0);}},
+  {cap:"Because you call the same handful of people over and over, the note covers almost every call — well over 99%. It quietly makes everything fast.", dur:4600, on(){SIM.access();}},
+  {cap:"But the note is small and personal. <b>Move to a new desk</b> (a context switch) and the old note is no use — you toss it.", dur:4400, on(){SIM.flush();}},
+  {cap:"Now your first calls miss again and need the book — part of why switching desks is costly. Then the note fills back up.", dur:4600, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>📞 Call people</b> (miss then instant) and <b>🧹 toss the note</b> to watch the slow look-ups return.", dur:5200},
+  {cap:"The TLB is a speed-dial note for recent address lookups: on it = instant, not on it = check the book then jot it down. Tossed when you switch desks.", dur:4800}
+]});
+
+</script>
+</body></html>

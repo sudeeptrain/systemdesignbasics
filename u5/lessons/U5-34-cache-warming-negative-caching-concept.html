@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Warming &amp; Negative Caching · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache4 .box{transition:.3s}
+.cache4.warm .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.note{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache Warming &amp; Negative Caching</h1>
+  <p class="subtitle">Cache warming pre-loads hot data before real traffic arrives, so the first users get hits instead of a cold-start miss storm. Negative caching stores 'not found' results too — so repeated lookups for a missing key don't keep pounding the database. Both turn predictable misses into cheap hits.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">DB lookups</div><div class="stat-v accent" id="statDbHits">0</div></div>
+  <div class="stat"><div class="stat-k">Cache</div><div class="stat-v bad" id="statCache">cold</div></div>
+  <div class="stat"><div class="stat-k">Negative caching</div><div class="stat-v bad" id="statNeg">off</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:44%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs cache4" data-show="1" style="left:50%;top:44%"><div class="box">⚡</div><div class="lbl"><span class="k">Cache</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:44%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="note" id="note">cache is cold — first hits will miss</div>
+<div class="acts">
+  <button class="act ok" id="actWarm">🔥 Warm the cache</button>
+  <button class="act" id="actNegative">🚫 Toggle negative caching</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let warm=false, neg=false, dbHits=0, running=false;
+  const elDb=document.getElementById('statDbHits'), elC=document.getElementById('statCache'), elN=document.getElementById('statNeg'), note=document.getElementById('note'), cache=scene.querySelector('.cache4');
+  function req(missingKey){ if(document.hidden) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),180);}
+      if(missingKey){ // request for a key that doesn't exist
+        if(neg){ note.textContent='miss cached → answered "not found" from cache'; note.style.color='var(--good)'; d.classList.add('done'); d.style.left='14%'; setTimeout(()=>d.remove(),leg); }
+        else { note.textContent='no record → keeps hitting DB every time'; note.style.color='var(--bad)'; d.classList.add('fail'); d.style.left='86%'; setTimeout(()=>{ dbHits++; elDb.textContent=dbHits; elDb.className='stat-v bad'; d.remove(); }, leg); }
+      } else { // normal key
+        if(warm){ note.textContent='warm cache → hit'; note.style.color='var(--good)'; d.classList.add('done'); d.style.left='14%'; setTimeout(()=>d.remove(),leg); }
+        else { note.textContent='cold cache → miss → DB'; note.style.color='var(--warn)'; d.classList.add('fail'); d.style.left='86%'; setTimeout(()=>{ dbHits++; elDb.textContent=dbHits; elDb.className='stat-v warn'; d.remove(); }, leg); }
+      } }, leg);
+  }
+  function warmUp(){ warm=true; elC.textContent='warm ✓'; elC.className='stat-v good'; cache.classList.add('warm'); note.textContent='pre-loaded hot data before traffic'; note.style.color='var(--good)';
+    for(let k=0;k<4;k++) setTimeout(()=>{ const d=document.createElement('div'); d.className='dot done'; d.style.left='86%'; d.style.top='56%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s';d.style.left='50%';}); setTimeout(()=>d.remove(),520); }, k*140*simRate());
+  }
+  function toggleNeg(){ neg=!neg; elN.textContent=neg?'on ✓':'off'; elN.className='stat-v '+(neg?'good':'bad'); }
+  function loop(){ if(!running)return; req(Math.random()<0.4); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actWarm').onclick=warmUp;
+  document.getElementById('actNegative').onclick=toggleNeg;
+  running=true; loop();
+  return {req,warmUp,toggleNeg};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"An empty cache is a <b>cold</b> cache. Right after a restart or deploy, every request misses and stampedes the database — the cold-start problem.", dur:4800, on(){SIM.req(false);}},
+  {cap:"<b>Cache warming</b> fixes this: <b>pre-load</b> the known-hot data <em>before</em> real traffic arrives. Do it now.", dur:4400, on(){SIM.warmUp();}},
+  {cap:"Now the cache is <b>warm.</b> The very first real users get <span class='hl-good'>hits</span> — no cold-miss storm, smooth from the first second.", dur:4600, on(){SIM.req(false);}},
+  {cap:"You warm by replaying common queries, loading a 'top items' list, or restoring a snapshot at startup. Predictable hot data, pre-staged.", dur:4600, on(){SIM.req(false);}},
+  {cap:"Now a different problem: requests for a key that <b>doesn't exist</b> at all — a bad ID, a deleted item, a probing bot.", dur:4600, on(){SIM.req(true);}},
+  {cap:"Without help, each such request misses the cache (nothing to find) and <span class='hl-bad'>hits the database every single time</span> — wasted load for a guaranteed 'no'.", dur:4800, on(){SIM.req(true);}},
+  {cap:"<b>Negative caching</b> stores the <b>'not found' result</b> itself. Turn it on.", dur:3800, on(){SIM.toggleNeg();}},
+  {cap:"Now the next lookup for that missing key is answered <span class='hl-good'>'not found' straight from cache</span> — no DB trip. (Use a short TTL, in case it gets created later.)", dur:4800, on(){SIM.req(true);}},
+  {cap:"Your turn 👉 <b>🔥 Warm the cache</b> to kill cold misses, and toggle <b>🚫 negative caching</b> to absorb missing-key lookups.", dur:5200},
+  {cap:"Cache warming pre-loads hot data so the first users hit; negative caching stores 'not found' so missing keys stop hammering the DB. Fewer needless misses.", dur:4800}
+]});
+
+</script>
+</body></html>

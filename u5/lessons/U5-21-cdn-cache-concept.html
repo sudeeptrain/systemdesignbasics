@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CDN Cache · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.edge .box{transition:.3s}
+.edge.warm .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.ttl{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">CDN Cache</h1>
+  <p class="subtitle">A CDN caches static content (images, video, JS) on edge servers near users. The first request for an asset misses and fetches from the origin; after that, nearby users are served from the edge until the content's TTL expires and it's revalidated. Closer copies mean faster loads and far less origin traffic.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Edge cache</div><div class="stat-v" id="statEdge">cold</div></div>
+  <div class="stat"><div class="stat-k">Origin hits</div><div class="stat-v good" id="statOrigin">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:44%"><div class="box sm">🧑</div><div class="lbl"><span class="k">User (nearby)</span></div></div>
+<div class="node abs edge" data-show="1" style="left:48%;top:44%"><div class="box">📍</div><div class="lbl"><span class="k">CDN edge</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:44%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Origin (far)</span></div></div>
+<div class="ttl" id="ttl">TTL: not cached yet</div>
+<div class="acts">
+  <button class="act ok" id="actRequest">📥 User requests asset</button>
+  <button class="act bad" id="actExpire">⏰ TTL expires</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let cached=false, reqs=0, origin=0, running=false, busy=false;
+  const elR=document.getElementById('statReqs'), elE=document.getElementById('statEdge'), elO=document.getElementById('statOrigin'), ttl=document.getElementById('ttl');
+  const edge=scene.querySelector('.edge');
+  function setEdge(v){ cached=v; elE.textContent=v?'warm ✓':'cold'; elE.className='stat-v '+(v?'good':''); edge.classList.toggle('warm',v); ttl.textContent=v?'TTL: fresh · serving from edge':'TTL: not cached yet'; }
+  function request(){ if(busy||document.hidden) return; busy=true; reqs++; elR.textContent=reqs;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='48%'; });
+    setTimeout(()=>{ if(cached){ d.classList.add('done'); d.style.left='13%'; setTimeout(()=>{d.remove(); busy=false;},leg); }
+      else { d.classList.add('fail'); origin++; elO.textContent=origin; elO.className='stat-v warn'; // miss → origin
+        d.style.left='86%'; setTimeout(()=>{ setEdge(true); const g=document.createElement('div'); g.className='dot done'; g.style.left='86%'; g.style.top='56%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .6s';g.style.left='13%';}); setTimeout(()=>{g.remove(); busy=false;},620); }, leg); }
+    }, leg);
+  }
+  function expire(){ setEdge(false); if(edge){edge.classList.add('crash'); setTimeout(()=>edge.classList.remove('crash'),300);} ttl.textContent='TTL: expired — next request revalidates'; }
+  function loop(){ if(!running)return; if(!busy){ if(Math.random()<0.15) expire(); else request(); } setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actRequest').onclick=request;
+  document.getElementById('actExpire').onclick=expire;
+  setEdge(false); running=true; loop();
+  return {request,expire,setEdge};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your origin server might be far from your users. A <b>CDN</b> caches static assets — images, video, scripts — on <b>edge servers</b> close to them.", dur:4800},
+  {cap:"The first time a nearby user requests an asset, the edge cache is <b>cold</b> — a miss. It must fetch from the distant origin.", dur:4600, on(){SIM.request();}},
+  {cap:"On the way back, the edge <b>stores a copy</b> and stamps it with a <b>TTL</b> (time to live) — how long it may serve this copy as fresh.", dur:4600},
+  {cap:"Now the edge is <b>warm.</b> The very next user nearby is served straight from the edge — <span class='hl-good'>fast</span>, no origin trip.", dur:4600, on(){SIM.request();}},
+  {cap:"Every edge hit is bandwidth the origin <em>didn't</em> serve. A popular asset is fetched from origin once and served from the edge millions of times.", dur:4800, on(){SIM.request();SIM.request();}},
+  {cap:"But cached copies can go stale. The <b>TTL</b> caps how long that's allowed. When it expires…", dur:4400, on(){SIM.expire();}},
+  {cap:"…the next request <b>revalidates</b>: the edge checks the origin (often a cheap 'still fresh?' check) and refreshes its copy.", dur:4600, on(){SIM.request();}},
+  {cap:"Short TTLs keep content fresh but raise origin load; long TTLs cut load but risk staleness. You can also <b>purge</b> instantly on a deploy.", dur:4800},
+  {cap:"Your turn 👉 <b>📥 Request the asset</b> (cold miss, then warm hits) and <b>⏰ expire the TTL</b> to force a revalidation.", dur:5200},
+  {cap:"A CDN cache serves static assets from edges near users, governed by TTL: fetch from origin once, serve locally many times, revalidate on expiry.", dur:4800}
+]});
+
+</script>
+</body></html>
