@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infrastructure as Code — A LEGO Instruction Booklet · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.code{position:absolute; left:8%; top:22%; width:30%; font-family:var(--fmono); font-size:10.5px; background:#0d1b2a; color:#dbe8fb; border-radius:9px; padding:9px; white-space:pre; z-index:2; line-height:1.6}
+.res{position:absolute; right:8%; width:30%; z-index:2}
+.rr{font-family:var(--fmono); font-size:11px; padding:5px 8px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px; transition:.3s; opacity:0; transform:translateX(8px)}
+.rr.on{opacity:1; transform:none} .rr.changed{border-color:var(--warn); background:#fff7e9}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Infrastructure as Code — A LEGO Instruction Booklet</h1>
+  <p class="subtitle">Building a LEGO set by improvising is slow and impossible to repeat. With the instruction booklet, anyone can build the exact same model, every time. Terraform is that booklet for your servers: write the build steps as code, and it constructs (and rebuilds) your infrastructure identically.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Pieces built</div><div class="stat-v accent" id="statResources">0</div></div>
+  <div class="stat"><div class="stat-k">Last action</div><div class="stat-v" id="statAct">—</div></div>
+  <div class="stat"><div class="stat-k">Repeatable?</div><div class="stat-v good" id="statRepro">yes — it's a booklet</div></div>
+</div>
+<div class="code" id="code">build "tower" {
+  count = 2
+  size  = "small"
+}</div>
+<div class="nlbl" style="left:82%;top:13%">🧱 the actual build</div>
+<div class="res" id="res"></div>
+<div class="acts">
+  <button class="act ok" id="actApply">▶️ Build to the booklet</button>
+  <button class="act" id="actChange">✏️ Edit the booklet</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const res=document.getElementById('res'), code=document.getElementById('code');
+  let live=0, desired=2, size='small', running=false;
+  const elR=document.getElementById('statResources'), elA=document.getElementById('statAct');
+  function render(changed){ res.innerHTML=''; for(let i=0;i<live;i++){ const r=document.createElement('div'); r.className='rr'+(changed?' changed':''); r.textContent='🧱 tower-'+(i+1)+' ('+size+')'; res.appendChild(r); requestAnimationFrame(()=>r.classList.add('on')); } elR.textContent=live; }
+  function apply(){ if(document.hidden) return; elA.textContent='building'; elA.className='stat-v good';
+    const diff = desired-live; let n=0;
+    const t=setInterval(()=>{ if(live<desired){ live++; const d=document.createElement('div'); d.className='dot'; d.style.left='30%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='70%';}); setTimeout(()=>{d.classList.add('done'); d.remove();},420); }
+      else if(live>desired){ live--; }
+      render(false); n++; if(live===desired||n>6) clearInterval(t); }, 350*simRate());
+  }
+  function change(){ if(size==='small'){ desired=4; size='large'; } else { desired=2; size='small'; }
+    code.textContent='build "tower" {\n  count = '+desired+'\n  size  = "'+size+'"\n}';
+    elA.textContent='plan: what changes'; elA.className='stat-v warn'; render(true);
+  }
+  function loop(){ if(!running)return; if(live!==desired) apply(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actApply').onclick=apply;
+  document.getElementById('actChange').onclick=change;
+  render(false); running=true; loop();
+  return {apply,change,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Setting up servers by <b>clicking around a console</b> is like building a LEGO set by improvising — slow, error-prone, and you could never repeat it exactly. There's a better way.", dur:4800},
+  {cap:"<b>Infrastructure as Code</b> — Terraform — is the <b>instruction booklet:</b> you write down exactly what to build. \"2 small towers.\"", dur:4800},
+  {cap:"You say <b>\"build to the booklet,\"</b> and it constructs the real pieces to match the instructions — step by step.", dur:4400, on(){SIM.apply();}},
+  {cap:"The booklet is the <b>source of truth.</b> The two towers now stand exactly as written — no guessing, no freestyling.", dur:4400},
+  {cap:"Want a change? You don't go poking at the bricks — you <b>edit the booklet:</b> make it 4 towers, size large.", dur:4400, on(){SIM.change();}},
+  {cap:"Terraform first <b>shows you what will change</b> — which pieces it'll add, swap, or take apart — before touching anything.", dur:4600},
+  {cap:"You okay the plan, then build — and it brings the model in line with the <b>new booklet</b>, adding the extra towers.", dur:4600, on(){SIM.apply();}},
+  {cap:"Because it's just a booklet, you can <b>keep it in version control, have others review it, and rebuild the exact same model anywhere</b> — a second time, a hundred times.", dur:4600},
+  {cap:"Your turn 👉 <b>✏️ Edit the booklet</b> and <b>▶️ build to it</b> to watch the model converge to your instructions.", dur:5200, on(){SIM.render(false);}},
+  {cap:"Infrastructure as Code turns your servers into a written, version-controlled booklet: preview the changes, build, rebuild anywhere. No more click-by-hand.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deployment Strategies — Refreshing a Restaurant's Menu · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.inst{position:absolute; width:40px; height:40px; border-radius:9px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:11px; font-weight:700; z-index:3; transition:.4s}
+.inst.v1{background:#eaf2fe; border:2px solid var(--accent); color:var(--accent-d)}
+.inst.v2{background:#e7f7ef; border:2px solid var(--good); color:#0c7a4d}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Deployment Strategies — Refreshing a Restaurant's Menu</h1>
+  <p class="subtitle">Launching a new menu without closing the restaurant takes a plan. Update tables a few at a time (rolling); set up a whole second dining room and switch everyone at once (blue-green); or trial it on one table first and watch before rolling out to all (canary).</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Diners served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Strategy</div><div class="stat-v" id="statStrat">Table by table</div></div>
+  <div class="stat"><div class="stat-k">On new menu</div><div class="stat-v" id="statV2">0%</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🧑‍🤝‍🧑</div><div class="lbl"><span class="k">Diners</span></div></div>
+<div id="insts"></div>
+<div class="acts">
+  <button class="act" id="actStrategy">🔀 Table-by-table / Second room / Trial table</button>
+  <button class="act ok" id="actDeploy">🚀 Roll out new menu</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const wrap=document.getElementById('insts'), scene=document.getElementById('scene');
+  const strats=['Table by table','Second room','Trial table'];
+  let strat=0, reqs=0, running=false, N=4, ver=[], busy=false;
+  const elR=document.getElementById('statReqs'), elS=document.getElementById('statStrat'), elV=document.getElementById('statV2');
+  function ys(n){const a=[],top=24,bot=80;for(let i=0;i<n;i++)a.push(top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(N); ver.forEach((v,i)=>{ const el=document.createElement('div'); el.className='inst '+(v===2?'v2':'v1'); el.style.left='62%'; el.style.top=y[i]+'%'; el.textContent=v===2?'new':'old'; wrap.appendChild(el); });
+    const pct=Math.round(ver.filter(v=>v===2).length/N*100); elV.textContent=pct+'%'; elV.className='stat-v '+(pct===0?'':pct<100?'warn':'good');
+    elS.textContent=strats[strat]; }
+  function req(){ if(document.hidden) return; const y=ys(N); const i=reqs%N; const target=wrap.children[i];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top=y[i]+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function deploy(){ if(busy) return; busy=true;
+    if(strat===0){ let i=0; const step=()=>{ if(i>=N){ busy=false; return; } ver[i]=2; render(); i++; setTimeout(step, 700*simRate()); }; step();
+    } else if(strat===1){ setTimeout(()=>{ ver=ver.map(()=>2); render(); busy=false; }, 600*simRate());
+    } else { ver[0]=2; render(); setTimeout(()=>{ ver=ver.map(()=>2); render(); busy=false; }, 1600*simRate()); }
+  }
+  function setStrat(){ strat=(strat+1)%3; ver=new Array(N).fill(1); render(); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 500*simRate()); }
+  document.getElementById('actStrategy').onclick=setStrat;
+  document.getElementById('actDeploy').onclick=deploy;
+  ver=new Array(N).fill(1); render(); running=true; loop();
+  return {req,deploy,setStrat,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your new menu is ready — but the restaurant is <b>full of diners right now.</b> How do you switch menus <b>without closing?</b>", dur:4600},
+  {cap:"<b>Table by table</b> (rolling): update the menu at <b>a few tables at a time.</b> Switch one, keep serving the rest the old menu, repeat.", dur:4600, on(){SIM.deploy();}},
+  {cap:"Cheap and steady — but for a while some tables have the <b>old menu and some the new</b>, so both kitchens must cope side by side.", dur:4600, on(){SIM.req();}},
+  {cap:"<b>Second room</b> (blue-green): set up a whole <b>second dining room</b> fully on the new menu, ready but empty, while the first serves the old.", dur:4400, on(){SIM.setStrat();}},
+  {cap:"When the new room's ready, you <b>move everyone across at once.</b> Instant switch — and if it flops, move them straight back.", dur:4600, on(){SIM.deploy();}},
+  {cap:"The cost: you're running and paying for <b>two full dining rooms</b> during the change. Safe, but not cheap.", dur:4400},
+  {cap:"<b>Trial table</b> (canary): the cautious one — give the new menu to <b>just one table first</b> and watch how they react.", dur:4600, on(){SIM.setStrat();SIM.deploy();}},
+  {cap:"If that table's happy, roll the new menu out to everyone. If they hate it, pull it — only one table was ever affected.", dur:4800},
+  {cap:"Your turn 👉 cycle <b>🔀 the strategy</b> and <b>🚀 roll out the menu</b> to compare table-by-table, second-room, and trial-table.", dur:5200, on(){SIM.render();}},
+  {cap:"Table-by-table = gradual & cheap; second room = instant switch & rollback; trial table = test on a few first. Pick by your appetite for risk.", dur:4800}
+]});
+
+</script>
+</body></html>

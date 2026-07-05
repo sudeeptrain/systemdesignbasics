@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Flags — A Theatre Soft Opening · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.toggle{position:absolute; left:50%; top:18%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:4}
+.userrow{position:absolute; left:80%; top:20%; width:30%; display:flex; flex-wrap:wrap; gap:5px; z-index:2}
+.u{width:18px; height:18px; border-radius:50%; background:#cdd8e6; transition:.3s}
+.u.on{background:var(--good)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Feature Flags — A Theatre Soft Opening</h1>
+  <p class="subtitle">A show doesn't premiere to a packed house cold. It previews to a few rows first, the cast watches how it lands, then opens to more seats night by night — and can pull a scene instantly if it bombs. A feature flag is that dimmer-style rollout: built and ready, revealed gradually.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Audience arriving</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">New scene</div><div class="stat-v bad" id="statFlag">CURTAINED</div></div>
+  <div class="stat"><div class="stat-k">Seats let in</div><div class="stat-v" id="statPct">0%</div></div>
+</div>
+<div class="toggle" id="toggle">🎭 new scene: CURTAINED</div>
+<div class="node abs" data-show="1" style="left:16%;top:55%"><div class="box">🧑‍🤝‍🧑</div><div class="lbl"><span class="k">Theatregoers</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:55%"><div class="box sm">🎭</div><div class="lbl"><span class="k">Usher</span></div></div>
+<div class="nlbl" style="left:84%;top:13%">seats seeing the new scene</div>
+<div class="userrow" id="users"></div>
+<div class="acts">
+  <button class="act ok" id="actToggle">🎭 Curtain UP / DOWN</button>
+  <button class="act" id="actRollout">📈 Open more seats</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const usersEl=document.getElementById('users');
+  let reqs=0, on=false, pct=0, running=false, N=12;
+  const elR=document.getElementById('statReqs'), elF=document.getElementById('statFlag'), elP=document.getElementById('statPct'), toggle=document.getElementById('toggle');
+  function render(){ usersEl.innerHTML=''; const lit=Math.round(N*pct/100); for(let i=0;i<N;i++){ const u=document.createElement('div'); u.className='u'+(on && i<lit?' on':''); usersEl.appendChild(u); }
+    elF.textContent=on?'LIVE':'CURTAINED'; elF.className='stat-v '+(on?'good':'bad'); elP.textContent=(on?pct:0)+'%'; toggle.textContent='🎭 new scene: '+(on?('LIVE · '+pct+'%'):'CURTAINED'); toggle.style.color=on?'var(--good)':'var(--bad)'; }
+  function req(){ if(document.hidden) return; reqs++; elR.textContent=reqs; const lit=on?Math.round(N*pct/100):0; const idx=reqs%N; const getsNew = idx<lit;
+    const d=document.createElement('div'); d.className='dot'+(getsNew?' done':''); d.style.left='16%'; d.style.top='55%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='80%'; d.style.top='30%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function tog(){ on=!on; if(on&&pct===0) pct=10; render(); }
+  function ramp(){ if(!on){on=true;} pct=Math.min(100,pct+30); render(); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 600*simRate()); }
+  document.getElementById('actToggle').onclick=tog;
+  document.getElementById('actRollout').onclick=ramp;
+  render(); running=true; loop();
+  return {req,tog,ramp,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A new show doesn't open to a packed house on night one. It reveals itself gradually — and a <b>feature flag</b> lets software launch the same careful way.", dur:4800},
+  {cap:"The new scene is built and rehearsed, but kept <b>behind the curtain</b> — so every theatregoer still sees the old version. It's ready, just hidden.", dur:4600, on(){SIM.req();}},
+  {cap:"When you're ready, you <b>raise the curtain</b> — no rebuilding the set, no closing the theatre. The switch just flips.", dur:4400, on(){SIM.tog();}},
+  {cap:"But don't reveal it to the whole house at once. Start with a <b>soft opening</b> — just the front few rows see the new scene.", dur:4600, on(){SIM.req();}},
+  {cap:"Watch how those rows react. Going down well? <b>Open more seats</b> — 40%, then 70%, then the full house.", dur:4600, on(){SIM.ramp();}},
+  {cap:"More of the audience sees it as you open more rows — a safe, watchable rollout instead of a risky opening night.", dur:4600, on(){SIM.ramp();}},
+  {cap:"And if a scene bombs at any point, you <b>drop the curtain</b> — instantly back to the old version for everyone, no drama backstage.", dur:4600, on(){SIM.tog();}},
+  {cap:"The same trick powers A/B tests, VIP-only previews, and a 'kill switch' for a risky act. One mechanism, many uses.", dur:4600, on(){SIM.tog();}},
+  {cap:"Your turn 👉 <b>🎭 Raise and drop the curtain</b> and <b>📈 open more seats</b> to control who sees the new scene, live.", dur:5200, on(){SIM.render();}},
+  {cap:"Feature flags separate 'built' from 'revealed': keep it curtained, open seats gradually, drop the curtain instantly. Safer launches, full control.", dur:4800}
+]});
+
+</script>
+</body></html>
