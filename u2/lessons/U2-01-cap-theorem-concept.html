@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAP Theorem · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cap-badge{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:5;
+  background:#fff; border:1.5px solid var(--line2); border-radius:999px; padding:6px 14px}
+.link{position:absolute; left:34%; width:32%; top:58%; height:4px; background:var(--good); border-radius:3px; z-index:1; transition:.3s}
+.link.cut{background:repeating-linear-gradient(90deg,var(--bad) 0 9px,transparent 9px 18px)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">CAP Theorem</h1>
+  <p class="subtitle">Consistency, Availability, Partition-tolerance — pick two. Networks fail, so Partition-tolerance is non-negotiable. The real choice happens during a partition: stay Consistent (refuse) or stay Available (risk stale).</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Network</div><div class="stat-v good" id="statLink">Connected</div></div>
+  <div class="stat"><div class="stat-k">During partition</div><div class="stat-v good" id="statHave">— + P</div></div>
+</div>
+<div class="cap-badge" id="badge">C · A · P all OK</div>
+<div class="node abs" data-show="1" style="left:26%;top:58%"><div class="box rep r-0">🗄️</div><div class="lbl"><span class="k">Replica N1</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:58%"><div class="box rep r-1">🗄️</div><div class="lbl"><span class="k">Replica N2</span></div></div>
+<div class="link" id="link"></div>
+<div class="acts">
+  <button class="act bad" id="actPartition">✂️ Partition the network</button>
+  <button class="act" id="actMode">🔀 Choose C / Choose A</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let link=true, mode='C', reqs=0, running=false, flip=0;
+  const elR=document.getElementById('statReqs'), elL=document.getElementById('statLink'), elH=document.getElementById('statHave'), badge=document.getElementById('badge');
+  const reps=[scene.querySelector('.r-0'),scene.querySelector('.r-1')], linkEl=document.getElementById('link');
+  function fmt(){ elL.textContent=link?'Connected':'PARTITIONED'; elL.className='stat-v '+(link?'good':'bad'); linkEl.classList.toggle('cut',!link);
+    elH.textContent=(mode==='C'?'C':'A')+' + P'; elH.className='stat-v '+(mode==='C'?'warn':'good');
+    if(link){ badge.textContent='C · A · P all OK'; badge.style.color='var(--good)'; }
+    else if(mode==='C'){ badge.textContent='CP — consistent, not available'; badge.style.color='var(--warn)'; }
+    else { badge.textContent='AP — available, maybe stale'; badge.style.color='var(--accent-d)'; } }
+  function req(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const toN2=(flip++%2)===1; const tx=toN2?74:26; const rep=toN2?reps[1]:reps[0];
+    // CP + partition + write to the cut-off side → refuse
+    if(!link && mode==='C' && toN2){ const d=document.createElement('div'); d.className='dot fail'; d.style.left=tx+'%'; d.style.top='40%'; scene.appendChild(d); setTimeout(()=>d.remove(),420*simRate()); return; }
+    const d=document.createElement('div'); d.className='dot'; d.style.left=tx+'%'; d.style.top='22%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='top '+leg+'ms'; d.style.top='52%'; });
+    setTimeout(()=>{ const stale = !link && mode==='A' && toN2;
+      d.classList.add(stale?'fail':'done'); if(rep){rep.classList.add('ping'); setTimeout(()=>rep.classList.remove('ping'),250);} setTimeout(()=>d.remove(),320); }, leg);
+  }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 1000*simRate()); }
+  function partition(){ link=!link; fmt(); }
+  function toggleMode(){ mode=mode==='C'?'A':'C'; fmt(); }
+  function refuse(){ const d=document.createElement('div'); d.className='dot fail'; d.style.left='74%'; d.style.top='40%'; scene.appendChild(d); setTimeout(()=>d.remove(),520*simRate()); if(reps[1]){reps[1].classList.add('crash'); setTimeout(()=>reps[1].classList.remove('crash'),600);} }
+  document.getElementById('actPartition').onclick=partition;
+  document.getElementById('actMode').onclick=toggleMode;
+  fmt(); running=true; loop();
+  return {partition,toggleMode,refuse,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>CAP</b> names three things a distributed store wants: <b>C</b>onsistency, <b>A</b>vailability, and <b>P</b>artition-tolerance.", dur:4600},
+  {cap:"Two replicas, kept in sync over the network. Reads and writes hit either one — both agree. Life is good.", dur:4400},
+  {cap:"Here's the theorem's catch: <b>networks fail.</b> Cables cut, packets drop. Partitions <em>will</em> happen.", dur:4400},
+  {cap:"So <b>P</b> isn't optional — you must tolerate partitions. That leaves a real choice only between <b>C</b> and <b>A</b>.", dur:4600},
+  {cap:"Watch — <span class='hl-bad'>partition the network.</span> The replicas can no longer talk.", dur:4000, on(){SIM.partition();}},
+  {cap:"<b>Choose C (CP):</b> the cut-off replica <span class='hl-bad'>refuses</span> requests it can't confirm. Always correct — but unavailable.", dur:4800, on(){SIM.refuse();}},
+  {cap:"<b>Choose A (AP):</b> flip the switch — now both replicas keep serving.", dur:4000, on(){SIM.toggleMode();}},
+  {cap:"They stay available, but the cut-off side may return <span class='hl-warn'>stale data.</span> Available, not consistent.", dur:4600},
+  {cap:"Your turn 👉 <b>✂️ Partition</b> the network and flip <b>C / A</b> to feel the unavoidable trade-off.", dur:5200, on(){SIM.fmt();}},
+  {cap:"CAP in one line: when the network splits, you can be consistent <em>or</em> available — never both. Choose per use-case.", dur:4800}
+]});
+
+</script>
+</body></html>

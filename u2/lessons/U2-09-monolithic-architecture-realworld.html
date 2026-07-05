@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monolith — A Swiss Army Knife · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.mono-box{position:absolute; left:46%; top:50%; transform:translate(-50%,-50%); width:230px; height:200px; border:2.5px solid var(--line2); border-radius:18px;
+  background:linear-gradient(180deg,#ffffff,#eef4fb); box-shadow:inset 0 1px 0 #fff,0 14px 30px -18px rgba(40,70,120,.5); z-index:2; transition:.3s; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:10px; padding:18px}
+.mod{font-family:var(--fmono); font-size:12px; padding:8px 10px; border-radius:9px; border:1.5px solid var(--line2); background:#fff; width:88px; text-align:center}
+.mono-box.deploying{border-color:var(--warn); animation:sd-pulse 1s ease-in-out infinite}
+.mono-box.crashed{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2; background:linear-gradient(180deg,#fdeceb,#f7d6d3)}
+.clone{position:absolute; left:46%; top:50%; transform:translate(120px,-50%); width:230px; height:200px; border:2.5px dashed var(--accent); border-radius:18px; opacity:0; transition:.4s; z-index:1; background:#f3f8ff}
+.clone.on{opacity:.9; transform:translate(150px,-50%)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Monolith — A Swiss Army Knife</h1>
+  <p class="subtitle">A Swiss Army knife packs every tool into one handle — brilliantly convenient. But to sharpen just the blade you send the whole knife to the shop, and if the hinge snaps, every tool is out of action at once.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Tasks done</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statStatus">Ready</div></div>
+  <div class="stat"><div class="stat-k">Service unit</div><div class="stat-v warn" id="statUnit">whole knife</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box">🧑‍🔧</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="clone" id="clone"></div>
+<div class="mono-box" id="mono">
+  <div class="mod">🔪 Blade</div><div class="mod">✂️ Scissors</div><div class="mod">🪛 Screwdriver</div><div class="mod">🍾 Corkscrew</div>
+</div>
+<div class="acts">
+  <button class="act" id="actDeploy">🪚 Sharpen one blade</button>
+  <button class="act bad" id="actCrash">💥 The hinge snaps</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, downUntil=0, running=false;
+  const elR=document.getElementById('statReqs'), elS=document.getElementById('statStatus');
+  const mono=document.getElementById('mono');
+  function down(){ return performance.now()<downUntil; }
+  function fmt(){ const d=down(); elS.textContent=d?'IN THE SHOP':'Ready'; elS.className='stat-v '+(d?'bad':'good'); }
+  function req(){ if(document.hidden) return; const d=down();
+    const dot=document.createElement('div'); dot.className='dot'; dot.style.left='13%'; dot.style.top='50%'; scene.appendChild(dot);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ dot.style.transition='left '+leg+'ms'; dot.style.left='40%'; });
+    setTimeout(()=>{ if(d){ dot.classList.add('fail'); setTimeout(()=>dot.remove(),320); return; }
+      dot.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>dot.remove(),300); }, leg); }
+  function deploy(){ mono.classList.add('deploying'); downUntil=performance.now()+1600*simRate(); fmt();
+    setTimeout(()=>{ mono.classList.remove('deploying'); fmt(); }, 1600*simRate()); }
+  function crash(){ mono.classList.add('crashed'); downUntil=performance.now()+1800*simRate(); fmt();
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='46%'; d.style.top='50%'; scene.appendChild(d); setTimeout(()=>d.remove(),500*simRate());
+    setTimeout(()=>{ mono.classList.remove('crashed'); fmt(); }, 1800*simRate()); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 560*simRate()); }
+  document.getElementById('actDeploy').onclick=deploy;
+  document.getElementById('actCrash').onclick=crash;
+  fmt(); running=true; loop();
+  return {deploy,crash,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>Swiss Army knife</b> packs every tool — blade, scissors, screwdriver, corkscrew — into one neat handle.", dur:4600},
+  {cap:"It's wonderfully convenient: one thing in your pocket does all the jobs. That's the appeal of a <b>monolith.</b>", dur:4400},
+  {cap:"The tools are tightly built together, sharing one handle and one hinge. No gaps, nothing to coordinate.", dur:4400},
+  {cap:"But to sharpen <em>just the blade</em>, you send the <b>whole knife</b> to the shop.", dur:4400, on(){SIM.deploy();}},
+  {cap:"While it's there, <span class='hl-bad'>every tool is unavailable</span> — scissors and screwdriver included, even though you only touched the blade.", dur:4800},
+  {cap:"Worse, if the central <b>hinge snaps</b>, the entire knife is useless at once.", dur:4200, on(){SIM.crash();}},
+  {cap:"One broken part takes <span class='hl-bad'>all the tools</span> down with it. No isolation between them.", dur:4400},
+  {cap:"And to have two people work at once, you carry a <b>second whole knife</b> — you can't clone just the scissors.", dur:4400},
+  {cap:"Your turn 👉 <b>🪚 Sharpen a blade</b> and <b>💥 snap the hinge</b> to feel the whole-tool blast radius.", dur:5200, on(){SIM.fmt();}},
+  {cap:"For most jobs a Swiss Army knife is perfect — simple and all-in-one. You only split into separate tools when it truly hurts.", dur:4800}
+]});
+
+</script>
+</body></html>

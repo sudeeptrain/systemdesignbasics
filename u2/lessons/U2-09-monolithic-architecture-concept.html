@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monolithic Architecture · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.mono-box{position:absolute; left:46%; top:50%; transform:translate(-50%,-50%); width:230px; height:200px; border:2.5px solid var(--line2); border-radius:18px;
+  background:linear-gradient(180deg,#ffffff,#eef4fb); box-shadow:inset 0 1px 0 #fff,0 14px 30px -18px rgba(40,70,120,.5); z-index:2; transition:.3s; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:10px; padding:18px}
+.mod{font-family:var(--fmono); font-size:12px; padding:8px 10px; border-radius:9px; border:1.5px solid var(--line2); background:#fff; width:88px; text-align:center}
+.mono-box.deploying{border-color:var(--warn); animation:sd-pulse 1s ease-in-out infinite}
+.mono-box.crashed{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2; background:linear-gradient(180deg,#fdeceb,#f7d6d3)}
+.clone{position:absolute; left:46%; top:50%; transform:translate(120px,-50%); width:230px; height:200px; border:2.5px dashed var(--accent); border-radius:18px; opacity:0; transition:.4s; z-index:1; background:#f3f8ff}
+.clone.on{opacity:.9; transform:translate(150px,-50%)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Monolithic Architecture</h1>
+  <p class="subtitle">A monolith packs every module into one deployable unit. It's simple and fast to start — one codebase, one deploy. But you deploy it whole, scale it whole, and one module's crash can take the entire process down.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statStatus">Running</div></div>
+  <div class="stat"><div class="stat-k">Deploy unit</div><div class="stat-v warn" id="statUnit">whole app</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box">📱</div><div class="lbl"><span class="k">Clients</span></div></div>
+<div class="clone" id="clone"></div>
+<div class="mono-box" id="mono">
+  <div class="mod">🔐 Auth</div><div class="mod">🛒 Orders</div><div class="mod">💳 Payments</div><div class="mod">🔎 Search</div>
+</div>
+<div class="acts">
+  <button class="act" id="actDeploy">🚀 Deploy a 1-line change</button>
+  <button class="act bad" id="actCrash">💥 One module crashes</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, downUntil=0, running=false;
+  const elR=document.getElementById('statReqs'), elS=document.getElementById('statStatus');
+  const mono=document.getElementById('mono'), clone=document.getElementById('clone');
+  function down(){ return performance.now()<downUntil; }
+  function fmt(){ const d=down(); elS.textContent=d?'DOWN':'Running'; elS.className='stat-v '+(d?'bad':'good'); }
+  function req(){ if(document.hidden) return; const d=down();
+    const dot=document.createElement('div'); dot.className='dot'; dot.style.left='13%'; dot.style.top='50%'; scene.appendChild(dot);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ dot.style.transition='left '+leg+'ms'; dot.style.left='40%'; });
+    setTimeout(()=>{ if(d){ dot.classList.add('fail'); setTimeout(()=>dot.remove(),320); return; }
+      dot.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>dot.remove(),300); }, leg); }
+  function deploy(){ mono.classList.add('deploying'); downUntil=performance.now()+1600*simRate(); fmt();
+    setTimeout(()=>{ mono.classList.remove('deploying'); fmt(); }, 1600*simRate()); }
+  function crash(){ mono.classList.add('crashed'); downUntil=performance.now()+1800*simRate(); fmt();
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='46%'; d.style.top='50%'; scene.appendChild(d); setTimeout(()=>d.remove(),500*simRate());
+    setTimeout(()=>{ mono.classList.remove('crashed'); fmt(); }, 1800*simRate()); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 560*simRate()); }
+  document.getElementById('actDeploy').onclick=deploy;
+  document.getElementById('actCrash').onclick=crash;
+  fmt(); running=true; loop();
+  return {deploy,crash,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>monolith</b> is one application holding every module — Auth, Orders, Payments, Search — in a single deployable unit.", dur:4600},
+  {cap:"Requests all flow into the one app, which handles them internally. Simple, fast, easy to start with.", dur:4400},
+  {cap:"There's no network between modules — they just call each other in-process. Great latency, easy debugging.", dur:4400},
+  {cap:"But you deploy it as <b>one piece</b>. Ship a one-line change to Search and the <em>whole app</em> redeploys.", dur:4600, on(){SIM.deploy();}},
+  {cap:"During that redeploy the entire thing is <span class='hl-bad'>down</span> — every feature, not just the one you touched.", dur:4400},
+  {cap:"Worse, a crash in <em>any</em> module can take the <b>whole process</b> down with it.", dur:4200, on(){SIM.crash();}},
+  {cap:"One memory leak in Search and Auth, Orders, and Payments all go dark too. No isolation.", dur:4400},
+  {cap:"And you scale it as a block: to handle more Orders traffic, you clone the <em>entire</em> app, Search and all.", dur:4400},
+  {cap:"Your turn 👉 <b>🚀 Deploy</b> a change and <b>💥 crash a module</b> to feel the whole-app blast radius.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Monoliths are the right start for most apps — simple wins. You split into services only when that coupling truly hurts.", dur:4800}
+]});
+
+</script>
+</body></html>

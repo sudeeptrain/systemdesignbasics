@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eventual Consistency · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ver{position:absolute; font-family:var(--fmono); font-size:13px; font-weight:700; z-index:4}
+.ver.stale{color:var(--bad)} .ver.fresh{color:var(--good)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Eventual Consistency</h1>
+  <p class="subtitle">Eventual consistency acks a write the moment the leader has it, then propagates to replicas in the background. For a brief window a replica can serve stale data — but if writes stop, all copies converge to the same value.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Writes</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Write latency</div><div class="stat-v good" id="statLat">low ✓</div></div>
+  <div class="stat"><div class="stat-k">Stale reads seen</div><div class="stat-v" id="statStale">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:45%;top:50%"><div class="box ldr">👑</div><div class="lbl"><span class="k">Leader</span></div></div>
+<div class="ver" id="lv" style="left:45%;top:64%">v0</div>
+<div class="node abs" data-show="1" style="left:80%;top:28%"><div class="box sm f-0">🗄️</div><div class="lbl"><span class="k">Follower 1</span></div></div>
+<div class="ver" id="fv0" style="left:80%;top:40%">v0</div>
+<div class="node abs" data-show="1" style="left:80%;top:74%"><div class="box sm f-1">🗄️</div><div class="lbl"><span class="k">Follower 2</span></div></div>
+<div class="ver" id="fv1" style="left:80%;top:86%">v0</div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✍️ Write (ack now, sync later)</button>
+  <button class="act" id="actReadFollower">🔎 Read a follower</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const L={x:45,y:50}, F=[{x:80,y:28},{x:80,y:74}];
+  let writes=0, ver=0, fver=[0,0], stale=0, running=false;
+  const elW=document.getElementById('statWrites'), elStale=document.getElementById('statStale');
+  const lv=document.getElementById('lv'), fv=[document.getElementById('fv0'),document.getElementById('fv1')];
+  const ldr=scene.querySelector('.ldr'), fol=[scene.querySelector('.f-0'),scene.querySelector('.f-1')];
+  function setv(){ lv.textContent='v'+ver; fv.forEach((e,i)=>{ e.textContent='v'+fver[i]; e.className='ver '+(fver[i]<ver?'stale':'fresh'); }); }
+  function hop(fx,fy,tx,ty,cls,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms, top '+ms+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(d); else setTimeout(()=>d.remove(),220); }, ms); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes; ver++; setv();
+    hop(14,50,L.x,L.y,'',420*simRate(),(d)=>{ if(ldr){ldr.classList.add('active'); setTimeout(()=>ldr.classList.remove('active'),250);}
+      // ack immediately
+      hop(L.x,L.y,14,50,'done',360*simRate());
+      // propagate to followers LATER (async, staggered)
+      F.forEach((f,i)=>setTimeout(()=>hop(L.x,L.y,f.x,f.y,'done',520*simRate(),(e)=>{ fver[i]=ver; setv(); if(fol[i]){fol[i].classList.add('healthy'); setTimeout(()=>fol[i].classList.remove('healthy'),300);} e.remove(); }), (700+i*900)*simRate()));
+      d.remove(); });
+  }
+  function readFollower(){ if(document.hidden) return; const i=Math.floor(Math.random()*2), f=F[i]; const fresh=fver[i]===ver;
+    if(!fresh){ stale++; elStale.textContent=stale; elStale.className='stat-v bad'; }
+    hop(14,50,f.x,f.y,fresh?'done':'fail',420*simRate(),(d)=>{ if(fol[i]){fol[i].classList.add('active'); setTimeout(()=>fol[i].classList.remove('active'),200);} d.style.transition='left .4s, top .4s'; d.style.left='14%'; d.style.top='50%'; setTimeout(()=>d.remove(),420*simRate()); }); }
+  function loop(){ if(!running)return; (Math.random()<0.45?write:readFollower)(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actReadFollower').onclick=readFollower;
+  setv(); running=true; loop();
+  return {write,readFollower,setv};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Eventual consistency</b> optimizes for speed: the leader acks a write <em>immediately</em>, then syncs replicas in the background.", dur:4800, on(){SIM.write();}},
+  {cap:"See it — the client got its <span class='hl-good'>\"OK\"</span> the instant the leader had the value. Writes are fast.", dur:4400},
+  {cap:"Meanwhile the new value <b>propagates lazily</b> to the followers. For a moment, their version lags behind.", dur:4600},
+  {cap:"Read a follower during that window and you might get <span class='hl-bad'>stale data</span> — an older version.", dur:4400, on(){SIM.readFollower();}},
+  {cap:"That's the catch: right after a write, different replicas can briefly disagree.", dur:4200},
+  {cap:"But give it a moment with no new writes, and every follower <span class='hl-good'>catches up</span> — they all converge.", dur:4600, on(){SIM.setv();}},
+  {cap:"\"Eventually\" the whole system agrees. That's the promise — consistency, just not instantly.", dur:4400},
+  {cap:"Perfect for likes, view counts, social feeds, DNS — where a few seconds of staleness is totally fine.", dur:4400},
+  {cap:"Your turn 👉 <b>✍️ Write</b> then quickly <b>🔎 Read a follower</b> to catch a stale read before it converges.", dur:5200, on(){SIM.setv();}},
+  {cap:"Eventual consistency = fast writes, high availability, brief staleness. The opposite trade-off from strong consistency.", dur:4800}
+]});
+
+</script>
+</body></html>

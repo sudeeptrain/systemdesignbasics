@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAP Theorem — A Shared Shopping List · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cap-badge{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:5;
+  background:#fff; border:1.5px solid var(--line2); border-radius:999px; padding:6px 14px}
+.link{position:absolute; left:34%; width:32%; top:58%; height:4px; background:var(--good); border-radius:3px; z-index:1; transition:.3s}
+.link.cut{background:repeating-linear-gradient(90deg,var(--bad) 0 9px,transparent 9px 18px)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">CAP Theorem — A Shared Shopping List</h1>
+  <p class="subtitle">You and a flatmate share a synced shopping list on your phones. When the signal drops between you, you must choose: keep editing your own copy (available, but you might both add milk), or lock the list until you reconnect (consistent, but unusable).</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Edits</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Phone signal</div><div class="stat-v good" id="statLink">Connected</div></div>
+  <div class="stat"><div class="stat-k">During outage</div><div class="stat-v good" id="statHave">— + P</div></div>
+</div>
+<div class="cap-badge" id="badge">in sync · both agree</div>
+<div class="node abs" data-show="1" style="left:26%;top:58%"><div class="box rep r-0">📝</div><div class="lbl"><span class="k">Your list</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:58%"><div class="box rep r-1">📝</div><div class="lbl"><span class="k">Flatmate's list</span></div></div>
+<div class="link" id="link"></div>
+<div class="acts">
+  <button class="act bad" id="actPartition">📵 Lose phone signal</button>
+  <button class="act" id="actMode">🔀 Keep editing / Lock list</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let link=true, mode='A', reqs=0, running=false, flip=0;
+  const elR=document.getElementById('statReqs'), elL=document.getElementById('statLink'), elH=document.getElementById('statHave'), badge=document.getElementById('badge');
+  const reps=[scene.querySelector('.r-0'),scene.querySelector('.r-1')], linkEl=document.getElementById('link');
+  function fmt(){ elL.textContent=link?'Connected':'NO SIGNAL'; elL.className='stat-v '+(link?'good':'bad'); linkEl.classList.toggle('cut',!link);
+    elH.textContent=(mode==='C'?'C':'A')+' + P'; elH.className='stat-v '+(mode==='C'?'warn':'good');
+    if(link){ badge.textContent='in sync · both agree'; badge.style.color='var(--good)'; }
+    else if(mode==='C'){ badge.textContent='Locked — consistent, unusable'; badge.style.color='var(--warn)'; }
+    else { badge.textContent='Editing apart — may both add milk'; badge.style.color='var(--accent-d)'; } }
+  function req(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const toN2=(flip++%2)===1; const tx=toN2?74:26; const rep=toN2?reps[1]:reps[0];
+    if(!link && mode==='C' && toN2){ const d=document.createElement('div'); d.className='dot fail'; d.style.left=tx+'%'; d.style.top='40%'; scene.appendChild(d); setTimeout(()=>d.remove(),420*simRate()); return; }
+    const d=document.createElement('div'); d.className='dot'; d.style.left=tx+'%'; d.style.top='22%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='top '+leg+'ms'; d.style.top='52%'; });
+    setTimeout(()=>{ const stale = !link && mode==='A' && toN2;
+      d.classList.add(stale?'fail':'done'); if(rep){rep.classList.add('ping'); setTimeout(()=>rep.classList.remove('ping'),250);} setTimeout(()=>d.remove(),320); }, leg);
+  }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 1000*simRate()); }
+  function partition(){ link=!link; fmt(); }
+  function toggleMode(){ mode=mode==='C'?'A':'C'; fmt(); }
+  function refuse(){ const d=document.createElement('div'); d.className='dot fail'; d.style.left='74%'; d.style.top='40%'; scene.appendChild(d); setTimeout(()=>d.remove(),520*simRate()); if(reps[1]){reps[1].classList.add('crash'); setTimeout(()=>reps[1].classList.remove('crash'),600);} }
+  document.getElementById('actPartition').onclick=partition;
+  document.getElementById('actMode').onclick=toggleMode;
+  fmt(); running=true; loop();
+  return {partition,toggleMode,refuse,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You and your flatmate share a <b>synced shopping list.</b> While both phones have signal, every edit appears on both — in sync.", dur:4800},
+  {cap:"This is the happy state: <b>C</b>onsistent, <b>A</b>vailable, and the connection (<b>P</b>) is fine. No conflict.", dur:4600},
+  {cap:"Then you walk into a basement and <span class='hl-bad'>lose signal.</span> The two phones can't sync.", dur:4200, on(){SIM.partition();}},
+  {cap:"<b>Lock the list (choose C):</b> the app <span class='hl-bad'>refuses edits</span> until you reconnect. Always correct, but useless right now.", dur:4800, on(){SIM.refuse();}},
+  {cap:"Or <b>keep editing (choose A):</b> flip the switch — both of you can still add items.", dur:4200, on(){SIM.toggleMode();}},
+  {cap:"…but with no sync, you might <span class='hl-warn'>both add milk.</span> Available, but the copies disagree until you reconnect.", dur:4800},
+  {cap:"That's CAP in a sentence: when the connection drops, you can be consistent <em>or</em> available — not both.", dur:4600},
+  {cap:"A shopping list happily picks <b>A</b> (a duplicate milk is no big deal). A shared bank balance would pick <b>C.</b>", dur:4800, on(){SIM.fmt();}},
+  {cap:"Your turn 👉 <b>📵 Lose signal</b> and flip <b>Keep editing / Lock</b> to feel the trade-off.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Partitions are inevitable. CAP just forces you to decide, per feature, which you'd rather keep when one hits.", dur:4800}
+]});
+
+</script>
+</body></html>

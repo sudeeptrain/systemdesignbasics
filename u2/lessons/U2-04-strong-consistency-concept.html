@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strong Consistency · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ver{position:absolute; font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Strong Consistency</h1>
+  <p class="subtitle">Strong (linearizable) consistency means once a write is acknowledged, every later read — from any replica — sees it. The system behaves as if there's a single copy. The price you pay is write latency.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Writes</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Any read returns</div><div class="stat-v good" id="statRead">latest ✓</div></div>
+  <div class="stat"><div class="stat-k">Write latency</div><div class="stat-v warn" id="statLat">higher</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:45%;top:50%"><div class="box ldr">👑</div><div class="lbl"><span class="k">Leader</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:26%"><div class="box sm f-0">🗄️</div><div class="lbl"><span class="k">Follower 1</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:74%"><div class="box sm f-1">🗄️</div><div class="lbl"><span class="k">Follower 2</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✍️ Write (sync replicate)</button>
+  <button class="act" id="actRead">🔎 Read from any replica</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const L={x:45,y:50}, F=[{x:78,y:26},{x:78,y:74}];
+  let writes=0, ver=0, running=false;
+  const elW=document.getElementById('statWrites'), elR=document.getElementById('statRead');
+  const ldr=scene.querySelector('.ldr'), fol=[scene.querySelector('.f-0'),scene.querySelector('.f-1')];
+  function hop(fx,fy,tx,ty,cls,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms, top '+ms+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(d); else setTimeout(()=>d.remove(),220); }, ms); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes; ver++;
+    hop(14,50,L.x,L.y,'',420*simRate(),(d)=>{ d.remove(); if(ldr){ldr.classList.add('active'); setTimeout(()=>ldr.classList.remove('active'),250);}
+      // synchronously replicate to BOTH followers before acking
+      let done=0; F.forEach((f,i)=>hop(L.x,L.y,f.x,f.y,'done',420*simRate(),(e)=>{ if(fol[i]){fol[i].classList.add('healthy'); setTimeout(()=>fol[i].classList.remove('healthy'),300);} e.remove(); done++;
+        if(done===2){ // ack back to client only now
+          hop(L.x,L.y,14,50,'done',420*simRate()); } })); });
+  }
+  function read(){ if(document.hidden) return; const f=F[Math.floor(Math.random()*2)];
+    hop(14,50,f.x,f.y,'done',420*simRate(),(d)=>{ const i=F.indexOf(f); if(fol[i]){fol[i].classList.add('active'); setTimeout(()=>fol[i].classList.remove('active'),200);} d.style.transition='left .4s, top .4s'; d.style.left='14%'; d.style.top='50%'; setTimeout(()=>d.remove(),420*simRate()); }); }
+  function loop(){ if(!running)return; (Math.random()<0.45?write:read)(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actRead').onclick=read;
+  running=true; loop();
+  return {write,read};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Strong consistency</b> makes a whole cluster behave like a single copy: once a write is done, it's done <em>everywhere.</em>", dur:4600},
+  {cap:"A write goes to the <b>leader</b> — the one node that orders all changes.", dur:4000, on(){SIM.write();}},
+  {cap:"Before acknowledging, the leader <b>synchronously replicates</b> to the followers and waits for them.", dur:4600},
+  {cap:"Only once every replica has the new value does the client get its <span class='hl-good'>\"OK.\"</span>", dur:4400},
+  {cap:"So now a <b>read from any replica</b> — leader or follower — is guaranteed to return the latest value.", dur:4600, on(){SIM.read();}},
+  {cap:"No stale reads, ever. The system is <b>linearizable</b>: reads and writes appear to happen in one clean order.", dur:4600},
+  {cap:"The cost is right there in the write path: you wait for <em>all</em> replicas, so writes are slower — higher latency.", dur:4600},
+  {cap:"Use it where correctness is non-negotiable: bank balances, inventory counts, unique usernames.", dur:4400},
+  {cap:"Your turn 👉 <b>✍️ Write</b> (watch it replicate to all before acking) and <b>🔎 Read</b> any replica — always fresh.", dur:5200},
+  {cap:"Strong consistency = always correct, never stale, but slower writes. The opposite trade-off from eventual consistency.", dur:4800}
+]});
+
+</script>
+</body></html>

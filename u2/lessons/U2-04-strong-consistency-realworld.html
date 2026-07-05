@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strong Consistency — Bank Teller · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ver{position:absolute; font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Strong Consistency — Bank Teller</h1>
+  <p class="subtitle">Withdraw cash and the teller confirms with head office before counting it out. Every branch updates before you get your money, so the instant you check elsewhere, the balance is already right. Safe and correct — but you wait a moment.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Withdrawals</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Any branch shows</div><div class="stat-v good" id="statRead">correct ✓</div></div>
+  <div class="stat"><div class="stat-k">Wait time</div><div class="stat-v warn" id="statLat">a moment</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:45%;top:50%"><div class="box ldr">🏛️</div><div class="lbl"><span class="k">Head office</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:26%"><div class="box sm f-0">🏦</div><div class="lbl"><span class="k">Branch A</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:74%"><div class="box sm f-1">🏦</div><div class="lbl"><span class="k">Branch B</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">💵 Withdraw (confirm everywhere)</button>
+  <button class="act" id="actRead">🔎 Check balance at any branch</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const L={x:45,y:50}, F=[{x:78,y:26},{x:78,y:74}];
+  let writes=0, ver=0, running=false;
+  const elW=document.getElementById('statWrites'), elR=document.getElementById('statRead');
+  const ldr=scene.querySelector('.ldr'), fol=[scene.querySelector('.f-0'),scene.querySelector('.f-1')];
+  function hop(fx,fy,tx,ty,cls,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms, top '+ms+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(d); else setTimeout(()=>d.remove(),220); }, ms); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes; ver++;
+    hop(14,50,L.x,L.y,'',420*simRate(),(d)=>{ d.remove(); if(ldr){ldr.classList.add('active'); setTimeout(()=>ldr.classList.remove('active'),250);}
+      let done=0; F.forEach((f,i)=>hop(L.x,L.y,f.x,f.y,'done',420*simRate(),(e)=>{ if(fol[i]){fol[i].classList.add('healthy'); setTimeout(()=>fol[i].classList.remove('healthy'),300);} e.remove(); done++;
+        if(done===2){ hop(L.x,L.y,14,50,'done',420*simRate()); } })); });
+  }
+  function read(){ if(document.hidden) return; const f=F[Math.floor(Math.random()*2)];
+    hop(14,50,f.x,f.y,'done',420*simRate(),(d)=>{ const i=F.indexOf(f); if(fol[i]){fol[i].classList.add('active'); setTimeout(()=>fol[i].classList.remove('active'),200);} d.style.transition='left .4s, top .4s'; d.style.left='14%'; d.style.top='50%'; setTimeout(()=>d.remove(),420*simRate()); }); }
+  function loop(){ if(!running)return; (Math.random()<0.45?write:read)(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actRead').onclick=read;
+  running=true; loop();
+  return {write,read};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You ask a bank teller for cash. Before counting a single note, they <b>confirm with head office.</b>", dur:4400, on(){SIM.write();}},
+  {cap:"Head office updates your balance at <b>every branch</b> — and waits for all of them to acknowledge.", dur:4600},
+  {cap:"Only once every branch is in sync does the teller <span class='hl-good'>hand you the money.</span> Nothing is half-done.", dur:4600},
+  {cap:"That's <b>strong consistency</b>: the whole bank behaves like a single, authoritative source of truth.", dur:4400},
+  {cap:"So if you walk to <b>another branch</b> and check your balance, it's already correct — guaranteed.", dur:4600, on(){SIM.read();}},
+  {cap:"No chance of withdrawing the same $100 twice from two branches. Every read reflects the very latest write.", dur:4600},
+  {cap:"The price is in the wait: the teller paused while all branches confirmed. Strong consistency costs a little <b>latency.</b>", dur:4600},
+  {cap:"That's the right trade for money, seat reservations, or unique usernames — where being wrong is far worse than being slow.", dur:4600},
+  {cap:"Your turn 👉 <b>💵 Withdraw</b> (watch it confirm everywhere) and <b>🔎 check any branch</b> — always correct.", dur:5200},
+  {cap:"Strong consistency = one source of truth, never stale, slightly slower. The mirror image of eventual consistency.", dur:4800}
+]});
+
+</script>
+</body></html>

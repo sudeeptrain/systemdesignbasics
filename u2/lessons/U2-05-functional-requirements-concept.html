@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Functional Requirements · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.frlist{position:absolute; right:7%; top:18%; width:46%; display:flex; flex-direction:column; gap:8px; z-index:2}
+.fr{display:flex; align-items:center; gap:9px; font-family:var(--fmono); font-size:13px; background:#fff; border:1.5px solid var(--line2); border-radius:9px; padding:8px 11px; transition:.3s}
+.fr .bx{width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line2); display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff}
+.fr.pass{border-color:var(--good)} .fr.pass .bx{background:var(--good); border-color:var(--good)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Functional Requirements</h1>
+  <p class="subtitle">Functional requirements are what the system must DO — the concrete features and behaviors. "A user can sign up," "a user can place an order." Each one is testable: give an input, expect a specific output.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Features passing</div><div class="stat-v accent" id="statPassed">0</div></div>
+  <div class="stat"><div class="stat-k">Total FRs</div><div class="stat-v" id="statTotal">4</div></div>
+  <div class="stat"><div class="stat-k">Type</div><div class="stat-v good" id="statType">"what it does"</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">🧪</div><div class="lbl"><span class="k">Test harness</span></div></div>
+<div class="frlist" id="frlist"></div>
+<div class="acts">
+  <button class="act ok" id="actDemo">▶️ Test the features</button>
+  <button class="act" id="actAddReq">➕ Add a requirement</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=['User can sign up 🔐','User can search items 🔎','User can place an order 🛒','User can pay 💳'];
+  const pool=['User can track delivery 🚚','User can leave a review ⭐','User can cancel an order ❌','Admin can refund 💸'];
+  let passed=0, running=false, ri=0;
+  const list=document.getElementById('frlist'), elP=document.getElementById('statPassed'), elT=document.getElementById('statTotal');
+  function render(){ list.innerHTML=''; reqs.forEach((r,i)=>{ const row=document.createElement('div'); row.className='fr fr-'+i; row.innerHTML='<span class="bx">✓</span><span>'+r+'</span>'; list.appendChild(row); }); elT.textContent=reqs.length; }
+  function testOne(i){ if(document.hidden) return; const row=list.querySelector('.fr-'+i); if(!row) return;
+    const y=18 + i*(64/Math.max(1,reqs.length)) + 6;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='52%'; d.style.top=y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(!row.classList.contains('pass')){ row.classList.add('pass'); passed++; elP.textContent=passed; } setTimeout(()=>d.remove(),260); }, leg);
+  }
+  function demoAll(){ reqs.forEach((_,i)=>setTimeout(()=>testOne(i), i*420*simRate())); }
+  function addReq(){ if(reqs.length<7 && pool.length){ reqs.push(pool.shift()); render(); } }
+  function loop(){ if(!running)return; testOne(ri%reqs.length); ri++; setTimeout(loop, 900*simRate()); }
+  document.getElementById('actDemo').onclick=demoAll;
+  document.getElementById('actAddReq').onclick=addReq;
+  render(); running=true; loop();
+  return {demoAll,addReq,testOne};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Functional requirements</b> answer one question: <em>what must the system do?</em> They're the features themselves.", dur:4600},
+  {cap:"Each is a concrete, checkable behavior: \"a user can sign up,\" \"a user can place an order.\"", dur:4400},
+  {cap:"The test is simple — give an input, expect a specific output. So every FR can be <b>verified.</b>", dur:4400, on(){SIM.testOne(0);}},
+  {cap:"Run the suite: each feature gets exercised and <span class='hl-good'>ticked off</span> as it behaves correctly.", dur:4400, on(){SIM.demoAll();}},
+  {cap:"FRs come straight from user stories and use-cases — they define the product's <b>capabilities.</b>", dur:4200},
+  {cap:"As the product grows, you <b>add requirements</b>: track delivery, leave a review, cancel an order…", dur:4400, on(){SIM.addReq();}},
+  {cap:"Each new FR is one more behavior to build and test. The checklist <em>is</em> the scope of the system.", dur:4400, on(){SIM.demoAll();}},
+  {cap:"Crucially, FRs say nothing about <em>how well</em> — speed, uptime, security. Those are non-functional requirements.", dur:4600},
+  {cap:"Your turn 👉 <b>▶️ Test the features</b> and <b>➕ add a requirement</b> to grow the system's behavior.", dur:5200},
+  {cap:"Functional requirements = the verbs of your system: what a user can do. Get them clear before designing anything.", dur:4600}
+]});
+
+</script>
+</body></html>
