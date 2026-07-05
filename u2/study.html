@@ -1,0 +1,256 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Design · Unit 2 — Study Slides</title>
+<style>
+:root{--bg:#eef3f9;--surface:#fff;--ink:#13202f;--muted:#3f5266;--faint:#65788e;--line:#d3deeb;--line2:#b9c9dd;--accent:#1f6fe6;--accentd:#1657bf;--good:#0f8f5b;--warn:#b9730b;--bad:#d83a2e;--violet:#6a4fe0;--pink:#cc2f86;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(160deg,#eef3f9,#e6eef7);font-size:18px;line-height:1.5}
+#stage{height:100vh;display:flex;flex-direction:column;padding:18px 22px 64px;max-width:1180px;margin:0 auto}
+.head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:8px;margin-bottom:10px}
+.unit{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accentd);background:rgba(31,111,230,.08);border:1px solid var(--line2);padding:4px 10px;border-radius:999px}
+.tnum{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint)}
+.ttl{font-family:'Space Grotesk',ui-sans-serif,system-ui;font-weight:700;font-size:27px;letter-spacing:-.01em;flex:1;min-width:200px}
+.rating{font-size:14px;color:var(--warn)}
+.slide{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px -24px rgba(40,70,120,.5);padding:20px 26px;overflow:auto}
+.slide h2{font-family:'Space Grotesk',ui-sans-serif;font-size:21px;margin:0 0 12px;color:var(--accentd);display:flex;align-items:center;gap:8px}
+.slide h2 .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block}
+ul{margin:6px 0 12px;padding-left:24px}
+li{margin:5px 0}
+li b{color:var(--accentd)}
+.sub{font-weight:700;color:var(--ink);margin:12px 0 4px;font-size:18px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0 12px}
+.kv .k{font-weight:700;color:var(--violet)}
+.kv .v{color:var(--muted)}
+table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:16.5px}
+th,td{border:1px solid var(--line2);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#eef4ff;color:var(--accentd);font-family:'IBM Plex Mono',monospace;font-size:14px}
+.note{margin:8px 0;padding:9px 13px;border-left:4px solid var(--good);background:#e9f7f0;border-radius:0 8px 8px 0;font-size:16.5px}
+.note.warn{border-left-color:var(--warn);background:#fff6e8}
+.note.key{border-left-color:var(--accent);background:#eaf2fe}
+.note.rw{border-left-color:var(--pink);background:#fdeef6}
+.foot{position:fixed;left:0;right:0;bottom:0;height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:15px}
+.foot button{font:inherit;font-size:15px;padding:6px 14px;border:1px solid var(--line2);background:#f3f7fc;border-radius:8px;cursor:pointer;color:var(--ink)}
+.foot button:hover{border-color:var(--accent);color:var(--accentd)}
+.counter{font-family:'IBM Plex Mono',monospace;color:var(--faint)}
+.spacer{flex:1}
+select{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff;max-width:42vw}
+.hint{color:var(--faint);font-size:13px}
+@media print{.foot{display:none}#stage{height:auto}.slide{break-inside:avoid;box-shadow:none}}
+</style><style>.mnav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;gap:8px;justify-content:center;align-items:center;padding:7px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 14px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:5px 12px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}#stage{padding-top:50px!important}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a href="index.html">▶ Animated Lessons</a><a class="cur">📊 Study Slides</a></div>
+<div id="stage">
+  <div class="head"><span class="unit">Unit 2 · Concepts & Patterns</span><span class="tnum" id="tnum"></span><span class="ttl" id="ttl"></span><span class="rating" id="rating"></span></div>
+  <div class="slide" id="slide"></div>
+</div>
+<div class="foot">
+  <button onclick="prev()">◀ Prev</button><button onclick="next()">Next ▶</button>
+  <span class="counter" id="counter"></span><span class="spacer"></span><span class="hint">← → keys</span>
+  <select id="jump" onchange="jumpTo(this.value)"></select>
+</div>
+<script>
+const TOPICS=[
+{n:1,t:"CAP Theorem",r:"★★★★★",slides:[
+ {h:"The theorem",body:["A distributed data store can guarantee at most <b>two of three</b>: <b>C</b>onsistency, <b>A</b>vailability, <b>P</b>artition-tolerance.",{kv:[["Consistency","every read sees the latest write"],["Availability","every request gets a (non-error) response"],["Partition tolerance","works despite dropped/delayed network messages"]]},"Networks <b>will</b> partition, so P is mandatory → the real choice is <b>C vs A</b> during a partition."]},
+ {h:"CP vs AP in practice",body:[{tbl:{head:["","CP","AP"],rows:[["On partition","reject/block to stay correct","serve possibly-stale data"],["Sacrifices","availability","consistency"],["Examples","HBase, ZooKeeper, RDBMS","Cassandra, DynamoDB, Riak"]]}},"When there's <b>no</b> partition, you can have both C and A.",{note:"CAP is only about partition time. The everyday trade-off (latency vs consistency) is captured by PACELC.",cls:"key"}]}
+]},
+{n:2,t:"Weak Consistency",r:"★★★★★",slides:[
+ {h:"What it is",body:["After a write, reads <b>may or may not</b> see it — <b>no guarantee</b> of when (or if) replicas converge for any given read.","Highest availability & lowest latency; least correctness.","Good when occasional loss/staleness is fine: live video, VoIP, gaming state, metrics, real-time analytics.",{note:"Trade absolute correctness for speed and availability where 'good enough, right now' beats 'perfect, later'.",cls:"key"}]}
+]},
+{n:3,t:"Eventual Consistency",r:"★★★★★",slides:[
+ {h:"Definition",body:["If no new writes occur, all replicas <b>eventually converge</b> to the same value. Reads may be <b>temporarily stale</b>.","A practical sweet spot: high availability + low latency, with bounded staleness.","Mechanisms: async replication, gossip, read-repair, anti-entropy, vector clocks/CRDTs for conflict resolution."]},
+ {h:"Where it fits",body:["DNS, social feeds, shopping carts, 'likes' counters, product catalogs.",{kv:[["Read-your-writes","you see your own updates"],["Monotonic reads","never see older data after newer"]]},"These are stronger sub-guarantees layered on eventual consistency.",{note:"Most internet-scale AP systems are eventually consistent — conflicts resolved by last-write-wins or CRDTs.",cls:"warn"}]}
+]},
+{n:4,t:"Strong Consistency",r:"★★★★★",slides:[
+ {h:"Definition",body:["Every read returns the <b>most recent committed write</b> — the system behaves as if there's a single copy (linearizable).","Achieved via synchronous replication, consensus (Raft/Paxos), or quorum reads+writes (R+W>N).","Cost: higher latency, lower availability (CP), reduced throughput.",{note:"Required for money, inventory, bookings, unique constraints — anywhere stale reads cause real harm.",cls:"key"}]}
+]},
+{n:5,t:"Functional Requirements",r:"★★★★",slides:[
+ {h:"What the system does",body:["Concrete <b>features & behaviors</b>: what inputs produce what outputs. 'Users can post, follow, like.'","Expressed as use cases, APIs, user stories.","Drive the <b>API design, data model, and core services</b>.",{note:"In a design interview: clarify FRs first, then scope down to a few to design well.",cls:"key"}]}
+]},
+{n:6,t:"Non-Functional Requirements",r:"★★★★★",slides:[
+ {h:"How well the system does it",body:["Quality attributes / constraints: <b>scalability, availability, latency, throughput, consistency, durability, security, cost, maintainability.</b>","Often the <b>hard part</b> of system design — they shape the architecture.","Quantify them: 'p99 < 200ms', '99.99% availability', '10k QPS'.",{note:"FRs say what; NFRs say how well. NFRs (the '-ilities') usually dominate big-system design.",cls:"warn"}]}
+]},
+{n:7,t:"High-Level Design (HLD)",r:"★★★★★",slides:[
+ {h:"The big picture",body:["Architecture-level view: major <b>components, services, data stores, and how they communicate.</b>","Decisions: SQL vs NoSQL, monolith vs microservices, sync vs async, caching, load balancing, sharding.","Output: a block diagram + data flow + tech choices with justifications.",{note:"HLD answers 'what are the pieces and how do they fit', not the class-level details.",cls:"key"}]}
+]},
+{n:8,t:"Low-Level Design (LLD)",r:"★★★★★",slides:[
+ {h:"The fine detail",body:["Component internals: <b>classes, interfaces, methods, schemas, algorithms, design patterns.</b>","UML class/sequence diagrams; SOLID; concurrency handling; error handling.","Example: design the rate limiter's classes & data structures, or the DB schema with indexes.",{note:"LLD turns one HLD box into implementable code-level structure.",cls:"key"}]}
+]},
+{n:9,t:"Monolithic Architecture",r:"★★★★★",slides:[
+ {h:"One deployable unit",body:["Entire app (UI, logic, data access) built & deployed as a <b>single artifact</b>, one codebase, usually one DB.",{sub:"Pros"},"Simple to build/test/deploy early; no network between modules (fast in-process calls); easy transactions.",{sub:"Cons"},"Scales as one block; one bug can crash all; slow builds; tech lock-in; hard for big teams; risky deploys."]},
+ {h:"When to use",body:["<b>Start here</b> for new products / small teams — fastest path to value.","Refactor toward modules; split to microservices only when scale/team pain demands it.",{note:"'Monolith first' is sound advice — premature microservices add huge complexity.",cls:"warn"}]}
+]},
+{n:10,t:"Microservices",r:"★★★★★",slides:[
+ {h:"Independent services",body:["App split into small, <b>independently deployable</b> services, each owning a business capability + its own data.","Communicate via APIs (REST/gRPC) or async messaging/events.",{sub:"Pros"},"Independent scaling & deploys; fault isolation; tech diversity; team autonomy.",{sub:"Cons"},"Distributed-systems complexity: network failures, eventual consistency, debugging, ops overhead, data across services."]},
+ {h:"Key concerns",body:["<b>Service boundaries</b> (bounded contexts), API contracts/versioning.","Cross-service data: no distributed transactions → use Saga, events, eventual consistency.","Needs: service discovery, API gateway, observability, CI/CD maturity.",{note:"Each service owns its data — no shared DB. Inter-service joins become API calls or data duplication.",cls:"key"}]}
+]},
+{n:11,t:"Event-Driven Architecture",r:"★★★★★",slides:[
+ {h:"React to events",body:["Components communicate by <b>producing & consuming events</b> (asynchronously) rather than direct calls.","<b>Loose coupling</b>: producers don't know consumers; add consumers without touching producers.","Backbones: message brokers (RabbitMQ) / event streams (Kafka)."]},
+ {h:"Trade-offs",body:[{sub:"Pros"},"Scalable, resilient (buffering), extensible, decoupled, good for real-time pipelines.",{sub:"Cons"},"Harder to trace/debug (no linear call stack); eventual consistency; ordering & duplicate handling; needs idempotent consumers.",{note:"Great for fan-out, async work, and decoupling — at the cost of end-to-end visibility.",cls:"warn"}]}
+]},
+{n:12,t:"Monolith vs Microservices vs Serverless",r:"★★★★★",slides:[
+ {h:"Comparison",body:[{tbl:{head:["","Monolith","Microservices","Serverless (FaaS)"],rows:[["Unit","one app","many services","functions"],["Scaling","whole app","per service","per invocation (auto)"],["Ops","simple","complex","minimal (managed)"],["Cost","always-on","always-on","pay-per-use"],["Best for","early/simple","large/complex","spiky/event work"]]}}]},
+ {h:"Choosing",body:["Start <b>monolith</b>; extract <b>microservices</b> as scale/teams grow; use <b>serverless</b> for event-driven, bursty, or glue workloads.","Serverless caveats: cold starts, vendor lock-in, execution limits, statelessness.",{note:"It's a spectrum, not a religion — many systems mix all three.",cls:"key"}]}
+]},
+{n:13,t:"Service Mesh",r:"★★★★",slides:[
+ {h:"Infrastructure layer for service-to-service comms",body:["A dedicated layer (sidecar proxies, e.g. Envoy) handling <b>networking concerns</b> between microservices: load balancing, retries, timeouts, <b>mTLS</b>, observability, traffic splitting.","Control plane (e.g. Istio/Linkerd) configures the data-plane proxies.","Moves cross-cutting concerns <b>out of app code</b> into the platform.",{note:"Pays off at many-services scale; overkill for a handful of services.",cls:"warn"}]}
+]},
+{n:14,t:"Backend for Frontend (BFF)",r:"★★★★★",slides:[
+ {h:"A backend per client type",body:["A dedicated backend tailored to each frontend (web, iOS, Android) that <b>aggregates & shapes</b> data from microservices for that client.","Avoids a one-size-fits-all API; reduces over/under-fetching and chatty mobile calls.","Each BFF owned by the frontend team.",{note:"BFF is an API-gateway specialization per client — improves client performance & developer velocity.",cls:"key"}]}
+]},
+{n:15,t:"API Composition",r:"★★★★★",slides:[
+ {h:"Aggregating across services",body:["A composer/gateway calls <b>multiple services</b> and joins their results into one response (since each service owns its own data).","Used to answer queries that span services (the 'join' you can't do in one DB).",{sub:"Trade-offs"},"Simple, but: in-memory joins can be costly; latency = slowest call; partial failures. For heavy cross-service queries, prefer <b>CQRS</b> read models.",{note:"API composition handles cross-service reads; CQRS materialized views scale it better.",cls:"warn"}]}
+]},
+{n:16,t:"PACELC Theorem",r:"★★★★",slides:[
+ {h:"Beyond CAP",body:["<b>If Partition (P): choose A or C; Else (E): choose Latency (L) or Consistency (C).</b>","Extends CAP to the <b>normal, no-partition</b> case — where you still trade latency vs consistency.",{tbl:{head:["System","Partition","Else"],rows:[["Dynamo/Cassandra","A","L (PA/EL)"],["MongoDB","C","C (PC/EC)"],["Spanner","C","C (PC/EC)"]]}},{note:"PACELC is more realistic than CAP: even healthy systems pay latency for stronger consistency.",cls:"key"}]}
+]},
+{n:17,t:"Quorum (R + W > N)",r:"★★★★★",slides:[
+ {h:"Tunable consistency",body:["<b>N</b> = replicas, <b>W</b> = nodes that must ack a write, <b>R</b> = nodes read from.","If <b>R + W > N</b>, read & write sets overlap → reads see the latest write (strong-ish consistency).",{kv:[["W=N, R=1","fast reads, slow/strict writes"],["W=1, R=N","fast writes, slow reads"],["W=R=⌈(N+1)/2⌉","balanced majority quorum"]]}]},
+ {h:"Notes",body:["Lets you <b>tune</b> the consistency/latency/availability balance per operation.","Used by Dynamo-style stores (Cassandra consistency levels).","<b>W + W > N</b> also avoids two writers committing without overlap.",{note:"Majority quorums (e.g., 2 of 3) tolerate one node down while staying consistent.",cls:"key"}]}
+]},
+{n:18,t:"Layered / N-Tier Architecture",r:"★★★★",slides:[
+ {h:"Horizontal layers",body:["Organize code into layers: <b>Presentation → Business/Logic → Data Access → Database.</b> Each layer talks only to the one below.","Classic 3-tier: UI tier, app tier, data tier (often separate machines).",{sub:"Pros/Cons"},"Pros: separation of concerns, easy to understand, swap a layer. Cons: can become a rigid 'big ball of layers'; changes ripple; risk of an anemic architecture.",{note:"Simple and ubiquitous; the default structure inside a monolith.",cls:"key"}]}
+]},
+{n:19,t:"Hexagonal / Ports & Adapters",r:"★★★",slides:[
+ {h:"Isolate the core",body:["Business logic (the 'hexagon') is isolated from the outside world. It exposes <b>ports</b> (interfaces); <b>adapters</b> connect them to DBs, UIs, queues, APIs.","The core depends on <b>abstractions</b>, not on frameworks/DBs (dependency inversion).",{sub:"Benefit"},"Swap a database or UI without touching business logic; highly testable (mock adapters).",{note:"A way to keep domain logic pure and infrastructure replaceable — basis of 'clean architecture'.",cls:"key"}]}
+]},
+{n:20,t:"CQRS",r:"★★★★★",slides:[
+ {h:"Split reads from writes",body:["<b>Command Query Responsibility Segregation</b>: separate <b>write model</b> (commands) from <b>read model</b> (queries), often different data stores.","Reads served from <b>denormalized, optimized</b> views; writes keep a normalized model.","Scales reads & writes independently; tailor each side's schema."]},
+ {h:"Trade-offs & fit",body:["Read models updated asynchronously → <b>eventual consistency</b> between write & read sides.","Adds complexity & duplicated data; pairs naturally with <b>Event Sourcing</b>.","Use for read-heavy domains with complex queries (dashboards, feeds).",{note:"Don't apply globally — use CQRS only where the read/write asymmetry justifies it.",cls:"warn"}]}
+]},
+{n:21,t:"Event Sourcing",r:"★★★★★",slides:[
+ {h:"Store events, not state",body:["Persist the <b>full sequence of state-changing events</b> as the source of truth; current state = replay of events.","Gives a complete <b>audit log</b>, time-travel, and easy rebuild of read models.","Pairs with CQRS (events feed read projections)."]},
+ {h:"Trade-offs",body:["Pros: auditability, debugging, temporal queries, replay.","Cons: querying current state needs projections; <b>schema/event versioning</b> is hard; large event stores; eventual consistency.",{note:"Powerful for finance/audit-heavy domains; complex — adopt deliberately.",cls:"warn"}]}
+]},
+{n:22,t:"Saga Pattern",r:"★★★★★",slides:[
+ {h:"Distributed transactions without 2PC",body:["A business transaction across services = a sequence of <b>local transactions</b>; each publishes an event triggering the next.","On failure, run <b>compensating transactions</b> to undo prior steps (semantic rollback).","Provides eventual consistency without locking across services."]},
+ {h:"Choreography vs Orchestration",body:[{tbl:{head:["","Choreography","Orchestration"],rows:[["Coordination","events, no central brain","central orchestrator service"],["Coupling","looser","orchestrator knows all"],["Visibility","harder to trace","centralized, clearer"],["Best for","few steps","complex workflows"]]}},{note:"Sagas replace distributed ACID with compensations — design the 'undo' for every step.",cls:"key"}]}
+]},
+{n:23,t:"Outbox / Inbox Pattern",r:"★★★★★",slides:[
+ {h:"Reliable messaging with the DB",body:["Problem: updating the DB <b>and</b> publishing an event isn't atomic — a crash between them loses the event (dual-write problem).","<b>Outbox</b>: write the event to an 'outbox' table in the <b>same DB transaction</b> as the state change; a relay/CDC process publishes it afterward.","<b>Inbox</b>: consumer records processed message IDs to <b>dedupe</b> (idempotent consume)."]},
+ {h:"Why it matters",body:["Guarantees <b>at-least-once</b> delivery aligned with DB commits — no lost or phantom events.","Relay often via Change Data Capture (CDC) on the outbox table.",{note:"Outbox solves the dual-write problem; inbox gives exactly-once *effect* via dedupe.",cls:"key"}]}
+]},
+{n:24,t:"Two-Phase Commit (2PC) & Distributed Transactions",r:"★★★★",slides:[
+ {h:"Atomic commit across nodes",body:["A <b>coordinator</b> runs: <b>Phase 1 (prepare)</b> — ask all participants to vote; <b>Phase 2 (commit/abort)</b> — if all vote yes, commit, else abort.","Gives ACID across multiple resources/DBs.",{sub:"Problems"},"<b>Blocking</b>: if coordinator dies after prepare, participants are stuck holding locks. Slow; poor availability; doesn't scale.","<b>3PC</b> adds a phase to reduce blocking; still rarely used at scale."]},
+ {h:"In practice",body:["Modern distributed systems usually <b>avoid 2PC</b>, preferring Sagas + eventual consistency.","Still used within some databases / XA transactions where strict atomicity is required.",{note:"2PC = strong atomicity but blocking & not scalable. Sagas trade atomicity for availability.",cls:"warn"}]}
+]},
+{n:25,t:"Circuit Breaker Pattern",r:"★★★★★",slides:[
+ {h:"Stop cascading failures",body:["Wraps calls to a flaky dependency. After too many failures it <b>'opens'</b> and fails fast (returns error/fallback) instead of waiting on timeouts.",{kv:[["Closed","calls pass through normally"],["Open","calls fail fast immediately"],["Half-open","trial calls test if the dependency recovered"]]}]},
+ {h:"Why",body:["Prevents one slow/dead service from <b>exhausting threads</b> and dragging the whole system down.","Gives the failing service time to recover; pair with fallbacks & timeouts.",{note:"A core resilience pattern — fail fast, recover gracefully, protect the caller's resources.",cls:"key"}]}
+]},
+{n:26,t:"Bulkhead Pattern",r:"★★★★",slides:[
+ {h:"Isolate to contain failure",body:["Named after ship bulkheads: partition resources (thread pools, connection pools) so a failure in one area <b>can't sink the whole ship</b>.","E.g., separate thread pools per dependency — if service X hangs, it only exhausts X's pool, not all threads.","Pairs with circuit breakers and timeouts.",{note:"Bulkheads contain the blast radius; circuit breakers stop the bleeding.",cls:"key"}]}
+]},
+{n:27,t:"Retry with Exponential Backoff & Jitter",r:"★★★★★",slides:[
+ {h:"Retrying without making things worse",body:["Transient failures → retry, but <b>not immediately or in lockstep</b>.","<b>Exponential backoff</b>: wait 1s, 2s, 4s, 8s… between attempts.","<b>Jitter</b>: add randomness so many clients don't retry at the same instant (avoids a synchronized 'retry storm' / thundering herd).","Cap retries & total time; only retry <b>idempotent</b> operations."]},
+ {h:"Notes",body:["Without jitter, backoff alone still synchronizes clients after an outage.","Combine with circuit breakers so you stop retrying a dead service.",{note:"Backoff spreads load over time; jitter spreads it across clients. Use both.",cls:"warn"}]}
+]},
+{n:28,t:"Sidecar & Ambassador Patterns",r:"★★★★",slides:[
+ {h:"Helper containers",body:[{kv:[["Sidecar","a helper deployed alongside the main app (same pod) handling cross-cutting concerns: logging, metrics, proxy, config, mTLS"],["Ambassador","a sidecar that proxies the app's OUTbound network calls (retries, routing, TLS) — an 'envoy' to the outside"]]},"Keep app code focused on business logic; platform handles networking/observability. Service meshes are built on sidecars.",{note:"Sidecar = co-located helper; ambassador = outbound-proxy sidecar.",cls:"key"}]}
+]},
+{n:29,t:"Strangler Fig (Migration Pattern)",r:"★★★★",slides:[
+ {h:"Incremental legacy migration",body:["Gradually replace a legacy system by <b>routing slices of traffic</b> to new services, piece by piece, until the old system is 'strangled' and removed.","A facade/router sits in front, sending some routes to new, the rest to old.","Avoids a risky big-bang rewrite; ship & validate incrementally; easy rollback per slice.",{note:"The safest way to modernize a monolith — replace it feature-by-feature in production.",cls:"key"}]}
+]},
+{n:30,t:"Serverless / FaaS (deep dive)",r:"★★★★★",slides:[
+ {h:"Functions as a service",body:["Run code in stateless <b>functions</b> triggered by events; the platform handles servers, scaling, and availability. Pay only for execution.","Auto-scales from zero to thousands of concurrent invocations.","Triggers: HTTP, queue messages, file uploads, schedules, DB changes."]},
+ {h:"Trade-offs",body:[{sub:"Pros"},"No server management; pay-per-use; effortless scaling; fast to ship.",{sub:"Cons"},"<b>Cold starts</b> (latency on first call); execution time/memory limits; <b>stateless</b> (need external state); vendor lock-in; harder local testing & debugging.",{note:"Ideal for spiky, event-driven, glue workloads; poor fit for long-running, latency-critical, or stateful apps.",cls:"warn"}]}
+]},
+{n:31,t:"Pub/Sub vs Event Streaming",r:"★★★★★",slides:[
+ {h:"Two messaging styles",body:[{tbl:{head:["","Pub/Sub (queue)","Event Streaming (log)"],rows:[["Model","push to subscribers","durable, ordered log"],["Retention","deleted after consume","retained (replayable)"],["Consumers","each msg to subscribers","read at own offset"],["Examples","RabbitMQ, SNS/SQS","Kafka, Kinesis, Pulsar"]]}}]},
+ {h:"When to use which",body:["<b>Pub/Sub</b>: decoupled task distribution, fan-out notifications, work queues.","<b>Streaming</b>: event replay, analytics, multiple independent consumers, ordering, source-of-truth event logs.",{note:"Queue = consume-and-forget; log = retained history you can re-read. Kafka can do both via consumer groups + retention.",cls:"key"}]}
+]},
+{n:32,t:"CRDTs",r:"★★★★",slides:[
+ {h:"Conflict-Free Replicated Data Types",body:["Data structures that can be updated <b>independently on many replicas</b> and <b>always merge</b> to the same state — no coordination, no conflicts.","Math: merges are commutative, associative, idempotent → order doesn't matter.",{kv:[["G-Counter","grow-only counter"],["PN-Counter","increment/decrement"],["OR-Set","add/remove set"],["LWW-Register","last-write-wins value"]]}]},
+ {h:"Where used",body:["Collaborative editing (Google Docs-style), offline-first apps, multiplayer, distributed caches/DBs (Riak, Redis CRDTs).","Enables <b>strong eventual consistency</b> without locks or consensus.",{note:"CRDTs give automatic conflict resolution for AP systems — great for collaborative & offline use.",cls:"key"}]}
+]}
+];
+const DD="Deep dive: why · when · when-not";
+const EXTRA={
+1:[{h:DD,body:["<b>In one line:</b> under a network partition a distributed store can keep Consistency or Availability, not both.",{sub:"Why it's needed"},"It forces you to <i>pre-decide</i> failure behavior instead of discovering it during an outage.",{sub:"Use it for"},"Any multi-node datastore choice; CP for banking/inventory, AP for carts/feeds/DNS.",{sub:"Don't over-apply"},"Single-node systems (no partition); and remember CAP only bites <i>during</i> a partition.",{note:"Staff insight: CAP is a 1-second decision in a 1-year-uptime system. The everyday trade-off is <b>PACELC</b> (latency vs consistency). Most real systems are AP with targeted CP.",cls:"key"}]}],
+2:[{h:DD,body:["<b>In one line:</b> no guarantee a read ever sees a given write — maximum speed/availability, minimum correctness.",{sub:"Why it's needed"},"Some data is disposable; paying for consistency would waste latency you can't spare.",{sub:"Use it for"},"Live video/VoIP, gaming state, real-time metrics, view counts.",{sub:"Avoid for"},"Anything where a wrong/stale read causes harm (money, inventory).",{note:"Staff insight: 'good enough, right now' beats 'perfect, later' for ephemeral data. A dropped video frame is fine; a dropped payment is not.",cls:"key"}]}],
+3:[{h:DD,body:["<b>In one line:</b> replicas converge over time; reads may be briefly stale but heal.",{sub:"Why it's needed"},"Delivers high availability + low latency at global scale without blocking on every replica.",{sub:"Use it for"},"Social feeds, product catalogs, DNS, shopping carts, likes/counters.",{sub:"Avoid for"},"Read-after-write correctness needs (account balance right after a transfer).",{note:"Staff insight: layer guarantees users notice — <b>read-your-writes</b> & <b>monotonic reads</b> — on top. Conflicts resolved by last-write-wins or CRDTs.",cls:"warn"}]}],
+4:[{h:DD,body:["<b>In one line:</b> every read returns the latest committed write (linearizable) — as if one copy.",{sub:"Why it's needed"},"Stale reads cause real damage: double-spend, oversell, broken uniqueness.",{sub:"Use it for"},"Payments, inventory, bookings, unique usernames, leader election.",{sub:"Avoid when"},"Stale-tolerant reads — you'd pay extra latency & lose availability for nothing.",{note:"Staff insight: achieved via consensus (Raft/Paxson) or quorum R+W>N. It costs latency & availability — buy it only on the critical path.",cls:"key"}]}],
+5:[{h:DD,body:["<b>In one line:</b> the concrete features/behaviors — what the system actually does.",{sub:"Why it's needed"},"They define the APIs, data model, and core services; skipping clarity = building the wrong thing.",{sub:"Use it for"},"Kicking off any design; the first 5 min of a design interview.",{sub:"Don't"},"List 50 features — scope down to the 2-3 that matter, then design those well.",{note:"Staff insight: in interviews, clarify FRs first, then explicitly de-scope. Over-scoping is the #1 time sink.",cls:"key"}]}],
+6:[{h:DD,body:["<b>In one line:</b> the quality attributes — scale, latency, availability, durability, security, cost.",{sub:"Why it's needed"},"NFRs usually <i>shape the architecture</i> far more than features do.",{sub:"Use it for"},"Every serious design; quantify them ('p99<200ms', '99.99%', '10k QPS').",{sub:"Premature for"},"Throwaway prototypes.",{note:"Staff insight: FRs say <i>what</i>; NFRs say <i>how well</i> — and the '-ilities' are what separate a junior from a Staff answer.",cls:"key"}]}],
+7:[{h:DD,body:["<b>In one line:</b> the architecture-level view — services, data stores, and how they talk.",{sub:"Why it's needed"},"Aligns everyone on the big shape & tech choices before diving into code.",{sub:"Use it for"},"Design docs, interviews, kickoff; SQL-vs-NoSQL, mono-vs-micro, sync-vs-async, caching, sharding.",{sub:"Don't"},"Get lost in class details here — that's LLD.",{note:"Staff insight: a strong HLD is a labeled box diagram + data flow + <i>justified</i> trade-offs. Justification is what's graded.",cls:"key"}]}],
+8:[{h:DD,body:["<b>In one line:</b> the fine detail — classes, interfaces, schemas, algorithms, patterns.",{sub:"Why it's needed"},"Turns one HLD box into implementable, correct, concurrency-safe code.",{sub:"Use it for"},"Designing a rate limiter, a schema, an event processor; LLD interview rounds.",{sub:"Skip early"},"Don't LLD the whole system in an HLD discussion.",{note:"Staff insight: SOLID + the right data structures + explicit concurrency/error handling. Show the one box you'd actually build.",cls:"key"}]}],
+9:[{h:DD,body:["<b>In one line:</b> the whole app as one deployable artifact and (usually) one DB.",{sub:"Why it's needed"},"Fastest to build/test/deploy early; in-process calls, easy transactions.",{sub:"Use it for"},"New products, small teams, MVPs — the right default.",{sub:"Outgrow it when"},"Builds slow, teams collide, one component needs independent scaling.",{note:"Staff insight: 'monolith first.' Premature microservices are the most common over-engineering mistake. Keep it <b>modular</b> so splitting later is cheap.",cls:"warn"}]}],
+10:[{h:DD,body:["<b>In one line:</b> small, independently deployable services, each owning a capability + its own data.",{sub:"Why it's needed"},"Independent scaling/deploys, fault isolation, team autonomy at large scale.",{sub:"Use it for"},"Big orgs/codebases, components with very different scaling needs.",{sub:"Avoid when"},"Small team/early product — you inherit distributed-systems complexity for no benefit.",{note:"Staff insight: services must own their data (no shared DB). The hard parts are <b>boundaries</b>, cross-service consistency (Saga), and observability.",cls:"warn"}]}],
+11:[{h:DD,body:["<b>In one line:</b> components communicate by emitting/consuming events asynchronously.",{sub:"Why it's needed"},"Loose coupling + buffering: add consumers without touching producers; absorb spikes.",{sub:"Use it for"},"Order pipelines, notifications, analytics, fan-out, real-time processing.",{sub:"Avoid when"},"Simple request/response with strong ordering & immediate consistency needs.",{note:"Staff insight: you trade a clean call stack for hard debugging — make consumers <b>idempotent</b> and plan for out-of-order/duplicate events.",cls:"warn"}]}],
+12:[{h:DD,body:["<b>In one line:</b> a spectrum — one app vs many services vs functions.",{sub:"Why it's needed"},"Each suits a different scale/cost/ops profile; picking wrong wastes money or velocity.",{sub:"Use it for"},"Monolith (early) → microservices (large/complex) → serverless (spiky/event/glue).",{sub:"Don't"},"Treat it as religion — most real systems mix all three.",{note:"Staff insight: serverless caveats = cold starts, limits, lock-in, statelessness. Choose per workload, not per fashion.",cls:"key"}]}],
+13:[{h:DD,body:["<b>In one line:</b> sidecar proxies that move networking concerns (mTLS, retries, LB, tracing) out of app code.",{sub:"Why it's needed"},"At dozens of services, re-implementing resilience/security in every language is unsustainable.",{sub:"Use it for"},"Large microservice fleets needing uniform security & observability (Istio, Linkerd).",{sub:"Avoid when"},"A handful of services — the operational overhead isn't worth it.",{note:"Staff insight: a mesh is platform-level plumbing; adopt it when service count makes per-service code duplication the bigger pain.",cls:"warn"}]}],
+14:[{h:DD,body:["<b>In one line:</b> a dedicated backend per client type (web/iOS/Android) that aggregates & shapes data.",{sub:"Why it's needed"},"One generic API over/under-fetches; mobile suffers chatty calls.",{sub:"Use it for"},"Multi-client products where clients have very different data needs.",{sub:"Avoid when"},"A single client, or a thin uniform API suffices.",{note:"Staff insight: BFF is an API-gateway specialization owned by the frontend team — it trades a little duplication for big client performance wins.",cls:"key"}]}],
+15:[{h:DD,body:["<b>In one line:</b> a gateway calls several services and joins their results into one response.",{sub:"Why it's needed"},"Each microservice owns its data, so cross-service 'joins' must happen at the API layer.",{sub:"Use it for"},"Read queries spanning services (an order page pulling user+items+payment).",{sub:"Avoid when"},"Heavy/complex cross-service queries — prefer a CQRS read model.",{note:"Staff insight: latency = the slowest call; handle partial failures. For scale, precompute with materialized read views instead.",cls:"warn"}]}],
+16:[{h:DD,body:["<b>In one line:</b> if Partition → A or C; Else → Latency or Consistency.",{sub:"Why it's needed"},"CAP ignores the 99.9% of time with no partition, where you still trade latency vs consistency.",{sub:"Use it for"},"Choosing/tuning a datastore realistically (Cassandra=PA/EL, Spanner=PC/EC).",{sub:"N/A"},"Single-node systems.",{note:"Staff insight: PACELC is the question to actually ask — even a healthy system pays latency for stronger consistency.",cls:"key"}]}],
+17:[{h:DD,body:["<b>In one line:</b> with R+W>N, read & write sets overlap so reads see the latest write.",{sub:"Why it's needed"},"Gives <i>tunable</i> consistency vs latency/availability per operation in leaderless stores.",{sub:"Use it for"},"Dynamo-style DBs (Cassandra consistency levels), quorum systems.",{sub:"Avoid when"},"Single-leader RDBMS where the leader already serializes writes.",{note:"Staff insight: a majority quorum (2 of 3) tolerates one node down while staying consistent — the practical default.",cls:"key"}]}],
+18:[{h:DD,body:["<b>In one line:</b> stack code in layers (presentation → logic → data) each calling only the one below.",{sub:"Why it's needed"},"Separation of concerns; easy to understand and to swap a layer.",{sub:"Use it for"},"The default internal structure of most monoliths/3-tier apps.",{sub:"Watch out"},"Can ossify into a rigid 'big ball of layers' where every change ripples.",{note:"Staff insight: simple & ubiquitous — but beware anemic layers that just pass data through without owning logic.",cls:"key"}]}],
+19:[{h:DD,body:["<b>In one line:</b> isolate business logic behind ports (interfaces); adapters connect DBs/UIs/queues.",{sub:"Why it's needed"},"Keeps domain logic independent of frameworks/DBs → swappable & highly testable.",{sub:"Use it for"},"Complex domains, long-lived systems, heavy testing needs.",{sub:"Overkill for"},"Simple CRUD apps.",{note:"Staff insight: dependency inversion at the architecture level — the core depends on abstractions, never on infrastructure. Basis of 'clean architecture'.",cls:"key"}]}],
+20:[{h:DD,body:["<b>In one line:</b> separate the write model (commands) from a denormalized read model (queries).",{sub:"Why it's needed"},"Scales reads & writes independently and tailors each side's schema for its job.",{sub:"Use it for"},"Read-heavy domains with complex queries (dashboards, feeds, search views).",{sub:"Avoid when"},"Simple CRUD — the extra moving parts & eventual consistency aren't worth it.",{note:"Staff insight: read side updates async → eventual consistency between write & read. Pairs naturally with Event Sourcing; don't apply globally.",cls:"warn"}]}],
+21:[{h:DD,body:["<b>In one line:</b> store the immutable log of state-changing events; current state = replay.",{sub:"Why it's needed"},"Full audit trail, time-travel, and easy rebuild/repair of read models.",{sub:"Use it for"},"Finance/ledgers, audit-heavy domains, systems needing temporal queries.",{sub:"Avoid when"},"Simple CRUD — querying current state needs projections and schema/versioning is hard.",{note:"Staff insight: powerful but complex. Event <b>versioning</b> and rebuild cost are the real-world pain points — adopt deliberately.",cls:"warn"}]}],
+22:[{h:DD,body:["<b>In one line:</b> a cross-service transaction as local steps, each with a compensating undo on failure.",{sub:"Why it's needed"},"You can't hold an ACID lock across services; Sagas give consistency without 2PC.",{sub:"Use it for"},"Order/booking/payment workflows spanning microservices.",{sub:"Avoid when"},"It fits in one DB transaction — just use ACID.",{note:"Staff insight: you must design the <b>compensation</b> for every step (refund, release inventory). Orchestration for complex flows; choreography for simple ones.",cls:"key"}]}],
+23:[{h:DD,body:["<b>In one line:</b> write the event to an outbox table in the SAME DB transaction, then relay it.",{sub:"Why it's needed"},"Solves the dual-write problem: a crash between DB-commit and publish would otherwise lose the event.",{sub:"Use it for"},"Any service that must update its DB and reliably emit an event (orders, payments).",{sub:"Skip when"},"No cross-system events are needed.",{note:"Staff insight: outbox guarantees at-least-once aligned with commits (relay via CDC); the <b>inbox</b> dedupes on the consumer for exactly-once <i>effect</i>.",cls:"key"}]}],
+24:[{h:DD,body:["<b>In one line:</b> coordinator-driven prepare→commit for atomicity across multiple resources.",{sub:"Why it's needed"},"Gives strict ACID across DBs when you truly need it.",{sub:"Avoid when"},"At scale — it <b>blocks</b> (coordinator dies → participants stuck holding locks) and kills availability.",{sub:"Use it for"},"Within a single DB / XA where strict atomicity is mandatory and scale is modest.",{note:"Staff insight: modern distributed systems prefer <b>Sagas + eventual consistency</b> over 2PC. Know 2PC to explain why you'd avoid it.",cls:"warn"}]}],
+25:[{h:DD,body:["<b>In one line:</b> after repeated failures, 'open' and fail fast instead of waiting on a dead dependency.",{sub:"Why it's needed"},"Stops one slow/dead service from exhausting threads and cascading into a full outage.",{sub:"Use it for"},"Every remote call to a dependency that can fail (payments, third-party APIs).",{sub:"Skip for"},"Pure in-process calls.",{note:"Staff insight: closed→open→half-open. Pair with timeouts + fallbacks. A core resilience pattern — fail fast, protect the caller.",cls:"key"}]}],
+26:[{h:DD,body:["<b>In one line:</b> partition resources (thread/connection pools) so one failure can't sink the whole ship.",{sub:"Why it's needed"},"Without isolation, one hung dependency consumes all threads and takes everything down.",{sub:"Use it for"},"Services calling multiple dependencies with separate pools per dependency.",{sub:"Skip for"},"Trivial single-dependency services.",{note:"Staff insight: bulkheads contain the blast radius; circuit breakers stop the bleeding — use them together.",cls:"key"}]}],
+27:[{h:DD,body:["<b>In one line:</b> retry transient failures with growing delays (1s,2s,4s…) plus randomness.",{sub:"Why it's needed"},"Naive instant/lockstep retries cause a synchronized 'retry storm' that DDoSes your own recovering service.",{sub:"Use it for"},"Calls to flaky dependencies, queue consumers, network ops.",{sub:"Only for"},"<b>Idempotent</b> operations; cap retries & total time.",{note:"Staff insight: backoff spreads load over time, <b>jitter</b> spreads it across clients — you need both, plus a circuit breaker so you stop hammering a dead service.",cls:"warn"}]}],
+28:[{h:DD,body:["<b>In one line:</b> sidecar = co-located helper for cross-cutting concerns; ambassador = a sidecar that proxies outbound calls.",{sub:"Why it's needed"},"Keeps app code focused on business logic; platform handles logging/metrics/TLS/routing.",{sub:"Use it for"},"Containerized services (the building block of service meshes).",{sub:"Overkill for"},"Simple apps without a platform/mesh.",{note:"Staff insight: sidecar = helper next to the app; ambassador = its outbound network proxy. Both standardize concerns across languages.",cls:"key"}]}],
+29:[{h:DD,body:["<b>In one line:</b> migrate a legacy system by routing slices of traffic to new services until the old one is 'strangled'.",{sub:"Why it's needed"},"Avoids a high-risk big-bang rewrite; ship & validate incrementally with easy per-slice rollback.",{sub:"Use it for"},"Modernizing monoliths / legacy platforms in production.",{sub:"Skip for"},"Greenfield systems (nothing to strangle).",{note:"Staff insight: a facade/router fronts old+new. The safest way to modernize — replace feature-by-feature, never all at once.",cls:"key"}]}],
+30:[{h:DD,body:["<b>In one line:</b> stateless functions triggered by events; the platform handles servers, scaling, availability.",{sub:"Why it's needed"},"Zero server management, pay-per-use, effortless scale-to-zero and scale-out.",{sub:"Use it for"},"Spiky/event-driven/glue work: uploads, webhooks, cron, light APIs.",{sub:"Avoid for"},"Long-running, latency-critical, or stateful workloads.",{note:"Staff insight: watch cold starts, execution/memory limits, statelessness, and vendor lock-in. Great glue, poor fit for steady heavy compute.",cls:"warn"}]}],
+31:[{h:DD,body:["<b>In one line:</b> pub/sub = consume-and-forget messaging; streaming = a retained, replayable log.",{sub:"Why it's needed"},"Different needs: task fan-out vs replayable history with independent consumers.",{sub:"Use it for"},"Pub/Sub → notifications, work queues (RabbitMQ/SNS-SQS); Streaming → analytics, event sourcing, replay (Kafka/Kinesis).",{sub:"Don't"},"Use a queue when you need to re-read history, or a log when you just need simple task hand-off.",{note:"Staff insight: Kafka can act like both via consumer groups + retention. Choose by: do consumers need to replay the past?",cls:"key"}]}],
+32:[{h:DD,body:["<b>In one line:</b> data types that merge automatically across replicas with no coordination or conflicts.",{sub:"Why it's needed"},"Enables conflict-free multi-writer/offline editing without locks or consensus.",{sub:"Use it for"},"Collaborative editors (Docs-style), offline-first apps, multiplayer, distributed caches.",{sub:"Avoid when"},"You need a single authoritative order or strong consistency (use consensus instead).",{note:"Staff insight: merges are commutative/associative/idempotent → order-independent. Give 'strong eventual consistency' but only for CRDT-expressible data.",cls:"key"}]}]
+};
+const RW={
+1:"Amazon DynamoDB chooses AP (always-writable cart); Google Spanner chooses CP for financial-grade consistency.",
+2:"Twitch live video and multiplayer game state accept weak consistency — a dropped frame or tick is harmless.",
+3:"Amazon DynamoDB carts and DNS are eventually consistent — briefly stale, always available.",
+4:"Google Spanner powers AdWords with globally strong consistency; bank ledgers demand it.",
+9:"Shopify runs a deliberate 'majestic monolith'; early Facebook and Stack Overflow scaled huge as monoliths.",
+10:"Netflix runs 700+ microservices; Uber and Amazon decomposed monoliths to scale teams independently.",
+11:"Uber and Netflix (Keystone) use Kafka-based event streams to decouple thousands of services.",
+12:"Netflix = microservices; Coca-Cola vending machines run on AWS Lambda (serverless).",
+13:"Lyft built <b>Envoy</b> (now the core of Istio) to standardize service-to-service networking.",
+14:"SoundCloud coined 'BFF'; Netflix runs a tailored backend per device type (TV, mobile, web).",
+15:"Netflix's API gateway composes calls to many microservices into one device-shaped response.",
+16:"Cassandra is PA/EL (favor availability+latency); Spanner is PC/EC (favor consistency).",
+17:"Cassandra & DynamoDB let you choose quorum levels (e.g., QUORUM read/write) per request.",
+20:"Trading and banking read-heavy platforms split write & read models (CQRS) to scale each side.",
+21:"Banking ledgers and order systems use Event Sourcing — events are the source of truth + full audit log.",
+22:"Uber and Airbnb coordinate multi-service booking/payment workflows with Sagas + compensations.",
+23:"Teams on Postgres + Kafka use the Outbox pattern (via Debezium CDC) to publish events reliably.",
+24:"Traditional banks use XA/2PC for cross-resource atomicity; internet-scale systems avoid it for Sagas.",
+25:"Netflix's <b>Hystrix</b> popularized the circuit breaker to stop cascading failures.",
+26:"Netflix isolates a thread pool per dependency so one slow service can't exhaust all threads (bulkhead).",
+27:"AWS SDKs implement exponential backoff + jitter by default (per AWS's own engineering blog).",
+28:"Istio injects an <b>Envoy</b> sidecar next to every pod for mTLS, retries and telemetry.",
+29:"Amazon and Shopify incrementally 'strangled' monoliths into services, shifting traffic slice by slice.",
+30:"Coca-Cola, iRobot and Netflix (encoding triggers) run event workloads on AWS Lambda.",
+31:"LinkedIn built Kafka for streaming/replay; Google Cloud Pub/Sub handles fire-and-forget fan-out.",
+32:"Figma's multiplayer editing and Redis Enterprise active-active replication use CRDTs to merge conflict-free."
+};
+let flat=[], idx=0;
+const BUDGET=18;
+function wt(body){let w=0;body.forEach(b=>{ if(typeof b==='string')w+=1.1; else if(b.sub!==undefined)w+=0.8; else if(b.kv)w+=0.6*b.kv.length+0.5; else if(b.tbl)w+=1.0*(b.tbl.rows.length+1)+1; else if(b.note!==undefined)w+=1.6;});return w;}
+function buildFlat(){ flat=[]; TOPICS.forEach((tp,ti)=>{
+  const base=tp.slides.map(s=>({h:s.h,body:s.body.slice()}));
+  const ex=EXTRA[tp.n]; let slides=base;
+  if(ex&&ex[0]&&ex[0].body){ let xb=ex[0].body; if(RW[tp.n]) xb=xb.concat([{note:'🏢 Real-world — '+RW[tp.n],cls:'rw'}]); const last=base[base.length-1];
+    if(wt(last.body)+wt(xb)<=BUDGET){ last.body=last.body.concat([{sub:"⭐ Interview deep dive"}],xb); }
+    else { slides=base.concat([{h:ex[0].h||DD,body:xb}]); } }
+  slides.forEach((s,si)=>flat.push({tp,ti,s,si,sn:slides.length})); }); }
+function render(){ const f=flat[idx], tp=f.tp, s=f.s;
+  document.getElementById('tnum').textContent='Topic '+tp.n+'/'+TOPICS.length;
+  document.getElementById('ttl').textContent=tp.t; document.getElementById('rating').textContent=tp.r||'';
+  let html='<h2><span class="dot"></span>'+s.h+'</h2><ul>';
+  s.body.forEach(b=>{ if(typeof b==='string'){html+='<li>'+b+'</li>';return;}
+    if(b.sub!==undefined){html+='</ul><div class="sub">'+b.sub+'</div><ul>';return;}
+    if(b.kv){html+='</ul><div class="kv">'+b.kv.map(r=>'<div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div>').join('')+'</div><ul>';return;}
+    if(b.tbl){const hh='<tr>'+b.tbl.head.map(x=>'<th>'+x+'</th>').join('')+'</tr>';const rr=b.tbl.rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');html+='</ul><table>'+hh+rr+'</table><ul>';return;}
+    if(b.note!==undefined){html+='</ul><div class="note '+(b.cls||'')+'">'+b.note+'</div><ul>';return;} });
+  html+='</ul>'; const sl=document.getElementById('slide'); sl.innerHTML=html; sl.scrollTop=0;
+  document.getElementById('counter').textContent='Slide '+(f.si+1)+'/'+f.sn+'  ·  ('+(idx+1)+'/'+flat.length+' total)';
+}
+function next(){ if(idx<flat.length-1){idx++;render();} }
+function prev(){ if(idx>0){idx--;render();} }
+function jumpTo(v){ idx=flat.findIndex(f=>f.ti===+v); render(); }
+function buildJump(){ document.getElementById('jump').innerHTML=TOPICS.map((tp,i)=>'<option value="'+i+'">'+tp.n+'. '+tp.t+'</option>').join(''); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();next();} if(e.key==='ArrowLeft')prev(); });
+buildFlat(); buildJump(); render();
+</script><style>body.embed .mnav{display:none!important}body.embed #stage{padding-top:8px!important}body.embed .foot .hint{display:none}body.embed{background:#eef3f9}</style><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")==="1")document.body.classList.add("embed");var t=p.get("t");if(t!==null&&typeof flat!=="undefined"){var T=+t;if(p.get("only")==="1"){flat=flat.filter(function(f){return f.ti===T;});var j=document.getElementById("jump");if(j)j.style.display="none";idx=0;}else{var k=flat.findIndex(function(f){return f.ti===T;});idx=k<0?0:k;}if(typeof render==="function")render();}}catch(e){}})();</script><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")!=="1")return;if(typeof next!=="function"||typeof prev!=="function")return;var _n=next,_p=prev;next=function(){ if(typeof idx!=="undefined"&&typeof flat!=="undefined"&&idx>=flat.length-1){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(1);return;} } _n(); };prev=function(){ if(typeof idx!=="undefined"&&idx<=0){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(-1);return;} } _p(); };}catch(e){}})();</script></body></html>
