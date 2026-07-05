@@ -1,0 +1,273 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Design · Unit 3 — Study Slides</title>
+<style>
+:root{--bg:#eef3f9;--surface:#fff;--ink:#13202f;--muted:#3f5266;--faint:#65788e;--line:#d3deeb;--line2:#b9c9dd;--accent:#1f6fe6;--accentd:#1657bf;--good:#0f8f5b;--warn:#b9730b;--bad:#d83a2e;--violet:#6a4fe0;--pink:#cc2f86;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(160deg,#eef3f9,#e6eef7);font-size:18px;line-height:1.5}
+#stage{height:100vh;display:flex;flex-direction:column;padding:18px 22px 64px;max-width:1180px;margin:0 auto}
+.head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:8px;margin-bottom:10px}
+.unit{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accentd);background:rgba(31,111,230,.08);border:1px solid var(--line2);padding:4px 10px;border-radius:999px}
+.tnum{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint)}
+.ttl{font-family:'Space Grotesk',ui-sans-serif,system-ui;font-weight:700;font-size:27px;letter-spacing:-.01em;flex:1;min-width:200px}
+.rating{font-size:14px;color:var(--warn)}
+.slide{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px -24px rgba(40,70,120,.5);padding:20px 26px;overflow:auto}
+.slide h2{font-family:'Space Grotesk',ui-sans-serif;font-size:21px;margin:0 0 12px;color:var(--accentd);display:flex;align-items:center;gap:8px}
+.slide h2 .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block}
+ul{margin:6px 0 12px;padding-left:24px}
+li{margin:5px 0}
+li b{color:var(--accentd)}
+.sub{font-weight:700;color:var(--ink);margin:12px 0 4px;font-size:18px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0 12px}
+.kv .k{font-weight:700;color:var(--violet)}
+.kv .v{color:var(--muted)}
+table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:16.5px}
+th,td{border:1px solid var(--line2);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#eef4ff;color:var(--accentd);font-family:'IBM Plex Mono',monospace;font-size:14px}
+.note{margin:8px 0;padding:9px 13px;border-left:4px solid var(--good);background:#e9f7f0;border-radius:0 8px 8px 0;font-size:16.5px}
+.note.warn{border-left-color:var(--warn);background:#fff6e8}
+.note.key{border-left-color:var(--accent);background:#eaf2fe}
+.note.rw{border-left-color:var(--pink);background:#fdeef6}
+.foot{position:fixed;left:0;right:0;bottom:0;height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:15px}
+.foot button{font:inherit;font-size:15px;padding:6px 14px;border:1px solid var(--line2);background:#f3f7fc;border-radius:8px;cursor:pointer;color:var(--ink)}
+.foot button:hover{border-color:var(--accent);color:var(--accentd)}
+.counter{font-family:'IBM Plex Mono',monospace;color:var(--faint)}
+.spacer{flex:1}
+select{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff;max-width:42vw}
+.hint{color:var(--faint);font-size:13px}
+@media print{.foot{display:none}#stage{height:auto}.slide{break-inside:avoid;box-shadow:none}}
+</style><style>.mnav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;gap:8px;justify-content:center;align-items:center;padding:7px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 14px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:5px 12px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}#stage{padding-top:50px!important}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a href="index.html">▶ Animated Lessons</a><a class="cur">📊 Study Slides</a></div>
+<div id="stage">
+  <div class="head"><span class="unit">Unit 3 · Database Design</span><span class="tnum" id="tnum"></span><span class="ttl" id="ttl"></span><span class="rating" id="rating"></span></div>
+  <div class="slide" id="slide"></div>
+</div>
+<div class="foot">
+  <button onclick="prev()">◀ Prev</button><button onclick="next()">Next ▶</button>
+  <span class="counter" id="counter"></span><span class="spacer"></span><span class="hint">← → keys</span>
+  <select id="jump" onchange="jumpTo(this.value)"></select>
+</div>
+<script>
+const TOPICS=[
+{n:1,t:"Database Design Process / Lifecycle",r:"★★★★★",slides:[
+ {h:"The phases",body:["1) <b>Requirements</b> → 2) <b>Conceptual</b> (ER model, entities & relationships) → 3) <b>Logical</b> (tables, keys, normalization) → 4) <b>Physical</b> (storage, indexes, partitions) → 5) implement, tune, evolve.","Each phase refines the previous; later phases add platform-specific detail.",{note:"Good schema design up front prevents painful migrations later — model the domain, then optimize for access patterns.",cls:"key"}]}
+]},
+{n:2,t:"Requirement Analysis",r:"★★★★",slides:[
+ {h:"Know the data & its access",body:["Identify <b>entities, attributes, relationships</b>, volumes, and the <b>queries/access patterns</b> the DB must serve.","Capture read/write ratio, consistency needs, growth, retention.","In NoSQL especially, <b>design for queries</b> — model around how data is read, not just normalized truth.",{note:"Access patterns drive the schema, indexes, and SQL-vs-NoSQL choice.",cls:"warn"}]}
+]},
+{n:3,t:"Logical vs Physical Design",r:"★★★★★",slides:[
+ {h:"Two levels of schema",body:[{kv:[["Logical","tables, columns, types, keys, relationships, normalization — platform-independent"],["Physical","how it's stored: indexes, partitioning, file layout, tablespaces, engine-specific tuning"]]},"Logical = 'what data & rules'; physical = 'how to store & access it fast on this engine'.",{note:"Logical design models correctness; physical design delivers performance.",cls:"key"}]}
+]},
+{n:4,t:"Normalization (1NF→BCNF)",r:"★★★★★",slides:[
+ {h:"Remove redundancy & anomalies",body:[{kv:[["1NF","atomic values, no repeating groups"],["2NF","1NF + no partial dependency on part of a composite key"],["3NF","2NF + no transitive dependency (non-key → non-key)"],["BCNF","stricter 3NF: every determinant is a candidate key"]]},"Goal: each fact stored once → avoids insert/update/delete anomalies."]},
+ {h:"Trade-off",body:["Normalized = clean, consistent, less storage, but <b>more joins</b> (slower reads).","<b>Denormalize</b> selectively for read performance at scale.",{note:"OLTP leans normalized; analytics/read-heavy often denormalize. Normalize until it hurts, denormalize until it works.",cls:"warn"}]}
+]},
+{n:5,t:"ACID Transactions",r:"★★★★★",slides:[
+ {h:"The four guarantees",body:[{kv:[["Atomicity","all-or-nothing — partial work rolls back"],["Consistency","moves DB from one valid state to another (constraints hold)"],["Isolation","concurrent txns don't corrupt each other"],["Durability","committed data survives crashes (via WAL/fsync)"]]},"Foundation of relational reliability for money, inventory, bookings.",{note:"ACID = correctness under concurrency & failure. NoSQL often relaxes it (BASE) for scale.",cls:"key"}]}
+]},
+{n:6,t:"Rollback",r:"★★★★★",slides:[
+ {h:"Undoing a transaction",body:["If a transaction fails or is aborted, <b>rollback</b> reverts all its changes — atomicity in action.","Engine keeps an <b>undo log</b> (before-images) to restore prior values.","Triggered by errors, constraint violations, deadlock victim selection, or explicit ROLLBACK.",{note:"Commit makes changes permanent (durability); rollback discards them entirely (atomicity).",cls:"key"}]}
+]},
+{n:7,t:"Indexing",r:"★★★★★",slides:[
+ {h:"Speed up reads",body:["An index is an auxiliary structure (usually a <b>B+Tree</b>) mapping column values → row locations, turning O(n) scans into O(log n) lookups.",{kv:[["Primary/clustered","table physically ordered by key (one per table)"],["Secondary","extra lookup structures"],["Composite","multiple columns (order matters)"],["Covering","index contains all needed columns (no table fetch)"]]}]},
+ {h:"Costs & rules",body:["Indexes <b>speed reads but slow writes</b> (each write updates indexes) and use storage.","Index the columns in WHERE / JOIN / ORDER BY; avoid over-indexing.","Leftmost-prefix rule for composite indexes.",{note:"Indexes are the #1 query-performance lever — and a tax on every write.",cls:"warn"}]}
+]},
+{n:8,t:"B-Tree Search",r:"★★★★",slides:[
+ {h:"Why B/B+Trees power indexes",body:["Balanced, high-fanout tree kept <b>shallow</b> (few levels) → few disk reads per lookup. O(log n).","<b>B+Tree</b>: all values in leaves, leaves linked → great for <b>range scans</b> and ordered traversal.","Self-balancing on insert/delete (splits/merges) keeps height low.",{note:"High fan-out = a billion rows in ~3–4 levels → ~3–4 disk seeks per lookup.",cls:"key"}]}
+]},
+{n:9,t:"Sharding",r:"★★★★★",slides:[
+ {h:"Horizontal partitioning across servers",body:["Split a large dataset across multiple DB nodes by a <b>shard key</b>; each shard holds a subset.",{kv:[["Range","by key ranges — good range queries, risk hotspots"],["Hash","hash(key)→shard — even spread, no range queries"],["Directory","lookup table maps key→shard (flexible)"]]},"Scales writes & storage beyond one machine."]},
+ {h:"Challenges",body:["<b>Hotspots</b> from a bad shard key; <b>cross-shard joins/transactions</b> are hard; rebalancing/resharding is painful.","Use <b>consistent hashing</b> to minimize movement when adding nodes.",{note:"Choose a shard key with high cardinality & even access. Cross-shard queries are the main pain.",cls:"warn"}]}
+]},
+{n:10,t:"Replication",r:"★★★★★",slides:[
+ {h:"Copies for HA & read scaling",body:["Keep copies of data on multiple nodes for <b>availability, durability, and read throughput</b>.",{kv:[["Leader-follower","writes→leader, reads→followers (async/sync)"],["Multi-leader","multiple write nodes (conflict resolution needed)"],["Leaderless","quorum reads/writes (Dynamo-style)"]]}]},
+ {h:"Sync vs async",body:[{tbl:{head:["","Sync","Async"],rows:[["Write latency","higher","lower"],["Data loss on failover","none","possible (lag)"],["Consistency","strong","eventual"]]}},{note:"Async replication is common (low latency) but risks losing recent writes if the leader dies before replicating.",cls:"warn"}]}
+]},
+{n:11,t:"Backup & Recovery",r:"★★★★",slides:[
+ {h:"Protecting against data loss",body:[{kv:[["Full","entire DB snapshot"],["Incremental","changes since last backup"],["PITR","point-in-time recovery via WAL/binlog replay"]]},"Define <b>RPO</b> (acceptable data loss) & <b>RTO</b> (recovery time) — they set backup frequency & strategy.","Store backups off-site / cross-region; <b>test restores</b> regularly.",{note:"An untested backup is not a backup. Replication ≠ backup (it replicates mistakes too).",cls:"warn"}]}
+]},
+{n:12,t:"SQL vs NoSQL",r:"★★★★★",slides:[
+ {h:"Two families",body:[{tbl:{head:["","SQL (relational)","NoSQL"],rows:[["Schema","fixed, structured","flexible/schemaless"],["Scaling","vertical (mostly)","horizontal (built-in)"],["Consistency","ACID, strong","often BASE/eventual"],["Joins","rich","limited/none"],["Best for","complex queries, txns","scale, flexible/huge data"]]}}]},
+ {h:"NoSQL types & choosing",body:[{kv:[["Document","JSON docs (MongoDB)"],["Key-Value","Redis, DynamoDB"],["Wide-column","Cassandra, HBase"],["Graph","Neo4j"]]},"Pick SQL for transactions & complex relationships; NoSQL for massive scale, flexible schema, or specific access patterns.",{note:"Not either/or — polyglot persistence uses the right store per workload.",cls:"key"}]}
+]},
+{n:13,t:"MongoDB Documents",r:"★★★★",slides:[
+ {h:"Document database",body:["Stores flexible <b>BSON/JSON documents</b> in collections; schema can vary per document.","<b>Embed</b> related data for one-read access (denormalized) or <b>reference</b> for normalization.","Scales horizontally via sharding; secondary indexes; aggregation pipeline.",{note:"Model around access patterns: embed what you read together; reference what changes independently or grows unbounded.",cls:"key"}]}
+]},
+{n:14,t:"Redis Cache",r:"★★★★★",slides:[
+ {h:"In-memory data store",body:["Blazing-fast <b>in-memory</b> key-value store; sub-millisecond reads. Used as cache, session store, rate limiter, queue, leaderboard.","Rich types: strings, hashes, lists, sets, sorted sets, streams, HyperLogLog.","Persistence options (RDB snapshots, AOF log); TTL/expiry; eviction policies (LRU/LFU)."]},
+ {h:"Patterns",body:["Cache-aside is the common pattern; set TTLs; beware stampedes (single-flight) & invalidation.","Cluster mode shards across nodes; replicas for HA.",{note:"Redis is the default distributed cache — memory speed + data structures, with optional durability.",cls:"key"}]}
+]},
+{n:15,t:"Cassandra Ring",r:"★★★★",slides:[
+ {h:"Wide-column, leaderless",body:["Nodes form a <b>ring</b>; data placed by <b>consistent hashing</b> of the partition key; replicated to N successive nodes.","<b>Leaderless</b> (no single master) → high availability, no SPOF; tunable consistency via quorum (R+W>N).","Optimized for <b>high write throughput</b>; AP by default; eventual consistency."]},
+ {h:"Design notes",body:["<b>Query-first modeling</b>: design tables per query; denormalize freely.","Avoid large partitions & hotspots; no joins.",{note:"Cassandra trades joins/ad-hoc queries for linear scale & always-on writes.",cls:"warn"}]}
+]},
+{n:16,t:"Neo4j Graph Database",r:"★★★★",slides:[
+ {h:"Nodes & relationships",body:["Stores <b>nodes, relationships (edges), and properties</b>; relationships are first-class & traversed in O(1) per hop (index-free adjacency).","Excels at <b>deep, multi-hop queries</b>: social graphs, recommendations, fraud rings, knowledge graphs.","Query language: <b>Cypher</b> (pattern matching).",{note:"For relationship-heavy queries (friends-of-friends, paths), graph DBs crush relational joins.",cls:"key"}]}
+]},
+{n:17,t:"Time-Series Database",r:"★★★★",slides:[
+ {h:"Built for timestamped data",body:["Optimized for <b>append-heavy, time-ordered</b> data: metrics, IoT, logs, finance. Examples: InfluxDB, TimescaleDB, Prometheus.","Features: time-based partitioning, high ingest, compression, downsampling/rollups, retention policies, time-window queries.","Writes mostly recent; reads mostly by time range.",{note:"Specialized for 'write a lot, query by time window, expire old data' — far better than a generic DB here.",cls:"key"}]}
+]},
+{n:18,t:"Vector Database",r:"★★★★★",slides:[
+ {h:"Similarity search on embeddings",body:["Stores high-dimensional <b>vectors (embeddings)</b> and finds nearest neighbors by similarity (cosine/dot/L2).","Powers semantic search, recommendations, and <b>RAG</b> for LLMs. Examples: Pinecone, Weaviate, Milvus, pgvector.","Uses <b>ANN</b> indexes (HNSW, IVF) for fast approximate search at scale."]},
+ {h:"Notes",body:["Exact nearest-neighbor is O(n)·dims — too slow; ANN trades a little accuracy for huge speed.","Often paired with metadata filtering + a keyword index (hybrid search).",{note:"The storage layer behind modern AI retrieval — embeddings in, similar items out.",cls:"key"}]}
+]},
+{n:19,t:"Denormalization (when & why)",r:"★★★★★",slides:[
+ {h:"Trade writes for fast reads",body:["Deliberately <b>add redundancy</b> (duplicate/precompute data) to avoid expensive joins/aggregations at read time.","Techniques: duplicated columns, precomputed aggregates, embedded documents, materialized views.",{sub:"Costs"},"Update anomalies, more storage, must keep copies in sync (app logic / triggers / CDC).",{note:"Use when reads ≫ writes and join cost hurts. Normalize for correctness, denormalize for speed — consciously.",cls:"warn"}]}
+]},
+{n:20,t:"Partitioning (Horizontal vs Vertical)",r:"★★★★★",slides:[
+ {h:"Two ways to split a table",body:[{kv:[["Horizontal","split by ROWS (e.g., by date/region/hash) — each partition same columns. Sharding = horizontal across servers"],["Vertical","split by COLUMNS — hot columns in one partition, rarely-used/large columns in another"]]},"Benefits: smaller working sets, faster queries on a partition, parallelism, easier archival.",{note:"Horizontal = more rows handled; vertical = separate hot vs cold columns. Sharding is horizontal partitioning across machines.",cls:"key"}]}
+]},
+{n:21,t:"Leader–Follower vs Multi-Leader Replication",r:"★★★★★",slides:[
+ {h:"Where writes are allowed",body:[{tbl:{head:["","Leader-Follower","Multi-Leader"],rows:[["Writes","one leader only","multiple leaders"],["Conflicts","none (single writer)","yes — need resolution"],["Use","most RDBMS setups","multi-region, offline-first"],["Reads","scale via followers","local low-latency writes"]]}}]},
+ {h:"Notes",body:["Leader-follower: simple, no write conflicts, but leader is a write bottleneck & failover needed.","Multi-leader: low-latency local writes across regions, but <b>conflict resolution</b> (LWW, CRDTs, app logic) is the hard part.",{note:"Single-leader avoids conflicts; multi-leader buys locality at the cost of merge complexity.",cls:"warn"}]}
+]},
+{n:22,t:"Read Replicas & Connection Pooling",r:"★★★★",slides:[
+ {h:"Scaling reads & connections",body:["<b>Read replicas</b>: route read queries to follower copies to offload the primary; primary handles writes. Reads may be slightly stale (replica lag).","<b>Connection pooling</b>: reuse a fixed set of DB connections (PgBouncer) instead of opening one per request — connections are expensive.",{note:"Replicas scale read throughput; pooling prevents connection exhaustion under high concurrency.",cls:"key"}]}
+]},
+{n:23,t:"Write-Ahead Log (WAL)",r:"★★★★",slides:[
+ {h:"Durability via logging first",body:["Before applying a change to data files, the DB <b>appends it to a sequential log</b> and fsyncs. On crash, replay the log to recover (redo) or undo uncommitted work.","Sequential log writes are fast; enables atomicity, durability, crash recovery, replication, and PITR.","Also the basis of replication streams & CDC.",{note:"WAL is how ACID's Durability is achieved cheaply — write the intent first, then the data.",cls:"key"}]}
+]},
+{n:24,t:"LSM-Tree vs B-Tree storage engines",r:"★★★★",slides:[
+ {h:"Two storage philosophies",body:[{tbl:{head:["","B-Tree","LSM-Tree"],rows:[["Writes","in-place update","append to memtable→flush SSTables"],["Write speed","slower (random IO)","fast (sequential)"],["Read speed","fast, predictable","may check many SSTables (+Bloom filters)"],["Used by","Postgres, MySQL(InnoDB)","Cassandra, RocksDB, LevelDB"]]}}]},
+ {h:"Notes",body:["LSM: great write throughput; needs <b>compaction</b> (merges SSTables) → write amplification.","B-Tree: balanced read/write, mature, good for read-heavy & range queries.",{note:"Write-heavy → LSM; balanced/read-heavy → B-Tree. Bloom filters make LSM reads viable.",cls:"warn"}]}
+]},
+{n:25,t:"Bloom Filters",r:"★★★★",slides:[
+ {h:"Probabilistic membership test",body:["Space-efficient structure: 'is X <b>possibly</b> in the set, or <b>definitely not</b>?' <b>No false negatives</b>, some false positives.","Bit array + k hash functions; setting/checking bits.","Use: skip disk lookups for keys not present (LSM/SSTables), cache filtering, dedup, avoiding wasted queries.",{note:"A 'no' is certain; a 'yes' means 'maybe — go check'. Tiny memory saves expensive lookups.",cls:"key"}]}
+]},
+{n:26,t:"Materialized Views",r:"★★★★",slides:[
+ {h:"Precomputed query results",body:["A view whose result is <b>physically stored</b> (unlike a regular view computed on each query). Reads are instant.","Must be <b>refreshed</b> (full or incremental, on schedule or on change) → can be slightly stale.","Use for expensive aggregations/joins read frequently (dashboards, reports).",{note:"Trade storage + refresh cost for fast reads — a denormalization tool, often paired with CQRS.",cls:"key"}]}
+]},
+{n:27,t:"OLTP vs OLAP",r:"★★★★★",slides:[
+ {h:"Transactional vs analytical",body:[{tbl:{head:["","OLTP","OLAP"],rows:[["Purpose","day-to-day transactions","analytics / BI"],["Queries","many small reads/writes","few, large scans/aggregations"],["Schema","normalized","star/snowflake, denormalized"],["Storage","row-oriented","column-oriented"],["Examples","Postgres, MySQL","Redshift, BigQuery, Snowflake"]]}}]},
+ {h:"Notes",body:["OLTP optimizes latency per transaction; OLAP optimizes scanning huge volumes.","Data flows OLTP → (ETL/ELT/CDC) → OLAP warehouse.",{note:"Don't run heavy analytics on your OLTP DB — separate the workloads.",cls:"warn"}]}
+]},
+{n:28,t:"Change Data Capture (CDC)",r:"★★★★",slides:[
+ {h:"Stream DB changes",body:["Capture row-level changes (insert/update/delete) from a DB — usually by tailing the <b>WAL/binlog</b> — and stream them to other systems.","Tools: Debezium + Kafka. Enables real-time sync to search indexes, caches, data lakes, microservices.","Powers the Outbox pattern and DB→warehouse pipelines.",{note:"CDC turns your database's change log into an event stream — low-impact, near-real-time integration.",cls:"key"}]}
+]},
+{n:29,t:"Object / Blob Storage (S3-style)",r:"★★★★★",slides:[
+ {h:"Store unstructured objects",body:["Flat namespace of <b>objects</b> (data + metadata + key) in buckets; accessed via HTTP API. Examples: S3, GCS, Azure Blob.","<b>Massively scalable, cheap, durable</b> (11 nines), but not a filesystem (no in-place edit; immutable objects).","Use for images, video, backups, logs, data-lake storage, static assets (+ CDN)."]},
+ {h:"Features",body:["Storage classes/tiers (hot→cold→archive) for cost; lifecycle policies; versioning; presigned URLs.","Eventual-then-strong read consistency (S3 now strong for new objects).",{note:"Default home for large unstructured data — store blobs in object storage, keep only a reference/URL in the DB.",cls:"key"}]}
+]},
+{n:30,t:"Data Warehouse vs Lake vs Lakehouse",r:"★★★★",slides:[
+ {h:"Three analytics stores",body:[{kv:[["Warehouse","structured, schema-on-write, SQL analytics (Snowflake, Redshift, BigQuery)"],["Lake","raw any-format data, schema-on-read, cheap object storage (S3 + Spark)"],["Lakehouse","lake storage + warehouse features (ACID, tables) — Delta Lake, Iceberg"]]}]},
+ {h:"Notes",body:["Warehouse: fast, governed, costlier, structured only. Lake: flexible & cheap but can become a 'swamp'.","Lakehouse blends both: open formats on cheap storage with transactions & performance.",{note:"Modern trend = lakehouse: one platform for BI + ML on the same data.",cls:"warn"}]}
+]},
+{n:31,t:"Columnar Databases",r:"★★★★",slides:[
+ {h:"Store by column, not row",body:["Data stored <b>column-by-column</b> → analytics scans read only needed columns, and similar values compress extremely well.","Great for OLAP aggregations over few columns across billions of rows.","Examples: Redshift, BigQuery, ClickHouse, Parquet (columnar file format).",{note:"Row stores win for OLTP (read/write whole records); column stores win for OLAP (scan few columns, heavy compression).",cls:"key"}]}
+]},
+{n:32,t:"Inverted Index & Search (Elasticsearch)",r:"★★★★★",slides:[
+ {h:"Full-text search engine",body:["An <b>inverted index</b> maps each <b>term → list of documents</b> containing it → instant full-text lookup (the opposite of doc→terms).","Pipeline: tokenization, normalization (lowercase, stemming), stop-words → index terms.","Ranking via <b>TF-IDF / BM25</b>; supports fuzzy, phrase, faceted search."]},
+ {h:"Elasticsearch",body:["Distributed search/analytics on Lucene; sharded + replicated indices; near-real-time.","Often fed by CDC from the primary DB (search is a derived read store).",{note:"Use a dedicated search engine for text search/relevance — don't bolt LIKE '%...%' onto your main DB.",cls:"warn"}]}
+]},
+{n:33,t:"Database Isolation Levels",r:"★★★★★",slides:[
+ {h:"Concurrency vs anomalies",body:[{tbl:{head:["Level","Prevents"],rows:[["Read Uncommitted","nothing (dirty reads possible)"],["Read Committed","dirty reads"],["Repeatable Read","+ non-repeatable reads"],["Serializable","+ phantoms (fully isolated)"]]}},"Higher isolation = fewer anomalies but more locking/aborts → lower concurrency."]},
+ {h:"The anomalies",body:[{kv:[["Dirty read","read uncommitted data"],["Non-repeatable read","same row differs within a txn"],["Phantom","new rows appear in a repeated range query"]]},{note:"Default is usually Read Committed (Postgres) or Repeatable Read (MySQL). Use Serializable when correctness is critical.",cls:"warn"}]}
+]},
+{n:34,t:"Optimistic vs Pessimistic Locking",r:"★★★★",slides:[
+ {h:"Two concurrency strategies",body:[{tbl:{head:["","Optimistic","Pessimistic"],rows:[["Assumes","conflicts rare","conflicts likely"],["Mechanism","version/timestamp check at commit","lock rows up front"],["On conflict","abort & retry","others wait/block"],["Best for","low contention, read-heavy","high contention, critical writes"]]}}]},
+ {h:"Notes",body:["Optimistic: no locks held → high concurrency, but wasted work on conflict (retry).","Pessimistic: guarantees the update but risks blocking & deadlocks.",{note:"Low contention → optimistic (version column); high contention → pessimistic (SELECT ... FOR UPDATE).",cls:"key"}]}
+]},
+{n:35,t:"Vector Search & ANN (HNSW / IVF) for RAG",r:"★★★★★",slides:[
+ {h:"Approximate nearest neighbor",body:["Exact NN over millions of high-dim vectors is too slow → use <b>ANN</b> indexes: trade tiny accuracy for huge speed.",{kv:[["HNSW","navigable small-world graph; fast, high recall, more memory"],["IVF","cluster vectors, search nearest clusters only"],["PQ","product quantization — compress vectors to save memory"]]}]},
+ {h:"RAG pipeline",body:["Embed docs → store vectors → at query: embed question → ANN search top-k → feed retrieved context to the LLM.","Hybrid search (vector + keyword) + metadata filters improves relevance.",{note:"ANN is what makes semantic search & RAG fast at scale — recall vs latency vs memory is the tuning triangle.",cls:"key"}]}
+]}
+];
+const DD="Deep dive: why · when · when-not";
+const EXTRA={
+1:[{h:DD,body:["<b>In one line:</b> the phased flow requirements → conceptual (ER) → logical (tables) → physical (indexes/partitions) → tune.",{sub:"Why it's needed"},"Schema mistakes are the most expensive to fix later (data migrations on live systems).",{sub:"Use it for"},"Any new datastore; designing for known access patterns.",{sub:"Don't"},"Over-model speculative entities you won't query.",{note:"Staff insight: model the domain, then optimize for <i>how data is read</i>. Access patterns &gt; theoretical purity, especially in NoSQL.",cls:"key"}]}],
+2:[{h:DD,body:["<b>In one line:</b> capture entities, relationships, volumes, and the actual queries the DB must serve.",{sub:"Why it's needed"},"The query pattern dictates schema, indexes, and SQL-vs-NoSQL — guess wrong and you rebuild.",{sub:"Use it for"},"The first step of any data design.",{sub:"Don't"},"Design tables before you know the read/write ratio & top queries.",{note:"Staff insight: 'design for queries' — especially in NoSQL, model around how you'll read, not the normalized truth.",cls:"key"}]}],
+3:[{h:DD,body:["<b>In one line:</b> logical = tables/keys/relationships (what); physical = indexes/partitions/storage (how, on this engine).",{sub:"Why it's needed"},"Separates correctness from performance so each can evolve.",{sub:"Use it for"},"Designing then tuning a schema.",{sub:"N/A"},"Always relevant.",{note:"Staff insight: get the logical model right first; physical tuning (indexes, partitioning) is reversible — schema shape is not.",cls:"key"}]}],
+4:[{h:DD,body:["<b>In one line:</b> structure tables (1NF→BCNF) so each fact lives once, killing update anomalies.",{sub:"Why it's needed"},"Redundancy causes inconsistent data and insert/update/delete anomalies.",{sub:"Use it for"},"OLTP / transactional systems where writes must stay consistent.",{sub:"Avoid over-normalizing when"},"Read-heavy/analytics — too many joins hurt; denormalize selectively.",{note:"Staff insight: 'normalize until it hurts, denormalize until it works.' OLTP leans normalized; OLAP denormalizes.",cls:"warn"}]}],
+5:[{h:DD,body:["<b>In one line:</b> Atomicity, Consistency, Isolation, Durability — correctness under concurrency & crashes.",{sub:"Why it's needed"},"Without it, concurrent access and failures corrupt data (lost/partial updates).",{sub:"Use it for"},"Money, inventory, bookings, anything needing correctness guarantees.",{sub:"Relaxed when"},"Massive scale tolerating eventual consistency (BASE/NoSQL).",{note:"Staff insight: ACID is the relational superpower; NoSQL often trades it for scale. Many NoSQL now offer per-operation ACID — know the boundaries.",cls:"key"}]}],
+6:[{h:DD,body:["<b>In one line:</b> revert a failed/aborted transaction so partial work disappears (atomicity in action).",{sub:"Why it's needed"},"A half-applied transaction leaves corrupt state; rollback guarantees all-or-nothing.",{sub:"Use it for"},"Error handling, constraint violations, deadlock victims.",{sub:"N/A"},"Auto-commit single statements (still atomic per statement).",{note:"Staff insight: enabled by the undo log (before-images). Commit = durable; rollback = discard — two sides of atomicity.",cls:"key"}]}],
+7:[{h:DD,body:["<b>In one line:</b> a B+Tree side-structure turning O(n) scans into O(log n) lookups.",{sub:"Why it's needed"},"Without indexes, queries full-scan — fine at 1k rows, fatal at 100M.",{sub:"Use it for"},"Columns in WHERE/JOIN/ORDER BY; high-selectivity lookups.",{sub:"Avoid over-indexing when"},"Write-heavy tables — every index taxes every write & costs storage.",{note:"Staff insight: indexes are the #1 query lever AND a write tax. Use covering/composite indexes; mind the leftmost-prefix rule.",cls:"warn"}]}],
+8:[{h:DD,body:["<b>In one line:</b> balanced, high-fanout tree kept shallow → a few disk seeks per lookup; B+Tree leaves linked for ranges.",{sub:"Why it's needed"},"Disk seeks are expensive; shallow trees minimize them.",{sub:"Use it for"},"Most relational indexes; range & ordered queries.",{sub:"Less ideal for"},"Write-saturated workloads (see LSM-Trees).",{note:"Staff insight: high fan-out → a billion rows in ~3-4 levels → ~3-4 seeks. B+Tree's linked leaves are why range scans are fast.",cls:"key"}]}],
+9:[{h:DD,body:["<b>In one line:</b> split one dataset across many DB nodes by a shard key.",{sub:"Why it's needed"},"Scales writes & storage past a single machine's limits.",{sub:"Use it for"},"Huge datasets/write volume (social graphs, messaging, metrics).",{sub:"Avoid until"},"You've exhausted vertical scaling + read replicas — sharding adds big complexity.",{note:"Staff insight: choose a high-cardinality, evenly-accessed shard key. Cross-shard joins/txns and resharding are the real pain — use consistent hashing.",cls:"warn"}]}],
+10:[{h:DD,body:["<b>In one line:</b> keep data copies on multiple nodes for availability, durability, and read scaling.",{sub:"Why it's needed"},"Removes SPOFs and offloads reads from the primary.",{sub:"Use it for"},"Almost every production DB (leader-follower at minimum).",{sub:"Note"},"Doesn't scale <i>writes</i> (single leader) — that needs sharding/multi-leader.",{note:"Staff insight: replication ≠ backup. Sync = no loss + latency; async = fast + risk losing lagged writes on failover. Watch replica lag.",cls:"warn"}]}],
+11:[{h:DD,body:["<b>In one line:</b> full/incremental backups + point-in-time recovery (WAL replay) to survive data loss.",{sub:"Why it's needed"},"Replication copies mistakes/deletes too — only backups recover from bad writes/ransomware.",{sub:"Use it for"},"Any system with data you can't recreate.",{sub:"Set by"},"RPO (data loss tolerance) & RTO (recovery time).",{note:"Staff insight: an untested backup is not a backup — restore-test regularly and store copies cross-region.",cls:"warn"}]}],
+12:[{h:DD,body:["<b>In one line:</b> SQL = structured/ACID/joins; NoSQL = flexible schema, horizontal scale, often eventual.",{sub:"Why it's needed"},"Workloads differ wildly — one engine can't be optimal for all.",{sub:"Use it for"},"SQL → transactions, complex relationships; NoSQL → scale, flexible/huge data, specific access patterns.",{sub:"Don't"},"Pick NoSQL for 'web scale' before you actually have scale.",{note:"Staff insight: it's not either/or — <b>polyglot persistence</b> uses the right store per workload. Default to Postgres until a real reason to leave.",cls:"key"}]}],
+13:[{h:DD,body:["<b>In one line:</b> flexible JSON/BSON documents in collections; embed or reference related data.",{sub:"Why it's needed"},"Maps to objects, evolves schema freely, one-read access via embedding.",{sub:"Use it for"},"Content, catalogs, user profiles, evolving schemas; rapid product iteration.",{sub:"Avoid for"},"Highly relational data with many cross-entity joins/transactions.",{note:"Staff insight: embed what you read together; reference what changes independently or grows unbounded (avoid the 16MB doc limit).",cls:"key"}]}],
+14:[{h:DD,body:["<b>In one line:</b> in-memory key-value store with rich data types; sub-ms latency.",{sub:"Why it's needed"},"Memory-speed reads offload the DB and enable real-time features.",{sub:"Use it for"},"Caching, sessions, rate limiting, leaderboards, queues, pub/sub.",{sub:"Avoid as"},"A primary durable store for large datasets (RAM is costly; persistence is secondary).",{note:"Staff insight: the default distributed cache. Set TTLs, choose an eviction policy (LRU/LFU), and guard hot keys against stampedes.",cls:"key"}]}],
+15:[{h:DD,body:["<b>In one line:</b> leaderless wide-column store; data placed on a hash ring, replicated to N nodes.",{sub:"Why it's needed"},"Massive write throughput + always-on availability with no SPOF.",{sub:"Use it for"},"Time-series, event logs, messaging, IoT at huge write scale.",{sub:"Avoid for"},"Ad-hoc queries, joins, or strong consistency needs.",{note:"Staff insight: <b>query-first modeling</b> — design a table per query and denormalize. Tunable consistency via R+W>N; avoid large partitions.",cls:"warn"}]}],
+16:[{h:DD,body:["<b>In one line:</b> nodes + relationships as first-class data; O(1) hop traversal (index-free adjacency).",{sub:"Why it's needed"},"Deep multi-hop relationship queries crush relational joins.",{sub:"Use it for"},"Social graphs, recommendations, fraud rings, knowledge graphs.",{sub:"Avoid for"},"Simple tabular data or heavy aggregations.",{note:"Staff insight: when the value is in the <i>connections</i> (friends-of-friends, shortest path), a graph DB + Cypher wins decisively.",cls:"key"}]}],
+17:[{h:DD,body:["<b>In one line:</b> optimized for append-heavy, time-ordered data with retention & downsampling.",{sub:"Why it's needed"},"Generic DBs handle 'write a lot, query by time window, expire old' poorly.",{sub:"Use it for"},"Metrics, monitoring, IoT sensors, finance ticks.",{sub:"Avoid for"},"Relational/transactional data or random updates.",{note:"Staff insight: time-partitioning + compression + rollups make it 10× better than a generic DB for telemetry. Pair with retention policies.",cls:"key"}]}],
+18:[{h:DD,body:["<b>In one line:</b> stores embeddings; finds nearest neighbors by similarity for semantic search/RAG.",{sub:"Why it's needed"},"Keyword search can't match by <i>meaning</i>; AI retrieval needs vector similarity at scale.",{sub:"Use it for"},"Semantic search, recommendations, RAG for LLMs, dedup, image search.",{sub:"Avoid for"},"Exact lookups/structured filters alone (use a normal DB/index).",{note:"Staff insight: uses ANN (HNSW/IVF) for speed; combine with metadata filters + keyword (hybrid search) for relevance.",cls:"key"}]}],
+19:[{h:DD,body:["<b>In one line:</b> deliberately add redundancy (duplicate/precompute) to avoid expensive joins at read time.",{sub:"Why it's needed"},"Joins/aggregations don't scale for read-heavy hot paths.",{sub:"Use it for"},"Read-dominated features (feeds, dashboards, product pages).",{sub:"Avoid when"},"Write-heavy or strict-consistency data — you must keep copies in sync.",{note:"Staff insight: trade write/storage cost & sync complexity for read speed — <i>consciously</i>. Keep copies fresh via app logic / triggers / CDC.",cls:"warn"}]}],
+20:[{h:DD,body:["<b>In one line:</b> split a table by rows (horizontal) or columns (vertical) to shrink working sets.",{sub:"Why it's needed"},"Smaller partitions = faster queries, parallelism, easy archival of old data.",{sub:"Use it for"},"Time-based archival (horizontal by date); hot/cold column split (vertical).",{sub:"Don't"},"Confuse with sharding — sharding is horizontal partitioning across <i>machines</i>.",{note:"Staff insight: horizontal handles more rows; vertical separates hot vs cold columns. Partition pruning is a big query win.",cls:"key"}]}],
+21:[{h:DD,body:["<b>In one line:</b> single-leader (one writer, no conflicts) vs multi-leader (many writers, must resolve conflicts).",{sub:"Why it's needed"},"Multi-region low-latency writes need multiple leaders — but conflicts appear.",{sub:"Use it for"},"Leader-follower → most apps; multi-leader → multi-region/offline-first.",{sub:"Avoid multi-leader when"},"You can't tolerate or resolve write conflicts.",{note:"Staff insight: single-leader is simpler & conflict-free (the default); multi-leader buys locality at the cost of merge logic (LWW/CRDTs).",cls:"warn"}]}],
+22:[{h:DD,body:["<b>In one line:</b> route reads to replicas to offload the primary; pool connections to avoid exhaustion.",{sub:"Why it's needed"},"Reads usually dominate; opening a DB connection per request is expensive.",{sub:"Use it for"},"Read-heavy apps; any high-concurrency service (PgBouncer).",{sub:"Watch out"},"Replica lag → slightly stale reads; route read-your-writes to the primary.",{note:"Staff insight: replicas scale read throughput; pooling prevents 'too many connections' meltdowns under load.",cls:"key"}]}],
+23:[{h:DD,body:["<b>In one line:</b> append the change to a sequential log (fsync) before touching data files.",{sub:"Why it's needed"},"Enables crash recovery, atomicity, durability — replay the log after a crash.",{sub:"Use it for"},"It's built into every serious DB; also powers replication & CDC.",{sub:"N/A"},"Transparent to app developers.",{note:"Staff insight: WAL is how ACID's Durability is cheap — sequential log writes are fast; data files updated later. The log is the source of replication streams.",cls:"key"}]}],
+24:[{h:DD,body:["<b>In one line:</b> B-Tree = in-place updates (balanced read/write); LSM = append + compaction (fast writes).",{sub:"Why it's needed"},"Write-heavy vs read-heavy workloads favor different engines.",{sub:"Use it for"},"LSM → ingestion/logging/time-series (Cassandra, RocksDB); B-Tree → general/read-heavy (Postgres, InnoDB).",{sub:"LSM trade-off"},"Write amplification from compaction; reads may scan many SSTables.",{note:"Staff insight: write-heavy → LSM; balanced/read-heavy → B-Tree. Bloom filters make LSM reads viable by skipping absent keys.",cls:"warn"}]}],
+25:[{h:DD,body:["<b>In one line:</b> probabilistic set test: 'possibly present' or 'definitely not' — no false negatives.",{sub:"Why it's needed"},"Avoids expensive disk/network lookups for keys that aren't there.",{sub:"Use it for"},"LSM/SSTable read skipping, cache filtering, dedup, crawler URL seen-sets.",{sub:"Accept"},"A tunable false-positive rate (occasional needless lookup).",{note:"Staff insight: a 'no' is certain; a 'yes' means 'maybe — go check'. Tiny memory saves huge I/O.",cls:"key"}]}],
+26:[{h:DD,body:["<b>In one line:</b> a view whose results are physically stored (instant reads), refreshed periodically.",{sub:"Why it's needed"},"Expensive aggregations/joins read often shouldn't recompute every query.",{sub:"Use it for"},"Dashboards, reports, precomputed leaderboards.",{sub:"Avoid when"},"Data must be perfectly fresh (views can be stale until refresh).",{note:"Staff insight: trade storage + refresh cost for fast reads — a denormalization tool, the relational sibling of CQRS read models.",cls:"key"}]}],
+27:[{h:DD,body:["<b>In one line:</b> OLTP = many small txns (row store); OLAP = big analytical scans (column store).",{sub:"Why it's needed"},"Mixing them on one DB starves both; they want opposite optimizations.",{sub:"Use it for"},"OLTP → app DB (Postgres/MySQL); OLAP → warehouse (Snowflake/BigQuery/Redshift).",{sub:"Don't"},"Run heavy analytics on your production OLTP DB.",{note:"Staff insight: data flows OLTP → (ETL/ELT/CDC) → OLAP. Separate the workloads to keep the app fast.",cls:"warn"}]}],
+28:[{h:DD,body:["<b>In one line:</b> stream row-level DB changes (via WAL/binlog) to other systems in near-real-time.",{sub:"Why it's needed"},"Keeps caches, search indexes, lakes, and services in sync without dual-writes.",{sub:"Use it for"},"DB→Elasticsearch/cache sync, the Outbox relay, DB→warehouse pipelines (Debezium+Kafka).",{sub:"Skip when"},"No downstream consumers need the changes.",{note:"Staff insight: CDC turns your DB's change log into an event stream — low-impact, decoupled integration. The modern alternative to batch ETL.",cls:"key"}]}],
+29:[{h:DD,body:["<b>In one line:</b> flat namespace of immutable objects over HTTP; massively scalable, cheap, 11-nines durable.",{sub:"Why it's needed"},"Databases are wrong (and costly) for large unstructured blobs.",{sub:"Use it for"},"Images, video, backups, logs, data-lake storage, static assets (+CDN).",{sub:"Avoid for"},"Small frequent random updates / low-latency transactional data.",{note:"Staff insight: store blobs in object storage; keep only a <i>reference/URL</i> in the DB. Use storage tiers (hot→archive) for cost.",cls:"key"}]}],
+30:[{h:DD,body:["<b>In one line:</b> warehouse (structured, schema-on-write) vs lake (raw, schema-on-read) vs lakehouse (both).",{sub:"Why it's needed"},"Analytics needs cheap raw storage AND governed, fast SQL — historically a split.",{sub:"Use it for"},"Warehouse → BI/SQL; Lake → ML/raw/cheap; Lakehouse → unified (Delta/Iceberg).",{sub:"Watch out"},"A lake without governance becomes a 'data swamp'.",{note:"Staff insight: the modern trend is the <b>lakehouse</b> — open table formats on cheap object storage with ACID + warehouse performance.",cls:"warn"}]}],
+31:[{h:DD,body:["<b>In one line:</b> store data column-by-column → scan only needed columns, compress heavily.",{sub:"Why it's needed"},"Analytics aggregate a few columns over billions of rows; row stores read everything.",{sub:"Use it for"},"OLAP/analytics (Redshift, BigQuery, ClickHouse, Parquet files).",{sub:"Avoid for"},"OLTP — reading/writing whole records is slow in column stores.",{note:"Staff insight: row store for OLTP, column store for OLAP. Same-column values compress 10×+, slashing scan I/O.",cls:"key"}]}],
+32:[{h:DD,body:["<b>In one line:</b> an inverted index (term→docs) + ranking (BM25) powers fast full-text search.",{sub:"Why it's needed"},"`LIKE '%x%'` doesn't scale or rank; real search needs tokenization, stemming, relevance.",{sub:"Use it for"},"Search bars, log search/analytics, autocomplete, faceted filtering (Elasticsearch).",{sub:"Avoid as"},"Your system of record (it's a derived read store).",{note:"Staff insight: feed it from the primary DB via CDC. Use a real engine for relevance — don't bolt text search onto your OLTP DB.",cls:"warn"}]}],
+33:[{h:DD,body:["<b>In one line:</b> Read Uncommitted → Read Committed → Repeatable Read → Serializable trade concurrency for fewer anomalies.",{sub:"Why it's needed"},"Concurrent transactions cause dirty/non-repeatable/phantom reads without isolation.",{sub:"Use it for"},"Pick per workload; Serializable for financial correctness, RC for general apps.",{sub:"Watch out"},"Higher isolation → more locking/aborts → lower throughput.",{note:"Staff insight: defaults differ (Postgres=Read Committed, MySQL=Repeatable Read). Use SELECT…FOR UPDATE or Serializable only where correctness demands.",cls:"warn"}]}],
+34:[{h:DD,body:["<b>In one line:</b> optimistic = version-check at commit (assume rare conflicts); pessimistic = lock up front.",{sub:"Why it's needed"},"Concurrency control choice hugely affects throughput under contention.",{sub:"Use it for"},"Optimistic → low-contention, read-heavy (a version column); Pessimistic → hot rows, critical writes.",{sub:"Avoid optimistic when"},"High contention — constant retries waste work.",{note:"Staff insight: low contention → optimistic; high contention → pessimistic (SELECT…FOR UPDATE). Pessimistic risks deadlocks.",cls:"key"}]}],
+35:[{h:DD,body:["<b>In one line:</b> approximate nearest-neighbor (HNSW/IVF/PQ) makes vector search fast at scale.",{sub:"Why it's needed"},"Exact NN over millions of high-dim vectors is too slow; ANN trades a little recall for huge speed.",{sub:"Use it for"},"RAG retrieval, semantic & image search, recommendations.",{sub:"Avoid exact NN when"},"Datasets are large — only tiny sets can afford brute force.",{note:"Staff insight: the tuning triangle is recall vs latency vs memory. HNSW=fast/high-recall/RAM-hungry; IVF/PQ=memory-efficient. Add hybrid + filters.",cls:"key"}]}]
+};
+const RW={
+4:"OLTP banking and ERP schemas are heavily normalized to keep every fact consistent.",
+5:"PostgreSQL/MySQL power bank transfers and order systems where ACID is non-negotiable.",
+7:"Adding the right index is the #1 fix in real slow-query postmortems.",
+8:"MySQL InnoDB and PostgreSQL use B+Tree indexes by default.",
+9:"Instagram sharded Postgres by user ID; Pinterest and Discord shard their primary stores.",
+10:"YouTube and most read-heavy apps use MySQL read replicas to offload the primary.",
+11:"GitLab's 2017 incident — all 5 backup methods had silently failed — is the cautionary tale for testing restores.",
+12:"Facebook runs MySQL at massive scale while Netflix uses Cassandra — polyglot persistence.",
+13:"eBay, Forbes and many content/catalog systems store data as MongoDB documents.",
+14:"Twitter caches timelines in Redis; Stack Overflow relies heavily on Redis.",
+15:"Netflix stores viewing history in Cassandra; Instagram and (early) Discord used it for write-heavy data.",
+16:"Graph DBs power LinkedIn-style connections and bank fraud-ring detection.",
+17:"Prometheus stores monitoring metrics; IoT and finance tick data use time-series DBs.",
+18:"RAG apps (ChatGPT-style) and Spotify recommendations rely on vector similarity search.",
+19:"Cassandra modeling denormalizes per query; analytics tables precompute aggregates.",
+20:"Huge log/event tables are partitioned by date for fast pruning and easy archival.",
+21:"Most MySQL/Postgres setups are single-leader; multi-region apps add multi-leader for local writes.",
+22:"Read-heavy apps add replicas + PgBouncer connection pooling to survive connection storms.",
+23:"PostgreSQL's WAL underpins crash recovery, replication and point-in-time recovery.",
+24:"Cassandra and RocksDB use LSM-Trees for write throughput; Postgres uses B-Trees.",
+25:"Cassandra and Google Bigtable use Bloom filters to skip disk lookups; Chrome Safe Browsing uses them too.",
+26:"BI dashboards precompute heavy aggregations as materialized views.",
+27:"Companies run Postgres/MySQL for OLTP and Snowflake/BigQuery for OLAP analytics.",
+28:"Netflix (DBLog), Airbnb (SpinalTap) and Debezium stream DB changes to search/cache/lakes.",
+29:"Netflix stores its entire video catalog on Amazon S3; backups and data lakes live there too.",
+30:"Netflix built Apache Iceberg on S3; Databricks champions the lakehouse model.",
+31:"Cloudflare runs analytics on ClickHouse; BigQuery and Redshift are columnar.",
+32:"GitHub code search and Uber/Netflix log search run on Elasticsearch.",
+33:"Postgres defaults to Read Committed; financial systems use Serializable for correctness.",
+34:"E-commerce inventory uses version checks (optimistic) or SELECT…FOR UPDATE (pessimistic) to avoid overselling.",
+35:"Spotify open-sourced Annoy for music recommendations; RAG pipelines use HNSW/IVF indexes."
+};
+let flat=[], idx=0;
+const BUDGET=18;
+function wt(body){let w=0;body.forEach(b=>{ if(typeof b==='string')w+=1.1; else if(b.sub!==undefined)w+=0.8; else if(b.kv)w+=0.6*b.kv.length+0.5; else if(b.tbl)w+=1.0*(b.tbl.rows.length+1)+1; else if(b.note!==undefined)w+=1.6;});return w;}
+function buildFlat(){ flat=[]; TOPICS.forEach((tp,ti)=>{
+  const base=tp.slides.map(s=>({h:s.h,body:s.body.slice()}));
+  const ex=EXTRA[tp.n]; let slides=base;
+  if(ex&&ex[0]&&ex[0].body){ let xb=ex[0].body; if(RW[tp.n]) xb=xb.concat([{note:'🏢 Real-world — '+RW[tp.n],cls:'rw'}]); const last=base[base.length-1];
+    if(wt(last.body)+wt(xb)<=BUDGET){ last.body=last.body.concat([{sub:"⭐ Interview deep dive"}],xb); }
+    else { slides=base.concat([{h:ex[0].h||DD,body:xb}]); } }
+  slides.forEach((s,si)=>flat.push({tp,ti,s,si,sn:slides.length})); }); }
+function render(){ const f=flat[idx], tp=f.tp, s=f.s;
+  document.getElementById('tnum').textContent='Topic '+tp.n+'/'+TOPICS.length;
+  document.getElementById('ttl').textContent=tp.t; document.getElementById('rating').textContent=tp.r||'';
+  let html='<h2><span class="dot"></span>'+s.h+'</h2><ul>';
+  s.body.forEach(b=>{ if(typeof b==='string'){html+='<li>'+b+'</li>';return;}
+    if(b.sub!==undefined){html+='</ul><div class="sub">'+b.sub+'</div><ul>';return;}
+    if(b.kv){html+='</ul><div class="kv">'+b.kv.map(r=>'<div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div>').join('')+'</div><ul>';return;}
+    if(b.tbl){const hh='<tr>'+b.tbl.head.map(x=>'<th>'+x+'</th>').join('')+'</tr>';const rr=b.tbl.rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');html+='</ul><table>'+hh+rr+'</table><ul>';return;}
+    if(b.note!==undefined){html+='</ul><div class="note '+(b.cls||'')+'">'+b.note+'</div><ul>';return;} });
+  html+='</ul>'; const sl=document.getElementById('slide'); sl.innerHTML=html; sl.scrollTop=0;
+  document.getElementById('counter').textContent='Slide '+(f.si+1)+'/'+f.sn+'  ·  ('+(idx+1)+'/'+flat.length+' total)';
+}
+function next(){ if(idx<flat.length-1){idx++;render();} }
+function prev(){ if(idx>0){idx--;render();} }
+function jumpTo(v){ idx=flat.findIndex(f=>f.ti===+v); render(); }
+function buildJump(){ document.getElementById('jump').innerHTML=TOPICS.map((tp,i)=>'<option value="'+i+'">'+tp.n+'. '+tp.t+'</option>').join(''); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();next();} if(e.key==='ArrowLeft')prev(); });
+buildFlat(); buildJump(); render();
+</script><style>body.embed .mnav{display:none!important}body.embed #stage{padding-top:8px!important}body.embed .foot .hint{display:none}body.embed{background:#eef3f9}</style><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")==="1")document.body.classList.add("embed");var t=p.get("t");if(t!==null&&typeof flat!=="undefined"){var T=+t;if(p.get("only")==="1"){flat=flat.filter(function(f){return f.ti===T;});var j=document.getElementById("jump");if(j)j.style.display="none";idx=0;}else{var k=flat.findIndex(function(f){return f.ti===T;});idx=k<0?0:k;}if(typeof render==="function")render();}}catch(e){}})();</script><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")!=="1")return;if(typeof next!=="function"||typeof prev!=="function")return;var _n=next,_p=prev;next=function(){ if(typeof idx!=="undefined"&&typeof flat!=="undefined"&&idx>=flat.length-1){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(1);return;} } _n(); };prev=function(){ if(typeof idx!=="undefined"&&idx<=0){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(-1);return;} } _p(); };}catch(e){}})();</script></body></html>
