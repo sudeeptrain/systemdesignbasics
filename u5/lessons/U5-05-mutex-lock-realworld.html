@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutex / Lock — The Single Restroom Key · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cs{position:absolute; left:72%; top:46%; transform:translate(-50%,-50%); width:96px; text-align:center; font-family:var(--fmono); font-size:11px; padding:14px 6px; border-radius:10px; border:2px dashed var(--line2); color:var(--muted); z-index:2; transition:.25s}
+.cs.occupied{border-style:solid; border-color:var(--good); background:#e7f7ef; color:#0c7a4d}
+.lockicon{position:absolute; left:48%; top:46%; transform:translate(-50%,-50%); font-size:22px; z-index:4; transition:.2s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Mutex / Lock — The Single Restroom Key</h1>
+  <p class="subtitle">A café has one restroom and one key behind the counter. To go in, you take the key; while you have it, nobody else can enter. They simply wait for the key to come back. That single key turns a potential scramble into an orderly one-at-a-time queue — exactly what a mutex does.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Safe visits</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Key</div><div class="stat-v good" id="statLock">on the hook</div></div>
+  <div class="stat"><div class="stat-k">Made to wait</div><div class="stat-v" id="statBlk">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:26%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Customer A</span></div></div>
+<div class="node abs" data-show="1" style="left:14%;top:68%"><div class="box sm">🧑</div><div class="lbl"><span class="k">Customer B</span></div></div>
+<div class="lockicon" id="lockicon">🔓</div>
+<div class="cs" id="cs">restroom</div>
+<div class="acts">
+  <button class="act ok" id="actEnter">🔑 Take the key &amp; enter</button>
+  <button class="act bad" id="actContend">🧑 Someone else tries too</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let held=false, done=0, blk=0, running=false;
+  const elD=document.getElementById('statDone'), elL=document.getElementById('statLock'), elB=document.getElementById('statBlk'), cs=document.getElementById('cs'), lockicon=document.getElementById('lockicon');
+  function setLock(h){ held=h; elL.textContent=h?'in use 🔒':'on the hook'; elL.className='stat-v '+(h?'warn':'good'); lockicon.textContent=h?'🔒':'🔓'; cs.classList.toggle('occupied',h); }
+  function enter(fromY){ if(document.hidden) return; if(held){ contend(fromY!==undefined?fromY:26); return; }
+    setLock(true); const y=fromY!==undefined?fromY:26;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='72%'; d.style.top='46%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>{ d.style.left='90%'; setTimeout(()=>d.remove(),leg); done++; elD.textContent=done; setLock(false); }, 700*simRate()); }, leg);
+  }
+  function contend(fromY){ if(document.hidden) return; const y=fromY!==undefined?fromY:68;
+    if(!held){ enter(y); return; }
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='40%'; d.style.top='46%'; });
+    setTimeout(()=>{ d.classList.add('fail'); lockicon.style.transform='translate(-50%,-50%) scale(1.3)'; setTimeout(()=>lockicon.style.transform='translate(-50%,-50%)',200); blk++; elB.textContent=blk; elB.className='stat-v warn'; setTimeout(()=>d.remove(),360); }, leg);
+  }
+  function loop(){ if(!running)return; if(!held) enter(26); else contend(68); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actEnter').onclick=()=>enter(26);
+  document.getElementById('actContend').onclick=()=>contend(68);
+  setLock(false); running=true; loop();
+  return {enter,contend};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"When two people might use one shared thing at once, you get chaos. The classic café fix: <b>one restroom, one key.</b> That's a mutex.", dur:4600},
+  {cap:"The restroom is the <b>critical section.</b> The rule is absolute: you must <b>take the key</b> before you can go in.", dur:4600},
+  {cap:"Customer A takes the key 🔒 and steps inside. The key is now <b>in use.</b>", dur:4400, on(){SIM.enter(26);}},
+  {cap:"Inside, A has the place entirely to themselves — guaranteed <b>nobody else is in there</b> at the same time.", dur:4400},
+  {cap:"Now Customer B wants to go <em>while A still has the key.</em>", dur:3600, on(){SIM.contend(68);}},
+  {cap:"B is <span class='hl-bad'>blocked</span> — there's no key to take. They simply <b>wait</b> until it's returned. No clash, just a pause.", dur:4600, on(){SIM.contend(68);}},
+  {cap:"When A is done, they <b>hang the key back up.</b> Now B takes it and has their turn — orderly, one at a time.", dur:4600, on(){SIM.enter(68);}},
+  {cap:"That one-at-a-time rule kills the scramble: only one person ever touches the shared space. Order restored.", dur:4600},
+  {cap:"The cost: whoever's waiting for the key does nothing useful meanwhile — so don't dawdle inside. Keep the critical section short.", dur:4600, on(){SIM.enter(26);}},
+  {cap:"Your turn 👉 <b>🔑 Take the key and enter</b>, then have <b>🧑 someone else try</b> while it's in use to watch them wait.", dur:5200},
+  {cap:"A mutex is the single restroom key: take it, use the shared space alone, return it. A little waiting buys you correctness — so keep visits brief.", dur:4800}
+]});
+
+</script>
+</body></html>

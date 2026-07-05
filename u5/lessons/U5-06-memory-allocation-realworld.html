@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Allocation — A Parking Lot · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.mem{position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); display:flex; gap:3px; z-index:2}
+.cell{width:26px; height:40px; border-radius:5px; background:#eef5fd; border:1.5px solid var(--line2); transition:.25s}
+.cell.used{background:#dbe8fb; border-color:var(--accent)}
+.cell.u1{background:#d7f0e3; border-color:var(--good)}
+.cell.u2{background:#fde6c8; border-color:var(--warn)}
+.cell.u3{background:#e8def9; border-color:var(--violet)}
+.cell.flash{box-shadow:0 0 0 3px rgba(31,111,230,.25)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Memory Allocation — A Parking Lot</h1>
+  <p class="subtitle">A car park hands out spaces and reclaims them when cars leave. A bus needs several adjacent spaces, so the attendant parks it in the first run of empties big enough. As cars come and go, the free spaces scatter into small gaps — so the lot may have room overall, yet nowhere to fit a bus.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Spaces taken</div><div class="stat-v accent" id="statUsed">0</div></div>
+  <div class="stat"><div class="stat-k">Spaces free</div><div class="stat-v good" id="statFree">16</div></div>
+  <div class="stat"><div class="stat-k">Scattered gaps</div><div class="stat-v" id="statFrag">1</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:24%">car park (16 spaces)</div>
+<div class="mem" id="mem"></div>
+<div class="acts">
+  <button class="act ok" id="actAlloc">🚗 Park a vehicle</button>
+  <button class="act bad" id="actFree">🚙 A vehicle leaves</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const N=16; let cells=new Array(N).fill(0); let nextId=1, running=false;
+  const mem=document.getElementById('mem'), elU=document.getElementById('statUsed'), elF=document.getElementById('statFree'), elFr=document.getElementById('statFrag');
+  function render(flashIdx){ mem.innerHTML=''; for(let i=0;i<N;i++){ const c=document.createElement('div'); const v=cells[i]; c.className='cell'+(v?(' used u'+((v%3)+1)):'')+(flashIdx&&flashIdx.includes(i)?' flash':''); mem.appendChild(c); }
+    const used=cells.filter(x=>x).length; elU.textContent=used; elF.textContent=N-used; elF.className='stat-v '+((N-used)>4?'good':'warn');
+    let frags=0, inHole=false; for(let i=0;i<N;i++){ if(!cells[i]){ if(!inHole){frags++; inHole=true;} } else inHole=false; } elFr.textContent=frags; elFr.className='stat-v '+(frags>2?'bad':frags>1?'warn':''); }
+  function alloc(size){ size=size||(2+Math.floor(Math.random()*3));
+    let run=0, start=-1; for(let i=0;i<N;i++){ if(!cells[i]){ if(run===0)start=i; run++; if(run===size){ const id=nextId++; const idx=[]; for(let j=start;j<start+size;j++){cells[j]=id; idx.push(j);} render(idx); return true; } } else run=0; }
+    render(); return false;
+  }
+  function free(){ const ids=[...new Set(cells.filter(x=>x))]; if(!ids.length){ render(); return; } const id=ids[Math.floor(Math.random()*ids.length)]; const idx=[]; for(let i=0;i<N;i++){ if(cells[i]===id){cells[i]=0; idx.push(i);} } render(idx); }
+  function loop(){ if(!running)return; if(Math.random()<0.6){ if(!alloc()) free(); } else free(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAlloc').onclick=()=>{ if(!alloc()) free(); };
+  document.getElementById('actFree').onclick=free;
+  render(); running=true; loop();
+  return {alloc,free,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A car park is the OS handing out memory: cars need spaces, the attendant gives them out and takes them back when cars leave.", dur:4800},
+  {cap:"Here's the lot — 16 spaces, all empty. A bigger vehicle (a van, a bus) needs <b>several adjacent spaces</b> in a row.", dur:4600},
+  {cap:"The simple rule is <b>first-fit:</b> scan from the entrance and drop the vehicle in the <b>first run of empties big enough.</b> Quick and easy.", dur:4600, on(){SIM.alloc(3);}},
+  {cap:"More vehicles fill in after it, each taking the next available run. The lot fills from the front.", dur:4400, on(){SIM.alloc(2);SIM.alloc(2);}},
+  {cap:"Now a vehicle parked in the <b>middle</b> leaves, opening a gap.", dur:4000, on(){SIM.free();}},
+  {cap:"As more come and go, the empties become <b>scattered small gaps</b> — that's <span class='hl-bad'>fragmentation.</span> Watch the 'scattered gaps' count climb.", dur:4800, on(){SIM.free();SIM.alloc(2);SIM.free();}},
+  {cap:"The trap: you might have <em>plenty</em> of free spaces overall, yet <b>no single run long enough</b> for a bus. Room exists, but it's unusable.", dur:4800, on(){SIM.alloc(4);}},
+  {cap:"Attendants fight this by re-shuffling cars together (compaction) or smarter placement — but the real cure is letting a vehicle split across gaps (paging, next).", dur:4800},
+  {cap:"Your turn 👉 <b>🚗 Park vehicles</b> and <b>🚙 let them leave</b> to watch the lot fragment into scattered gaps.", dur:5200},
+  {cap:"Memory allocation parks contiguous blocks and frees them; leaving from the middle scatters gaps (fragmentation). Paging will sidestep it entirely.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Memory — A Small Desk, a Big Filing Cabinet · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rambox{position:absolute; left:54%; top:42%; transform:translate(-50%,-50%); width:120px; min-height:70px; border:2px solid var(--accent); border-radius:10px; background:#eef4ff; padding:8px; display:flex; flex-wrap:wrap; gap:4px; align-content:flex-start; z-index:2}
+.diskbox{position:absolute; left:86%; top:60%; transform:translate(-50%,-50%); width:90px; min-height:54px; border:2px dashed var(--muted); border-radius:10px; background:#f4f6f9; padding:6px; display:flex; flex-wrap:wrap; gap:3px; align-content:flex-start; z-index:2}
+.vp{width:16px; height:16px; border-radius:4px; background:var(--violet); opacity:.85}
+.vp.cold{background:#c2cad6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Virtual Memory — A Small Desk, a Big Filing Cabinet</h1>
+  <p class="subtitle">Your desk only fits a few open folders, but the filing cabinet behind you holds thousands. You work as if you had unlimited space: only the folders you're using sit on the desk; the rest stay filed away and are fetched when needed. That's virtual memory — desk is RAM, cabinet is disk.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Folders opened</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">On the desk</div><div class="stat-v good" id="statRam">0</div></div>
+  <div class="stat"><div class="stat-k">In the cabinet</div><div class="stat-v" id="statDisk">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box sm">🧑‍💼</div><div class="lbl"><span class="k">You<br>(work anywhere)</span></div></div>
+<div class="nlbl" style="left:54%;top:22%">desk (small)</div>
+<div class="rambox" id="ram"></div>
+<div class="nlbl" style="left:86%;top:40%">filing cabinet</div>
+<div class="diskbox" id="disk"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📄 Open a folder</button>
+  <button class="act" id="actGrow">➕ Take on more than fits</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const RAMCAP=6; let ram=[], disk=[], accesses=0, nextPage=0, running=false;
+  const ramEl=document.getElementById('ram'), diskEl=document.getElementById('disk'), elA=document.getElementById('statAccesses'), elR=document.getElementById('statRam'), elD=document.getElementById('statDisk');
+  function render(){ ramEl.innerHTML=''; ram.forEach(p=>{ const d=document.createElement('div'); d.className='vp'; d.title='folder '+p; ramEl.appendChild(d); });
+    diskEl.innerHTML=''; disk.forEach(p=>{ const d=document.createElement('div'); d.className='vp cold'; d.title='folder '+p; diskEl.appendChild(d); });
+    elR.textContent=ram.length; elD.textContent=disk.length; elD.className='stat-v '+(disk.length?'warn':''); }
+  function bringIn(p){ if(ram.includes(p)){ ram.splice(ram.indexOf(p),1); ram.push(p); return; }
+    if(disk.includes(p)) disk.splice(disk.indexOf(p),1);
+    if(ram.length>=RAMCAP){ const victim=ram.shift(); disk.push(victim); }
+    ram.push(p);
+  }
+  function access(p){ if(document.hidden) return; if(p===undefined) p=Math.floor(Math.random()*Math.max(1,nextPage)); accesses++; elA.textContent=accesses;
+    bringIn(p); render();
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='52%'; }); setTimeout(()=>d.remove(),leg+120);
+  }
+  function grow(){ const p=nextPage++; bringIn(p); render();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='52%'; }); setTimeout(()=>{d.classList.add('done'); d.remove();},leg+100);
+  }
+  function loop(){ if(!running)return; if(nextPage<10 && Math.random()<0.5) grow(); else access(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access();
+  document.getElementById('actGrow').onclick=grow;
+  render(); running=true; loop();
+  return {access,grow};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You might be working a case with thousands of documents, but your <b>desk</b> only fits a few open folders. <b>Virtual memory</b> works exactly like this.", dur:4800},
+  {cap:"You act as if you have <b>endless space</b> — every document is 'available' to you, even though most aren't physically on the desk.", dur:4400},
+  {cap:"The trick: only the folders you're <b>actively using</b> need to be on the desk. Watch them get pulled out.", dur:4400, on(){SIM.grow();SIM.grow();}},
+  {cap:"Take on more than the desk can hold, and you quietly <b>file the older folders back</b> into the cabinet to make room.", dur:4800, on(){SIM.grow();SIM.grow();SIM.grow();SIM.grow();}},
+  {cap:"The desk stays full of just your <b>current working set</b> — the folders in play — while the rest wait, cold, in the cabinet.", dur:4600, on(){SIM.access();}},
+  {cap:"Reach for a folder that's <span class='hl-good'>already on the desk</span> and it's instant. You never notice the cabinet exists.", dur:4600, on(){SIM.access();}},
+  {cap:"Reach for one you'd filed away, and you fetch it back from the cabinet — slower, but it works seamlessly. (That fetch is a page fault, next.)", dur:4800, on(){SIM.access();}},
+  {cap:"This is why you can juggle far more than fits on the desk — and why each person's cabinet is their own, kept separate.", dur:4600, on(){SIM.grow();}},
+  {cap:"Your turn 👉 <b>➕ Take on more than fits</b> to push folders into the cabinet, then <b>📄 open folders</b> to watch them shuttle back.", dur:5200},
+  {cap:"Virtual memory = a desk (RAM) backed by a big cabinet (disk). The desk holds your working set; everything else is filed away and fetched on demand.", dur:4800}
+]});
+
+</script>
+</body></html>

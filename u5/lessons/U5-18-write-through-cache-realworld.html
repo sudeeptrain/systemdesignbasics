@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Write-Through — Planner and Shared Calendar Together · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache .box,.db .box{transition:.3s}
+.sync{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--good); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Write-Through — Planner and Shared Calendar Together</h1>
+  <p class="subtitle">Whenever you make a plan, you write it in your own planner AND the family's shared calendar in the same breath, before moving on. The two never disagree, so anyone can trust your planner. The cost: every plan takes a moment longer because you always update both.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Plans written</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Planner vs calendar</div><div class="stat-v good" id="statSync">in sync ✓</div></div>
+  <div class="stat"><div class="stat-k">Writing speed</div><div class="stat-v" id="statLat">calendar-bound</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:42%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs cache" data-show="1" style="left:50%;top:42%"><div class="box">📔</div><div class="lbl"><span class="k">Your planner</span></div></div>
+<div class="node abs db" data-show="1" style="left:84%;top:42%"><div class="box sm">📅</div><div class="lbl"><span class="k">Shared calendar</span></div></div>
+<div class="sync" id="sync">plans go in both, together</div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✏️ Make a plan</button>
+  <button class="act" id="actRead">📖 Check a plan</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let writes=0, running=false, busy=false;
+  const elW=document.getElementById('statWrites'), elS=document.getElementById('statSync'), elL=document.getElementById('statLat');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function write(){ if(busy||document.hidden) return; busy=true; writes++; elW.textContent=writes;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('busy'); setTimeout(()=>cache.classList.remove('busy'),250);}
+      d.style.left='84%'; setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),250);} d.classList.add('done');
+        elS.textContent='in sync ✓'; elS.className='stat-v good';
+        const g=document.createElement('div'); g.className='dot done'; g.style.left='84%'; g.style.top='54%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .55s';g.style.left='16%';}); setTimeout(()=>{g.remove(); d.remove(); busy=false;},560); }, leg);
+    }, leg);
+  }
+  function read(){ if(document.hidden) return; if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),200);}
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='16%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function loop(){ if(!running)return; if(!busy){ if(Math.random()<0.5) write(); else read(); } setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actRead').onclick=read;
+  running=true; loop();
+  return {write,read};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"When you make a plan with both a personal planner and a shared family calendar, where do you write it? <b>Write-through</b> says: both, in the same breath.", dur:4800},
+  {cap:"You jot the plan in your <b>own planner</b> first…", dur:3400, on(){SIM.write();}},
+  {cap:"…and immediately, as part of the <em>same</em> act, copy it into the <b>shared calendar.</b> You don't consider it 'done' until both have it.", dur:4800},
+  {cap:"So your planner and the shared calendar are <b>always in agreement.</b> There's never a window where your planner is ahead.", dur:4600, on(){SIM.write();}},
+  {cap:"That makes <b>checking safe:</b> whatever's in your planner is guaranteed current, so anyone can rely on it without double-checking.", dur:4400, on(){SIM.read();}},
+  {cap:"It's also robust: because every plan hits the shared calendar instantly, even if you lose your planner, nothing recent is lost.", dur:4600, on(){SIM.write();}},
+  {cap:"The price is <b>speed.</b> Every plan takes a moment longer because you always write it twice — you never get the quick-jot speed alone.", dur:4800, on(){SIM.read();}},
+  {cap:"And you faithfully copy <em>every</em> plan over, even one-offs nobody else cares about — a little wasted effort. Best when things are <b>read far more than written.</b>", dur:4800},
+  {cap:"Your turn 👉 <b>✏️ Make plans</b> (watch both update together) and <b>📖 check</b> them straight from your always-trustworthy planner.", dur:5200},
+  {cap:"Write-through writes to planner and shared calendar together: always consistent, durable, safe to read — at the cost of slower writes. Great when reads dominate.", dur:4800}
+]});
+
+</script>
+</body></html>

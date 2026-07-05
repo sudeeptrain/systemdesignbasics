@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIFO Replacement — Clearing the Fridge by Date · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.frames{position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); display:flex; gap:10px; z-index:2}
+.frame{width:52px; height:52px; border-radius:10px; border:2px solid var(--line2); background:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:15px; font-weight:700; color:var(--accent-d); transition:.25s}
+.frame.hit{border-color:var(--good); background:#e7f7ef}
+.frame.evict{border-color:var(--bad); background:#fdeceb}
+.frame.oldest{box-shadow:0 0 0 3px rgba(185,115,11,.3)}
+.refstr{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; letter-spacing:3px; z-index:3}
+.refstr b{color:var(--accent)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">FIFO Replacement — Clearing the Fridge by Date</h1>
+  <p class="subtitle">The fridge is full and you've bought something new. The simplest rule for what to toss: whatever's been in there longest goes — first in, first out. Easy to follow, but it doesn't care that the oldest thing might be the ketchup you use every single day.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Already in fridge</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Had to buy &amp; restock</div><div class="stat-v" id="statFaults">0</div></div>
+  <div class="stat"><div class="stat-k">Tosses</div><div class="stat-v" id="statEv">oldest first</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:22%">3 fridge shelves · oldest-out</div>
+<div class="frames" id="frames"></div>
+<div class="refstr" id="refstr"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">🍽️ Need next item</button>
+  <button class="act" id="actReset">🔄 Reset</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CAP=3; const refStr=[1,2,3,4,1,2,5,1,2,3,4,5];
+  let frames=[], hits=0, faults=0, i=0, running=false;
+  const framesEl=document.getElementById('frames'), refEl=document.getElementById('refstr'), elH=document.getElementById('statHits'), elF=document.getElementById('statFaults');
+  function render(flash){ framesEl.innerHTML=''; for(let k=0;k<CAP;k++){ const d=document.createElement('div'); const p=frames[k]; d.className='frame'+(flash&&flash.idx===k?(' '+flash.cls):'')+( frames.length===CAP && k===0 && p!==undefined ?' oldest':''); d.textContent=p===undefined?'·':p; framesEl.appendChild(d); }
+    refEl.innerHTML=refStr.map((p,k)=> k===((i-1+refStr.length)%refStr.length)&&i>0?('<b>'+p+'</b>'):p).join(' '); }
+  function access(){ if(document.hidden) return; const p=refStr[i%refStr.length]; i++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ if(frames.includes(p)){ hits++; elH.textContent=hits; d.classList.add('done'); const idx=frames.indexOf(p); render({idx,cls:'hit'}); setTimeout(()=>d.remove(),leg); }
+      else { faults++; elF.textContent=faults; elF.className='stat-v bad'; d.classList.add('fail');
+        if(frames.length>=CAP){ frames.shift(); } frames.push(p); const idx=frames.indexOf(p); render({idx,cls:'evict'}); setTimeout(()=>d.remove(),360); } }, leg);
+  }
+  function reset(){ frames=[]; hits=0; faults=0; i=0; elH.textContent=0; elF.textContent=0; elF.className='stat-v'; render(); }
+  function loop(){ if(!running)return; access(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAccess').onclick=access;
+  document.getElementById('actReset').onclick=reset;
+  render(); running=true; loop();
+  return {access,reset,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your fridge only fits so much. When it's full and you bring something new home, something has to go. <b>Which?</b> That's a replacement policy.", dur:4800},
+  {cap:"<b>FIFO</b> — First In, First Out — is the simplest rule: toss whatever has been in the fridge the <b>longest.</b>", dur:4600},
+  {cap:"The three shelves start empty. The first few items you need aren't there yet, so you buy and shelve them.", dur:4400, on(){SIM.access();SIM.access();SIM.access();}},
+  {cap:"Need something that's <b>already in the fridge?</b> Great — you just grab it. No shopping trip, no tossing. Free.", dur:4400, on(){SIM.access();}},
+  {cap:"Now you need something new while the fridge is full. FIFO tosses the <b>oldest item</b> (highlighted) to make space.", dur:4800, on(){SIM.access();}},
+  {cap:"Dead easy to do — you don't track anything, just remember the order things went in. Oldest at the front, out it goes.", dur:4400, on(){SIM.access();}},
+  {cap:"But that's the flaw: FIFO might bin the <b>ketchup you use daily</b> simply because it's been there a while. It ignores what you actually reach for.", dur:4800, on(){SIM.access();}},
+  {cap:"It can even backfire weirdly: a <em>bigger</em> fridge sometimes leads to <em>more</em> wasteful shopping trips (Belady's anomaly). Smarter rules fix that.", dur:4600, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>🍽️ Need items</b> to watch grabs, restocks, and oldest-first tossing — then <b>🔄 reset</b> to run again.", dur:5200},
+  {cap:"FIFO tosses the longest-stored item — dead simple, but blind to how often you use things. It's the baseline smarter policies improve on.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Memory · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rambox{position:absolute; left:54%; top:42%; transform:translate(-50%,-50%); width:120px; min-height:70px; border:2px solid var(--accent); border-radius:10px; background:#eef4ff; padding:8px; display:flex; flex-wrap:wrap; gap:4px; align-content:flex-start; z-index:2}
+.diskbox{position:absolute; left:86%; top:60%; transform:translate(-50%,-50%); width:90px; min-height:54px; border:2px dashed var(--muted); border-radius:10px; background:#f4f6f9; padding:6px; display:flex; flex-wrap:wrap; gap:3px; align-content:flex-start; z-index:2}
+.vp{width:16px; height:16px; border-radius:4px; background:var(--violet); opacity:.85}
+.vp.cold{background:#c2cad6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Virtual Memory</h1>
+  <p class="subtitle">Virtual memory gives each program a huge private address space — bigger than physical RAM. Only the pages it's actively using sit in RAM; the rest live on disk and are paged in on demand. Programs run as if memory were vast, while RAM holds just the working set.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Page accesses</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">In RAM</div><div class="stat-v good" id="statRam">0</div></div>
+  <div class="stat"><div class="stat-k">On disk (swap)</div><div class="stat-v" id="statDisk">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box sm">📦</div><div class="lbl"><span class="k">Program<br>(huge space)</span></div></div>
+<div class="nlbl" style="left:54%;top:22%">physical RAM (small)</div>
+<div class="rambox" id="ram"></div>
+<div class="nlbl" style="left:86%;top:40%">disk swap</div>
+<div class="diskbox" id="disk"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📄 Access a page</button>
+  <button class="act" id="actGrow">➕ Allocate more than RAM</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const RAMCAP=6; let ram=[], disk=[], accesses=0, nextPage=0, running=false;
+  const ramEl=document.getElementById('ram'), diskEl=document.getElementById('disk'), elA=document.getElementById('statAccesses'), elR=document.getElementById('statRam'), elD=document.getElementById('statDisk');
+  function render(){ ramEl.innerHTML=''; ram.forEach(p=>{ const d=document.createElement('div'); d.className='vp'; d.title='page '+p; ramEl.appendChild(d); });
+    diskEl.innerHTML=''; disk.forEach(p=>{ const d=document.createElement('div'); d.className='vp cold'; d.title='page '+p; diskEl.appendChild(d); });
+    elR.textContent=ram.length; elD.textContent=disk.length; elD.className='stat-v '+(disk.length?'warn':''); }
+  function bringIn(p){ // ensure page p in RAM, evicting LRU to disk if full
+    if(ram.includes(p)){ ram.splice(ram.indexOf(p),1); ram.push(p); return; }
+    if(disk.includes(p)) disk.splice(disk.indexOf(p),1);
+    if(ram.length>=RAMCAP){ const victim=ram.shift(); disk.push(victim); }
+    ram.push(p);
+  }
+  function access(p){ if(document.hidden) return; if(p===undefined) p=Math.floor(Math.random()*Math.max(1,nextPage)); accesses++; elA.textContent=accesses;
+    bringIn(p); render();
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='52%'; }); setTimeout(()=>d.remove(),leg+120);
+  }
+  function grow(){ // allocate a new page (program's space exceeds RAM)
+    const p=nextPage++; bringIn(p); render();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='52%'; }); setTimeout(()=>{d.classList.add('done'); d.remove();},leg+100);
+  }
+  function loop(){ if(!running)return; if(nextPage<10 && Math.random()<0.5) grow(); else access(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access();
+  document.getElementById('actGrow').onclick=grow;
+  render(); running=true; loop();
+  return {access,grow};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your program may want gigabytes of memory, but the machine has far less RAM. <b>Virtual memory</b> sells each program a beautiful lie.", dur:4800},
+  {cap:"Every program gets a <b>huge, private address space</b> — as if it owned vast memory all to itself.", dur:4400},
+  {cap:"The trick: only the pages it's <b>actively using</b> need to sit in RAM. Watch pages get allocated.", dur:4400, on(){SIM.grow();SIM.grow();}},
+  {cap:"Keep allocating past what RAM can hold, and the OS quietly <b>moves older pages out to disk</b> (the swap area).", dur:4800, on(){SIM.grow();SIM.grow();SIM.grow();SIM.grow();}},
+  {cap:"RAM stays full of just the <b>working set</b> — the pages in current use — while the cold rest wait on disk.", dur:4600, on(){SIM.access();}},
+  {cap:"Access a page that's still in RAM and it's <span class='hl-good'>instant.</span> The program never knows some of its memory lives on disk.", dur:4600, on(){SIM.access();}},
+  {cap:"Access one that got swapped out, and the OS <b>pages it back in</b> from disk — slower, but invisible to the program. (That's a page fault, next.)", dur:4800, on(){SIM.access();}},
+  {cap:"This is why you can run more programs than physically fit, and why each is safely <b>isolated</b> in its own address space.", dur:4600, on(){SIM.grow();}},
+  {cap:"Your turn 👉 <b>➕ Allocate more than RAM</b> to push pages to disk, then <b>📄 access pages</b> to see them shuttle back.", dur:5200},
+  {cap:"Virtual memory = a big private address space backed by RAM + disk. RAM holds the working set; the rest swaps to disk on demand.", dur:4800}
+]});
+
+</script>
+</body></html>

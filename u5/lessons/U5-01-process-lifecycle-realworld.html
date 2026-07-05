@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Process Lifecycle — An Employee's Workday · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.st{position:absolute; transform:translate(-50%,-50%); width:78px; text-align:center; font-family:var(--fmono); font-size:11px; font-weight:700; padding:9px 4px; border-radius:9px; border:2px solid var(--line2); background:#fff; color:var(--muted); z-index:2; transition:.25s}
+.st.cur{border-color:var(--accent); background:#eaf2fe; color:var(--accent-d); box-shadow:0 0 0 4px rgba(31,111,230,.14)}
+.st.run{border-color:var(--good); background:#e7f7ef; color:#0c7a4d}
+.token{position:absolute; width:20px; height:20px; border-radius:50%; background:var(--violet); transform:translate(-50%,-50%); z-index:5; transition:left .5s, top .5s; box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.flow{position:absolute; font-family:var(--fmono); font-size:9px; color:var(--faint); transform:translate(-50%,-50%); z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Process Lifecycle — An Employee's Workday</h1>
+  <p class="subtitle">A worker moves through states all day: newly hired and onboarding, ready at their desk waiting for a task, actively working, paused while waiting on someone else, then clocked out. A process lives the same way — and the manager keeps shuttling people between 'ready' and 'working'.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Tasks finished</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Current state</div><div class="stat-v" id="statState">Hired</div></div>
+  <div class="stat"><div class="stat-k">Desk ⇄ Working swaps</div><div class="stat-v" id="statSw">0</div></div>
+</div>
+<div class="st s-new" style="left:12%;top:30%">🆕 Hired</div>
+<div class="st s-ready" style="left:37%;top:30%">🪑 At desk</div>
+<div class="st s-run" style="left:64%;top:30%">⚙️ Working</div>
+<div class="st s-wait" style="left:64%;top:76%">⏳ Waiting</div>
+<div class="st s-term" style="left:88%;top:30%">🏁 Clocked out</div>
+<div class="flow" style="left:24%;top:24%">onboard →</div>
+<div class="flow" style="left:50%;top:24%">assign →</div>
+<div class="flow" style="left:76%;top:24%">leave →</div>
+<div class="flow" style="left:71%;top:53%">waiting on others</div>
+<div class="token" id="token" style="left:12%;top:30%"></div>
+<div class="acts">
+  <button class="act ok" id="actDispatch">⚙️ Assign a task</button>
+  <button class="act" id="actIO">⏳ Blocked, waiting on others</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const pos={new:[12,30],ready:[37,30],run:[64,30],wait:[64,76],term:[88,30]};
+  const token=document.getElementById('token');
+  let state='new', done=0, sw=0, running=false, busy=false;
+  const elD=document.getElementById('statDone'), elS=document.getElementById('statState'), elSw=document.getElementById('statSw');
+  const names={new:'Hired',ready:'At desk',run:'Working',wait:'Waiting',term:'Clocked out'};
+  function paint(){ ['new','ready','run','wait','term'].forEach(k=>{ const el=scene.querySelector('.s-'+k); if(el){ el.classList.toggle('cur',state===k && k!=='run'); el.classList.toggle('run',state==='run'&&k==='run'); if(k!=='run')el.classList.remove('run'); if(state!==k)el.classList.remove('cur'); } });
+    elS.textContent=names[state]; }
+  function go(s){ state=s; const p=pos[s]; token.style.left=p[0]+'%'; token.style.top=p[1]+'%'; paint(); }
+  function dispatch(){ if(state==='ready'){ sw++; elSw.textContent=sw; } go('run'); }
+  function io(){ go('wait'); }
+  function auto(){ if(!running||busy) return; busy=true;
+    const seq=()=>{ go('ready'); setTimeout(()=>{ sw++; elSw.textContent=sw; go('run'); setTimeout(()=>{
+      if(Math.random()<0.5){ go('wait'); setTimeout(()=>{ go('ready'); setTimeout(()=>{ sw++; elSw.textContent=sw; go('run'); setTimeout(()=>finish(),700*simRate()); },700*simRate()); },700*simRate()); }
+      else finish();
+    },700*simRate()); },700*simRate()); };
+    function finish(){ go('term'); done++; elD.textContent=done; setTimeout(()=>{ go('new'); busy=false; },800*simRate()); }
+    seq();
+  }
+  function loop(){ if(!running)return; auto(); setTimeout(loop, 4200*simRate()); }
+  document.getElementById('actDispatch').onclick=dispatch;
+  document.getElementById('actIO').onclick=io;
+  go('new'); running=true; loop();
+  return {dispatch,io,go};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A running program is like an <b>employee on the clock.</b> From arriving to leaving, they pass through a fixed set of states — let's follow one.", dur:4600},
+  {cap:"It starts as <b>Hired:</b> still being onboarded — desk set up, paperwork done. Not ready to take on work just yet.", dur:4600, on(){SIM.go('new');}},
+  {cap:"Once set up, they sit <b>at their desk</b> — fully ready, just waiting to be handed a task. That's the Ready queue.", dur:4600, on(){SIM.go('ready');}},
+  {cap:"The manager <b>assigns a task</b> — now they're <b>Working</b>, actually getting things done.", dur:4600, on(){SIM.dispatch();}},
+  {cap:"Mid-task they often need something from someone else — an approval, a reply. They're <b>blocked, waiting</b>, and step away from the work.", dur:4800, on(){SIM.io();}},
+  {cap:"While they wait, the manager hands the work to someone else. When the reply arrives, they go <b>back to their desk</b> — not straight back to working.", dur:4800, on(){SIM.go('ready');}},
+  {cap:"They bounce between <b>desk and working</b> — assigned, interrupted, re-queued — maybe many times a day. Watch the swap counter climb.", dur:4600, on(){SIM.dispatch();}},
+  {cap:"When the job's truly done, they <b>clock out</b> — desk freed up for the next person. One task complete.", dur:4600, on(){SIM.go('term');}},
+  {cap:"Your turn 👉 <b>⚙️ Assign a task</b> to someone at their desk and send them to <b>⏳ wait on others</b> to walk the states yourself.", dur:5200, on(){SIM.go('ready');}},
+  {cap:"The lifecycle: Hired → At desk → Working, pausing to Wait on others, then Clocked out. The manager (scheduler) drives the desk⇄working shuffle.", dur:4800}
+]});
+
+</script>
+</body></html>

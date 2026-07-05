@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page Fault — Fetching a File from the Archive · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rambox{position:absolute; left:52%; top:40%; transform:translate(-50%,-50%); width:110px; min-height:60px; border:2px solid var(--accent); border-radius:10px; background:#eef4ff; padding:8px; display:flex; flex-wrap:wrap; gap:5px; align-content:flex-start; z-index:2}
+.diskbox{position:absolute; left:86%; top:72%; transform:translate(-50%,-50%); width:84px; min-height:48px; border:2px dashed var(--muted); border-radius:10px; background:#f4f6f9; padding:6px; display:flex; flex-wrap:wrap; gap:4px; z-index:2}
+.vp{width:18px; height:18px; border-radius:4px; background:var(--violet); font-family:var(--fmono); font-size:9px; color:#fff; display:flex; align-items:center; justify-content:center}
+.vp.cold{background:#c2cad6; color:#566}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Page Fault — Fetching a File from the Archive</h1>
+  <p class="subtitle">You reach for a document — if it's already on your desk, you read it instantly. If it's down in the basement archive, you stop, walk down, pull the file, bring it up, and only then carry on. The work still gets done, but a basement trip is far slower than a glance at the desk.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Documents needed</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">On the desk (instant)</div><div class="stat-v good" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Archive trips</div><div class="stat-v" id="statFaults">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:40%"><div class="box sm">🧑‍💼</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="nlbl" style="left:52%;top:20%">desk</div>
+<div class="rambox" id="ram"></div>
+<div class="nlbl" style="left:86%;top:52%">basement archive</div>
+<div class="diskbox" id="disk"></div>
+<div class="acts">
+  <button class="act ok" id="actHit">⚡ Grab a file off the desk</button>
+  <button class="act bad" id="actFault">💢 Fetch a file from the archive</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let ram=[1,2], disk=[3,4,5], accesses=0, hits=0, faults=0, running=false, busy=false;
+  const ramEl=document.getElementById('ram'), diskEl=document.getElementById('disk'), elA=document.getElementById('statAccesses'), elH=document.getElementById('statHits'), elF=document.getElementById('statFaults');
+  function render(){ ramEl.innerHTML=''; ram.forEach(p=>{ const d=document.createElement('div'); d.className='vp'; d.textContent='f'+p; ramEl.appendChild(d); }); diskEl.innerHTML=''; disk.forEach(p=>{ const d=document.createElement('div'); d.className='vp cold'; d.textContent='f'+p; diskEl.appendChild(d); }); }
+  function hit(){ if(document.hidden||!ram.length) return; accesses++; elA.textContent=accesses; const p=ram[Math.floor(Math.random()*ram.length)];
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='14%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; }); setTimeout(()=>{ hits++; elH.textContent=hits; d.remove(); }, leg);
+  }
+  function fault(){ if(document.hidden||busy||!disk.length) return; busy=true; accesses++; elA.textContent=accesses; const p=disk.shift();
+    const f=document.createElement('div'); f.className='dot fail'; f.style.left='14%'; f.style.top='40%'; scene.appendChild(f);
+    const leg=400*simRate(); requestAnimationFrame(()=>{ f.style.transition='left '+leg+'ms'; f.style.left='50%'; });
+    setTimeout(()=>{ faults++; elF.textContent=faults; elF.className='stat-v bad'; setTimeout(()=>f.remove(),200);
+      if(ram.length>=4){ const v=ram.shift(); disk.push(v); }
+      const g=document.createElement('div'); g.className='dot'; g.style.left='86%'; g.style.top='72%'; scene.appendChild(g);
+      requestAnimationFrame(()=>{ g.style.transition='left .6s, top .6s'; g.style.left='52%'; g.style.top='40%'; });
+      setTimeout(()=>{ ram.push(p); render(); g.classList.add('done'); setTimeout(()=>g.remove(),300); busy=false; }, 640*simRate());
+    }, leg);
+  }
+  function loop(){ if(!running)return; if(!busy){ if(disk.length && Math.random()<0.4) fault(); else hit(); } setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actHit').onclick=hit;
+  document.getElementById('actFault').onclick=fault;
+  render(); running=true; loop();
+  return {hit,fault,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"With a desk-and-archive setup, not every document is on the desk. So what happens when you need one that <b>isn't?</b> The equivalent of a <b>page fault.</b>", dur:4600},
+  {cap:"First the easy case: the file is <b>already on your desk.</b> You grab it and read it instantly — no walking required.", dur:4400, on(){SIM.hit();}},
+  {cap:"Every on-desk grab is a <span class='hl-good'>hit</span> — instant. You breeze through the work.", dur:4400, on(){SIM.hit();}},
+  {cap:"Now you need a file that was filed down in the <b>basement archive.</b>", dur:3600, on(){SIM.fault();}},
+  {cap:"It's not on the desk — so you <span class='hl-bad'>stop everything</span> (a page fault) and head down to the archive to find it.", dur:4800},
+  {cap:"You pull the file, and if your desk is full you <b>file an old one back down</b> to make room, then carry the new file up.", dur:4600, on(){SIM.fault();}},
+  {cap:"You set it on the desk, note where it is, and <b>resume your work</b> — now reading it as a normal on-desk file.", dur:4600, on(){SIM.hit();}},
+  {cap:"It all gets done seamlessly — but a basement trip is <b>thousands of times slower</b> than a desk glance. A few are fine; constant trips kill your day.", dur:4800},
+  {cap:"Your turn 👉 <b>⚡ Grab a file off the desk</b> (instant) and <b>💢 fetch one from the archive</b> (stop → fetch → resume).", dur:5200},
+  {cap:"A page fault is the quiet basement trip for a missing file: pause, fetch from the archive, carry on. Invisible but slow — so keep trips rare.", dur:4800}
+]});
+
+</script>
+</body></html>

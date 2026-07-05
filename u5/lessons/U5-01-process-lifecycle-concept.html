@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Process Lifecycle · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.st{position:absolute; transform:translate(-50%,-50%); width:78px; text-align:center; font-family:var(--fmono); font-size:11px; font-weight:700; padding:9px 4px; border-radius:9px; border:2px solid var(--line2); background:#fff; color:var(--muted); z-index:2; transition:.25s}
+.st.cur{border-color:var(--accent); background:#eaf2fe; color:var(--accent-d); box-shadow:0 0 0 4px rgba(31,111,230,.14)}
+.st.run{border-color:var(--good); background:#e7f7ef; color:#0c7a4d}
+.token{position:absolute; width:20px; height:20px; border-radius:50%; background:var(--violet); transform:translate(-50%,-50%); z-index:5; transition:left .5s, top .5s; box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.flow{position:absolute; font-family:var(--fmono); font-size:9px; color:var(--faint); transform:translate(-50%,-50%); z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Process Lifecycle</h1>
+  <p class="subtitle">A process is a running program, and it moves through a fixed set of states: New → Ready → Running, dipping into Waiting when it needs I/O, and finally Terminated. The OS scheduler shuttles it between Ready and Running as the CPU becomes free.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Processes finished</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Current state</div><div class="stat-v" id="statState">New</div></div>
+  <div class="stat"><div class="stat-k">Ready ⇄ Running swaps</div><div class="stat-v" id="statSw">0</div></div>
+</div>
+<div class="st s-new" style="left:12%;top:30%">🆕 New</div>
+<div class="st s-ready" style="left:37%;top:30%">📋 Ready</div>
+<div class="st s-run" style="left:64%;top:30%">⚙️ Running</div>
+<div class="st s-wait" style="left:64%;top:76%">⏳ Waiting</div>
+<div class="st s-term" style="left:88%;top:30%">🏁 Done</div>
+<div class="flow" style="left:24%;top:24%">admit →</div>
+<div class="flow" style="left:50%;top:24%">dispatch →</div>
+<div class="flow" style="left:76%;top:24%">exit →</div>
+<div class="flow" style="left:71%;top:53%">I/O wait</div>
+<div class="token" id="token" style="left:12%;top:30%"></div>
+<div class="acts">
+  <button class="act ok" id="actDispatch">⚙️ Dispatch to CPU</button>
+  <button class="act" id="actIO">⏳ Send to I/O wait</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const pos={new:[12,30],ready:[37,30],run:[64,30],wait:[64,76],term:[88,30]};
+  const token=document.getElementById('token');
+  let state='new', done=0, sw=0, running=false, busy=false;
+  const elD=document.getElementById('statDone'), elS=document.getElementById('statState'), elSw=document.getElementById('statSw');
+  const names={new:'New',ready:'Ready',run:'Running',wait:'Waiting',term:'Done'};
+  function paint(){ ['new','ready','run','wait','term'].forEach(k=>{ const el=scene.querySelector('.s-'+k); if(el){ el.classList.toggle('cur',state===k && k!=='run'); el.classList.toggle('run',state==='run'&&k==='run'); if(k!=='run')el.classList.remove('run'); if(state!==k)el.classList.remove('cur'); } });
+    elS.textContent=names[state]; }
+  function go(s){ state=s; const p=pos[s]; token.style.left=p[0]+'%'; token.style.top=p[1]+'%'; paint(); }
+  function dispatch(){ if(state==='ready'){ sw++; elSw.textContent=sw; } go('run'); }
+  function io(){ go('wait'); }
+  function auto(){ if(!running||busy) return; busy=true;
+    const seq=()=>{ go('ready'); setTimeout(()=>{ sw++; elSw.textContent=sw; go('run'); setTimeout(()=>{
+      if(Math.random()<0.5){ go('wait'); setTimeout(()=>{ go('ready'); setTimeout(()=>{ sw++; elSw.textContent=sw; go('run'); setTimeout(()=>finish(),700*simRate()); },700*simRate()); },700*simRate()); }
+      else finish();
+    },700*simRate()); },700*simRate()); };
+    function finish(){ go('term'); done++; elD.textContent=done; setTimeout(()=>{ go('new'); busy=false; },800*simRate()); }
+    seq();
+  }
+  function loop(){ if(!running)return; auto(); setTimeout(loop, 4200*simRate()); }
+  document.getElementById('actDispatch').onclick=dispatch;
+  document.getElementById('actIO').onclick=io;
+  go('new'); running=true; loop();
+  return {dispatch,io,go};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>process</b> is a program in execution. From birth to death it passes through a fixed set of <b>states</b> — let's follow one through.", dur:4600},
+  {cap:"It begins in <b>New:</b> the OS is setting it up — allocating memory, creating its control block. It isn't runnable yet.", dur:4600, on(){SIM.go('new');}},
+  {cap:"Once admitted, it enters the <b>Ready</b> queue: fully prepared to run, just waiting for a turn on the CPU.", dur:4600, on(){SIM.go('ready');}},
+  {cap:"The scheduler <b>dispatches</b> it to the CPU — now it's <b>Running</b>, actually executing instructions.", dur:4600, on(){SIM.dispatch();}},
+  {cap:"Mid-run it often needs something slow — a disk read, network reply. It moves to <b>Waiting</b> (blocked) and gives up the CPU.", dur:4800, on(){SIM.io();}},
+  {cap:"While it waits, another process can run. When its I/O completes, it goes <b>back to Ready</b> — not straight to Running.", dur:4800, on(){SIM.go('ready');}},
+  {cap:"It cycles between <b>Ready and Running</b> — dispatched, interrupted, re-queued — possibly many times. Watch the swap counter climb.", dur:4600, on(){SIM.dispatch();}},
+  {cap:"When its work is finished, it exits to <b>Terminated</b>: the OS reclaims its resources. One process complete.", dur:4600, on(){SIM.go('term');}},
+  {cap:"Your turn 👉 <b>⚙️ Dispatch</b> a ready process to the CPU and send it to <b>⏳ I/O wait</b> to walk the states yourself.", dur:5200, on(){SIM.go('ready');}},
+  {cap:"The process lifecycle: New → Ready → Running, dipping to Waiting for I/O, ending in Terminated. The scheduler drives the Ready⇄Running dance.", dur:4800}
+]});
+
+</script>
+</body></html>

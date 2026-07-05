@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LRU Replacement — Clearing Out the Wardrobe · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.frames{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); display:flex; gap:10px; z-index:2}
+.frame{width:54px; height:54px; border-radius:10px; border:2px solid var(--line2); background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:var(--fmono); font-weight:700; color:var(--accent-d); transition:.25s}
+.frame .pid{font-size:15px} .frame .age{font-size:8px; color:var(--muted); font-weight:400}
+.frame.hit{border-color:var(--good); background:#e7f7ef}
+.frame.evict{border-color:var(--bad); background:#fdeceb}
+.frame.lru{box-shadow:0 0 0 3px rgba(185,115,11,.3)}
+.refstr{position:absolute; left:50%; top:72%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; letter-spacing:3px; z-index:3}
+.refstr b{color:var(--accent)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">LRU Replacement — Clearing Out the Wardrobe</h1>
+  <p class="subtitle">The wardrobe is full and you've bought a new jacket. The smart rule for what to donate: whatever you haven't worn for the longest time. Each time you wear something it goes back to the front of your mind as 'recent', so your favourites are always safe.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Already owned</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Had to buy</div><div class="stat-v" id="statFaults">0</div></div>
+  <div class="stat"><div class="stat-k">Donate</div><div class="stat-v" id="statEv">least-recently-worn</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:20%">3 spots · ordered most→least recently worn</div>
+<div class="frames" id="frames"></div>
+<div class="refstr" id="refstr"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">👕 Wear next outfit</button>
+  <button class="act" id="actReset">🔄 Reset</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CAP=3; const refStr=[1,2,3,4,1,2,5,1,2,3,4,5];
+  let frames=[], hits=0, faults=0, i=0, running=false;
+  const framesEl=document.getElementById('frames'), refEl=document.getElementById('refstr'), elH=document.getElementById('statHits'), elF=document.getElementById('statFaults');
+  function render(flash){ framesEl.innerHTML=''; for(let k=0;k<CAP;k++){ const p=frames[k]; const d=document.createElement('div'); const age = p===undefined?'':(k===frames.length-1?'just worn':(k===0?'not worn in ages':'')); d.className='frame'+(flash&&flash.idx===k?(' '+flash.cls):'')+( frames.length===CAP && k===0 && p!==undefined?' lru':''); d.innerHTML='<span class="pid">'+(p===undefined?'·':p)+'</span><span class="age">'+age+'</span>'; framesEl.appendChild(d); }
+    refEl.innerHTML=refStr.map((p,k)=> k===((i-1+refStr.length)%refStr.length)&&i>0?('<b>'+p+'</b>'):p).join(' '); }
+  function access(){ if(document.hidden) return; const p=refStr[i%refStr.length]; i++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ if(frames.includes(p)){ hits++; elH.textContent=hits; d.classList.add('done'); frames.splice(frames.indexOf(p),1); frames.push(p); render({idx:frames.length-1,cls:'hit'}); setTimeout(()=>d.remove(),leg); }
+      else { faults++; elF.textContent=faults; elF.className='stat-v bad'; d.classList.add('fail'); if(frames.length>=CAP){ frames.shift(); } frames.push(p); render({idx:frames.length-1,cls:'evict'}); setTimeout(()=>d.remove(),360); } }, leg);
+  }
+  function reset(){ frames=[]; hits=0; faults=0; i=0; elH.textContent=0; elF.textContent=0; elF.className='stat-v'; render(); }
+  function loop(){ if(!running)return; access(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAccess').onclick=access;
+  document.getElementById('actReset').onclick=reset;
+  render(); running=true; loop();
+  return {access,reset,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"FIFO donates the oldest <em>purchase</em> — even your daily favourite. <b>LRU</b> asks a smarter question: which outfit haven't you <em>worn</em> for the longest?", dur:4800},
+  {cap:"The idea is simple human habit: what you wore recently, you'll probably wear again soon. Keep the recent, let go of the long-ignored.", dur:4800},
+  {cap:"We line up your outfits from most-recently-worn to least. New ones you don't own yet get bought and added.", dur:4400, on(){SIM.access();SIM.access();SIM.access();}},
+  {cap:"When you <span class='hl-good'>wear something you already own</span>, it's marked <b>just worn</b> and moves to the front — safe from the donate pile.", dur:4600, on(){SIM.access();}},
+  {cap:"When the wardrobe's full and you buy something new, LRU donates the outfit at the <b>not-worn-in-ages</b> end (highlighted).", dur:4800, on(){SIM.access();}},
+  {cap:"That protects your favourites. The jacket you wear constantly never gets donated — unlike FIFO, which might bin it just for being old.", dur:4600, on(){SIM.access();}},
+  {cap:"Over a season, this wastes far less money than FIFO — you rarely re-buy something you donated too soon.", dur:4600, on(){SIM.access();}},
+  {cap:"The cost: you have to <b>remember when you last wore each thing</b> — keep updating that order. Real systems approximate it to keep it cheap.", dur:4800, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>👕 Wear outfits</b> and watch favourites jump to the front while the longest-ignored one gets donated.", dur:5200},
+  {cap:"LRU donates what you haven't used for longest, betting on habit — fewer wasteful re-buys than FIFO, at the cost of tracking recency.", dur:4800}
+]});
+
+</script>
+</body></html>

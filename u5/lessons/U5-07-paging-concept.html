@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paging · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.col{position:absolute; width:62px; display:flex; flex-direction:column; gap:5px; z-index:2}
+.pg{font-family:var(--fmono); font-size:10px; text-align:center; padding:5px 2px; border-radius:6px; border:1.5px solid var(--line2); background:#fff; transition:.25s}
+.pg.hit{border-color:var(--good); background:#e7f7ef}
+.pt{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:96px; text-align:center; font-family:var(--fmono); font-size:10px; padding:8px; border-radius:9px; border:1.5px solid var(--accent); background:#eef4ff; color:var(--accent-d); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Paging</h1>
+  <p class="subtitle">Paging splits memory into fixed-size pages (virtual) and frames (physical). A page table maps each page to whatever frame holds it — so a program's contiguous address space can sit in scattered physical frames. No external fragmentation, and every program gets a clean, private view.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Page accesses</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">Pages mapped</div><div class="stat-v" id="statMapped">0</div></div>
+  <div class="stat"><div class="stat-k">Fragmentation</div><div class="stat-v good" id="statFrag">none ✓</div></div>
+</div>
+<div class="nlbl" style="left:16%;top:16%">virtual pages</div>
+<div class="col" id="pages" style="left:6%;top:26%"></div>
+<div class="pt" id="pt">📒 page table</div>
+<div class="nlbl" style="left:86%;top:16%">physical frames</div>
+<div class="col" id="frames" style="left:80%;top:26%"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📄 Access next page</button>
+  <button class="act" id="actRandom">🎲 Access a random page</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const pagesEl=document.getElementById('pages'), framesEl=document.getElementById('frames'), pt=document.getElementById('pt');
+  const NP=5, NF=5; let map={}, accesses=0, nextSeq=0, running=false;
+  const elA=document.getElementById('statAccesses'), elM=document.getElementById('statMapped');
+  const freeFrames=[2,0,4,1,3]; // scattered on purpose
+  function render(){ pagesEl.innerHTML=''; for(let i=0;i<NP;i++){ const d=document.createElement('div'); d.className='pg pp-'+i; d.textContent='page '+i; pagesEl.appendChild(d); }
+    framesEl.innerHTML=''; for(let f=0;f<NF;f++){ const d=document.createElement('div'); d.className='pg pf-'+f; const owner=Object.keys(map).find(p=>map[p]===f); d.textContent= owner!==undefined? ('frame '+f+'·p'+owner) : ('frame '+f); if(owner!==undefined)d.classList.add('hit'); framesEl.appendChild(d); }
+    elM.textContent=Object.keys(map).length; }
+  function access(p){ if(document.hidden) return; accesses++; elA.textContent=accesses;
+    if(map[p]===undefined){ const f=freeFrames[Object.keys(map).length % NF]; map[p]=f; }
+    render();
+    const pageEl=scene.querySelector('.pp-'+p); if(pageEl){pageEl.classList.add('hit'); setTimeout(()=>pageEl.classList.remove('hit'),400);}
+    // animate page → table → frame
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top=(30+p*12)+'%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='50%'; });
+    setTimeout(()=>{ pt.style.boxShadow='0 0 0 4px rgba(31,111,230,.18)'; setTimeout(()=>pt.style.boxShadow='',250); const f=map[p];
+      d.style.left='84%'; d.style.top=(30+f*12)+'%'; setTimeout(()=>{ d.classList.add('done'); const fe=scene.querySelector('.pf-'+f); if(fe){fe.classList.add('hit'); setTimeout(()=>fe.classList.remove('hit'),300);} setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function next(){ access(nextSeq % NP); nextSeq++; }
+  function rand(){ access(Math.floor(Math.random()*NP)); }
+  function loop(){ if(!running)return; next(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAccess').onclick=next;
+  document.getElementById('actRandom').onclick=rand;
+  render(); running=true; loop();
+  return {access,next,rand,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Contiguous allocation leaves messy holes. <b>Paging</b> sidesteps the whole problem by chopping memory into <b>fixed-size pieces.</b>", dur:4600},
+  {cap:"A program's memory is split into equal <b>pages</b> (virtual). Physical memory is split into equal <b>frames</b> of the same size.", dur:4600},
+  {cap:"The key: a page can live in <em>any</em> free frame. A <b>page table</b> records which frame holds each page.", dur:4600, on(){SIM.next();}},
+  {cap:"Access page 0 — the CPU asks the page table, which points to its frame. The lookup is the indirection that makes it all work.", dur:4600, on(){SIM.next();}},
+  {cap:"Notice the frames it lands in are <b>scattered</b>, not in order — yet the program sees a tidy, continuous address space.", dur:4800, on(){SIM.next();}},
+  {cap:"Because every piece is the same fixed size, any free frame fits any page. There's <span class='hl-good'>no external fragmentation</span> at all.", dur:4800, on(){SIM.next();}},
+  {cap:"It also gives each program its own private virtual space — page tables keep them isolated, mapping to different frames.", dur:4600, on(){SIM.rand();}},
+  {cap:"The small cost: every memory access needs a page-table lookup. (A hardware cache called the TLB speeds that up — coming later.)", dur:4600, on(){SIM.rand();}},
+  {cap:"Your turn 👉 <b>📄 Access pages</b> in order and <b>🎲 at random</b> to watch the table map each to a scattered frame.", dur:5200},
+  {cap:"Paging maps fixed-size virtual pages to physical frames via a page table — killing external fragmentation and isolating each program.", dur:4800}
+]});
+
+</script>
+</body></html>

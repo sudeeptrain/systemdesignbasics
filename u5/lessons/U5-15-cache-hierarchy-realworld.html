@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Hierarchy — From Countertop to Basement · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.lvl .box{transition:.3s}
+.lvl.hit .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.lat{position:absolute; font-family:var(--fmono); font-size:9px; color:var(--faint); transform:translateX(-50%); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Cache Hierarchy — From Countertop to Basement</h1>
+  <p class="subtitle">When you cook, the thing in your hand is instant; the spice rack is a reach away; the pantry is a few steps; the basement store is a trek. You keep what you use most closest. A CPU stacks memory the same way — L1 in hand, RAM in the basement — and pulls what it fetches up close for next time.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Times needed</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">Found at</div><div class="stat-v good" id="statLevel">—</div></div>
+  <div class="stat"><div class="stat-k">Effort</div><div class="stat-v" id="statCost">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:10%;top:48%"><div class="box">🧑‍🍳</div><div class="lbl"><span class="k">Cook</span></div></div>
+<div class="node abs lvl l-0" data-show="1" style="left:34%;top:48%"><div class="box sm">🤚</div><div class="lbl"><span class="k">in hand</span></div></div>
+<div class="node abs lvl l-1" data-show="1" style="left:52%;top:48%"><div class="box sm">🧂</div><div class="lbl"><span class="k">spice rack</span></div></div>
+<div class="node abs lvl l-2" data-show="1" style="left:70%;top:48%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">pantry</span></div></div>
+<div class="node abs lvl l-3" data-show="1" style="left:90%;top:48%"><div class="box">🏚️</div><div class="lbl"><span class="k">basement</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actHot">⚡ Right in hand</button>
+  <button class="act" id="actCold">🐢 All the way to the basement</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const xs=[34,52,70,90]; const names=['in hand','spice rack','pantry','basement']; const cost=['instant ⚡','a reach','a few steps','a trek 🐢'];
+  let accesses=0, running=false, busy=false;
+  const elA=document.getElementById('statAccesses'), elL=document.getElementById('statLevel'), elC=document.getElementById('statCost');
+  function access(depth){ if(busy||document.hidden) return; busy=true; accesses++; elA.textContent=accesses;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='10%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=300*simRate(); let k=0;
+    (function step(){ const x=xs[k]; d.style.transition='left '+leg+'ms'; d.style.left=x+'%';
+      setTimeout(()=>{ const lvl=scene.querySelector('.l-'+k); if(lvl){lvl.classList.add('hit'); setTimeout(()=>lvl.classList.remove('hit'),300);}
+        if(k>=depth){ d.classList.add('done'); elL.textContent=names[depth]; elL.className='stat-v '+(depth===0?'good':depth<3?'warn':'bad'); elC.textContent=cost[depth];
+          if(depth>0){ d.style.transition='left '+leg+'ms'; d.style.left=xs[0]+'%'; setTimeout(()=>{ const l1=scene.querySelector('.l-0'); if(l1){l1.classList.add('hit'); setTimeout(()=>l1.classList.remove('hit'),250);} d.remove(); busy=false; }, leg); }
+          else { setTimeout(()=>{ d.remove(); busy=false; }, 240); }
+          return; }
+        k++; step();
+      }, leg);
+    })();
+  }
+  function loop(){ if(!running)return; const r=Math.random(); access(r<0.5?0:r<0.75?1:r<0.9?2:3); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actHot').onclick=()=>access(0);
+  document.getElementById('actCold').onclick=()=>access(3);
+  running=true; loop();
+  return {access};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Picture cooking a meal. Where things are stored decides how fast you can grab them — and a CPU's memory is laid out by exactly the same logic.", dur:4600},
+  {cap:"Closest is <b>in your hand</b> — instant. Then the <b>spice rack</b> (a reach), the <b>pantry</b> (a few steps), and the <b>basement store</b> (a real trek).", dur:4800},
+  {cap:"It's the universal trade-off: the spots <b>closest at hand are tiny</b>; the <b>roomy storage is far away.</b> The layers give you both speed and capacity.", dur:4600},
+  {cap:"When you need an ingredient, you check nearest first. If it's <b>already in your hand</b>, you use it instantly — the fast path.", dur:4400, on(){SIM.access(0);}},
+  {cap:"If not, you check the spice rack, then the pantry — each a little farther. Finding it in the pantry still beats a basement trip.", dur:4600, on(){SIM.access(2);}},
+  {cap:"Worst case it's <b>not in the kitchen at all</b>, and you trudge down to the <span class='hl-bad'>basement</span> — the slow path.", dur:4600, on(){SIM.access(3);}},
+  {cap:"But here's the trick: once you've fetched it, you <b>keep it on the counter, in hand</b> — so the <em>next</em> time you need it, it's instant. Watch it come forward.", dur:4800, on(){SIM.access(3);}},
+  {cap:"This works because recipes reuse the same few ingredients — a couple of slow trips pay off across many quick grabs afterward.", dur:4600, on(){SIM.access(0);}},
+  {cap:"Your turn 👉 grab something <b>⚡ right in hand</b> and something <b>🐢 from the basement</b> (then watch it get kept close).", dur:5200},
+  {cap:"The cache hierarchy trades size for nearness — in-hand → rack → pantry → basement. Check closest first, keep what you fetch. Reuse makes it pay.", dur:4800}
+]});
+
+</script>
+</body></html>

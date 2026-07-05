@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIFO Page Replacement · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.frames{position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); display:flex; gap:10px; z-index:2}
+.frame{width:52px; height:52px; border-radius:10px; border:2px solid var(--line2); background:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:15px; font-weight:700; color:var(--accent-d); transition:.25s}
+.frame.hit{border-color:var(--good); background:#e7f7ef}
+.frame.evict{border-color:var(--bad); background:#fdeceb}
+.frame.oldest{box-shadow:0 0 0 3px rgba(185,115,11,.3)}
+.refstr{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; letter-spacing:3px; z-index:3}
+.refstr b{color:var(--accent)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">FIFO Page Replacement</h1>
+  <p class="subtitle">When RAM is full and a new page must come in, which page leaves? FIFO is the simplest answer: evict the page that has been in memory longest — first in, first out. Easy to implement with a queue, but it ignores how often a page is actually used.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Hits</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Page faults</div><div class="stat-v" id="statFaults">0</div></div>
+  <div class="stat"><div class="stat-k">Evicts</div><div class="stat-v" id="statEv">oldest first</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:22%">3 RAM frames · FIFO queue</div>
+<div class="frames" id="frames"></div>
+<div class="refstr" id="refstr"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📄 Access next page</button>
+  <button class="act" id="actReset">🔄 Reset</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CAP=3; const refStr=[1,2,3,4,1,2,5,1,2,3,4,5];
+  let frames=[], hits=0, faults=0, i=0, running=false;
+  const framesEl=document.getElementById('frames'), refEl=document.getElementById('refstr'), elH=document.getElementById('statHits'), elF=document.getElementById('statFaults');
+  function render(flash){ framesEl.innerHTML=''; for(let k=0;k<CAP;k++){ const d=document.createElement('div'); const p=frames[k]; d.className='frame'+(p===undefined?'':'')+(flash&&flash.idx===k?(' '+flash.cls):'')+( frames.length===CAP && k===0 && p!==undefined ?' oldest':''); d.textContent=p===undefined?'·':p; framesEl.appendChild(d); }
+    refEl.innerHTML=refStr.map((p,k)=> k===((i-1+refStr.length)%refStr.length)&&i>0?('<b>'+p+'</b>'):p).join(' '); }
+  function access(){ if(document.hidden) return; const p=refStr[i%refStr.length]; i++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ if(frames.includes(p)){ hits++; elH.textContent=hits; d.classList.add('done'); const idx=frames.indexOf(p); render({idx,cls:'hit'}); setTimeout(()=>d.remove(),leg); }
+      else { faults++; elF.textContent=faults; elF.className='stat-v bad'; d.classList.add('fail');
+        if(frames.length>=CAP){ frames.shift(); } frames.push(p); const idx=frames.indexOf(p); render({idx,cls:'evict'}); setTimeout(()=>d.remove(),360); } }, leg);
+  }
+  function reset(){ frames=[]; hits=0; faults=0; i=0; elH.textContent=0; elF.textContent=0; elF.className='stat-v'; render(); }
+  function loop(){ if(!running)return; access(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAccess').onclick=access;
+  document.getElementById('actReset').onclick=reset;
+  render(); running=true; loop();
+  return {access,reset,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"RAM holds only so many pages. When it's full and a new page faults in, the OS must <b>evict</b> one. Which? That's a replacement policy.", dur:4800},
+  {cap:"<b>FIFO</b> — First In, First Out — is the simplest rule: kick out whichever page has been in memory the <b>longest.</b>", dur:4600},
+  {cap:"The three frames start empty. The first few distinct pages just fault in and fill them up.", dur:4400, on(){SIM.access();SIM.access();SIM.access();}},
+  {cap:"Access a page already resident and it's a <span class='hl-good'>hit</span> — no disk, no eviction. Free and fast.", dur:4400, on(){SIM.access();}},
+  {cap:"Now a brand-new page faults while frames are full. FIFO evicts the <b>oldest-loaded</b> page (highlighted) and takes its slot.", dur:4800, on(){SIM.access();}},
+  {cap:"It's trivial to implement — just a queue. Add at the back, evict from the front. No tracking of usage at all.", dur:4400, on(){SIM.access();}},
+  {cap:"But that's the flaw: FIFO might evict a page you use <em>constantly</em> just because it arrived early. It ignores actual demand.", dur:4800, on(){SIM.access();}},
+  {cap:"It can even suffer <b>Belady's anomaly</b> — adding more frames sometimes causes <em>more</em> faults. Smarter policies (LRU) fix this.", dur:4600, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>📄 Access pages</b> to watch hits, faults, and oldest-first eviction — then <b>🔄 reset</b> to run it again.", dur:5200},
+  {cap:"FIFO evicts the longest-resident page — dead simple, but blind to usage. It's the baseline every other replacement policy improves on.", dur:4800}
+]});
+
+</script>
+</body></html>

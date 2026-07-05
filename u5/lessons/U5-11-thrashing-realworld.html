@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thrashing — A Desk Too Small for the Job · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gauge{position:absolute; left:50%; bottom:16%; transform:translateX(-50%); width:62%; height:20px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.gfill{position:absolute; left:0; top:0; bottom:0; width:80%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}
+.rambar{position:absolute; left:50%; top:34%; transform:translate(-50%,-50%); width:60%; height:26px; border:2px solid var(--accent); border-radius:8px; background:#eef4ff; overflow:hidden; z-index:2}
+.ramused{position:absolute; left:0; top:0; bottom:0; width:30%; background:linear-gradient(90deg,#6a4fe0,#1f6fe6); transition:width .4s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Thrashing — A Desk Too Small for the Job</h1>
+  <p class="subtitle">Take on a few tasks and your desk holds the files you need — you actually get work done. Pile on too many at once and the files won't all fit; you spend every minute fetching one folder and filing another, with no time left to actually work. That collapse is thrashing.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Real work done</div><div class="stat-v accent" id="statWork">100%</div></div>
+  <div class="stat"><div class="stat-k">Tasks juggled</div><div class="stat-v" id="statProc">1</div></div>
+  <div class="stat"><div class="stat-k">Fetch/file trips</div><div class="stat-v good" id="statFault">few</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:18%">files needed vs desk space</div>
+<div class="rambar"><div class="ramused" id="ramused"></div></div>
+<div class="nlbl" style="left:50%;bottom:40%">time spent on real work (vs fetching/filing)</div>
+<div class="gauge"><div class="gfill" id="gfill"></div></div>
+<div class="acts">
+  <button class="act bad" id="actAddProcess">➕ Take on another task</button>
+  <button class="act ok" id="actRemove">➖ Drop a task</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  let procs=1, running=false;
+  const elW=document.getElementById('statWork'), elP=document.getElementById('statProc'), elF=document.getElementById('statFault'), gfill=document.getElementById('gfill'), ramused=document.getElementById('ramused');
+  function render(){ elP.textContent=procs;
+    const demand=procs*28; ramused.style.width=Math.min(100,demand)+'%'; ramused.style.background= demand>100?'linear-gradient(90deg,#f08070,#d83a2e)':'linear-gradient(90deg,#6a4fe0,#1f6fe6)';
+    let work; if(demand<=100) work=Math.max(60,100-procs*4); else work=Math.max(5, 100 - (demand-100)*2.2 - 20);
+    work=Math.round(work); elW.textContent=work+'%';
+    gfill.style.width=work+'%'; gfill.style.background= work<35?'linear-gradient(90deg,#f08070,#d83a2e)':work<70?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#3fcf8e,#0f8f5b)';
+    elW.className='stat-v '+(work<35?'bad':work<70?'warn':'accent');
+    const faults= demand<=100?'few': demand<140?'rising':'nonstop 🔥'; elF.textContent=faults; elF.className='stat-v '+(demand<=100?'good':demand<140?'warn':'bad'); }
+  function add(){ procs=Math.min(6,procs+1); render(); }
+  function rem(){ procs=Math.max(1,procs-1); render(); }
+  function loop(){ if(!running)return; render(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actAddProcess').onclick=add;
+  document.getElementById('actRemove').onclick=rem;
+  render(); running=true; loop();
+  return {add,rem,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Taking on more tasks usually means getting more done. But overload your desk and you can collapse into <b>thrashing.</b> Watch.", dur:4600},
+  {cap:"With one or two tasks, all the files you need <b>fit on the desk.</b> You rarely fetch anything, so almost all your time is <span class='hl-good'>real work.</span>", dur:4600},
+  {cap:"Take on a couple more and the desk fills up. Still fine while everything fits — work stays high, fetch trips few.", dur:4400, on(){SIM.add();}},
+  {cap:"Keep piling on. Now the files you need <b>won't all fit on the desk</b> at once — watch the space bar go red.", dur:4000, on(){SIM.add();SIM.add();}},
+  {cap:"For every file you pull out, you must <b>file away one you'll need again in a minute.</b> The tasks fight over the same tiny desk.", dur:4800, on(){SIM.add();}},
+  {cap:"Now you're fetching and filing <span class='hl-bad'>nonstop</span> — running back and forth — with barely a second for actual work. Output falls off a cliff.", dur:4800, on(){SIM.add();}},
+  {cap:"That's thrashing: taking on <em>more</em> makes you finish <em>less</em>. You look frantically busy while achieving almost nothing.", dur:4600},
+  {cap:"The cure is to <b>shed tasks</b> — set some aside — so the files for the rest fit on the desk again. Watch real work recover.", dur:4600, on(){SIM.rem();SIM.rem();SIM.rem();}},
+  {cap:"Your turn 👉 <b>➕ Take on tasks</b> until work collapses, then <b>➖ drop</b> some to escape the thrash.", dur:5200},
+  {cap:"Thrashing: too many tasks for the desk, so all your time goes to fetching and filing, not working. Fix it by easing the load to fit.", dur:4800}
+]});
+
+</script>
+</body></html>

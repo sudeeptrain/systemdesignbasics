@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Segmentation · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.segtab{position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:230px; font-family:var(--fmono); font-size:11px; z-index:2}
+.srow{display:flex; justify-content:space-between; padding:6px 9px; border-radius:6px; border:1.5px solid var(--line2); background:#fff; margin-bottom:5px; transition:.25s}
+.srow.hit{border-color:var(--good); background:#e7f7ef}
+.srow.bad{border-color:var(--bad); background:#fdeceb}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Segmentation</h1>
+  <p class="subtitle">Segmentation divides a program's memory by its logical parts — code, data, heap, stack — each a variable-size segment with a base address and a limit. An access gives a segment plus an offset; the offset must fall within the limit, or it's an out-of-bounds error.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Accesses</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">Last segment</div><div class="stat-v" id="statSeg">—</div></div>
+  <div class="stat"><div class="stat-k">Out-of-bounds</div><div class="stat-v good" id="statErr">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:46%"><div class="box sm">🧠</div><div class="lbl"><span class="k">CPU<br>seg + offset</span></div></div>
+<div class="segtab" id="segtab"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">📄 Valid access (in bounds)</button>
+  <button class="act bad" id="actBadAccess">🚫 Access past the limit</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const segs=[{n:'code',base:0,limit:400},{n:'data',base:400,limit:200},{n:'heap',base:600,limit:300},{n:'stack',base:900,limit:120}];
+  let accesses=0, err=0, running=false, i=0;
+  const tab=document.getElementById('segtab'), elA=document.getElementById('statAccesses'), elS=document.getElementById('statSeg'), elE=document.getElementById('statErr');
+  function render(){ tab.innerHTML=''; segs.forEach((s,k)=>{ const r=document.createElement('div'); r.className='srow sr-'+k; r.innerHTML='<span>'+s.n+'</span><span>base '+s.base+' · limit '+s.limit+'</span>'; tab.appendChild(r); }); }
+  function access(bad){ if(document.hidden) return; accesses++; elA.textContent=accesses; const k=i++%segs.length; const s=segs[k]; elS.textContent=s.n; const row=scene.querySelector('.sr-'+k);
+    const off = bad? s.limit+50 : Math.floor(Math.random()*s.limit);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ const within = off < s.limit;
+      if(within){ if(row){row.classList.add('hit'); setTimeout(()=>row.classList.remove('hit'),500);} d.classList.add('done'); d.style.left='62%'; setTimeout(()=>d.remove(),leg); }
+      else { if(row){row.classList.add('bad'); setTimeout(()=>row.classList.remove('bad'),500);} d.classList.add('fail'); err++; elE.textContent=err; elE.className='stat-v bad'; setTimeout(()=>d.remove(),360); }
+    }, leg);
+  }
+  function loop(){ if(!running)return; access(Math.random()<0.25); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access(false);
+  document.getElementById('actBadAccess').onclick=()=>access(true);
+  render(); running=true; loop();
+  return {access};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Paging chops memory into equal blind pieces. <b>Segmentation</b> takes a different view: divide memory by its <b>logical parts.</b>", dur:4600},
+  {cap:"A program naturally has segments: the <b>code</b>, the <b>data</b>, the <b>heap</b> (dynamic memory), the <b>stack</b> (function calls).", dur:4600},
+  {cap:"Each segment has a <b>base</b> (where it starts in physical memory) and a <b>limit</b> (how big it's allowed to be). Sizes vary.", dur:4600, on(){SIM.access(false);}},
+  {cap:"An address is a <b>segment + offset.</b> The CPU looks up the base, adds the offset, and reads the real location.", dur:4600, on(){SIM.access(false);}},
+  {cap:"But first it checks the <b>limit:</b> the offset must be smaller than the segment's size. A valid access goes straight through.", dur:4600, on(){SIM.access(false);}},
+  {cap:"Now try an offset that runs <b>past the limit.</b>", dur:3600, on(){SIM.access(true);}},
+  {cap:"The hardware <span class='hl-bad'>rejects it</span> — a segmentation fault. This bounds-check is real protection: code can't stray into the stack or another segment.", dur:4800, on(){SIM.access(true);}},
+  {cap:"Segments also map cleanly to permissions — code read-only, stack no-execute — and to how programmers actually think about memory.", dur:4600},
+  {cap:"The downside is variable sizes bring back <b>external fragmentation</b> — which is why real systems often combine segmentation <em>with</em> paging.", dur:4800, on(){SIM.access(false);}},
+  {cap:"Your turn 👉 make a <b>📄 valid access</b> and one <b>🚫 past the limit</b> to watch the bounds check allow and reject.", dur:5200},
+  {cap:"Segmentation splits memory by logical role (code/data/heap/stack), each base+limit. It maps to how we think and enforces bounds — but can fragment.", dur:4800}
+]});
+
+</script>
+</body></html>

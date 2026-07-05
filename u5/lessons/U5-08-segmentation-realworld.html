@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Segmentation — A House Divided by Room · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.segtab{position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:240px; font-family:var(--fmono); font-size:11px; z-index:2}
+.srow{display:flex; justify-content:space-between; padding:6px 9px; border-radius:6px; border:1.5px solid var(--line2); background:#fff; margin-bottom:5px; transition:.25s}
+.srow.hit{border-color:var(--good); background:#e7f7ef}
+.srow.bad{border-color:var(--bad); background:#fdeceb}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Segmentation — A House Divided by Room</h1>
+  <p class="subtitle">A house isn't one big blind space — it's divided by purpose into rooms: kitchen, bedroom, garage, study. Each room has a location and a size, and you can't walk through a wall into the next one. Segmentation organizes a program's memory the same way, with a bounds check at every wall.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Trips made</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">Last room</div><div class="stat-v" id="statSeg">—</div></div>
+  <div class="stat"><div class="stat-k">Hit a wall</div><div class="stat-v good" id="statErr">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:46%"><div class="box sm">🧑</div><div class="lbl"><span class="k">You<br>room + step</span></div></div>
+<div class="segtab" id="segtab"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">🚶 Step within a room</button>
+  <button class="act bad" id="actBadAccess">🚫 Step past the wall</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const segs=[{n:'🍳 kitchen',base:0,limit:400},{n:'🛏️ bedroom',base:400,limit:200},{n:'📚 study',base:600,limit:300},{n:'🚗 garage',base:900,limit:120}];
+  let accesses=0, err=0, running=false, i=0;
+  const tab=document.getElementById('segtab'), elA=document.getElementById('statAccesses'), elS=document.getElementById('statSeg'), elE=document.getElementById('statErr');
+  function render(){ tab.innerHTML=''; segs.forEach((s,k)=>{ const r=document.createElement('div'); r.className='srow sr-'+k; r.innerHTML='<span>'+s.n+'</span><span>at '+s.base+' · size '+s.limit+'</span>'; tab.appendChild(r); }); }
+  function access(bad){ if(document.hidden) return; accesses++; elA.textContent=accesses; const k=i++%segs.length; const s=segs[k]; elS.textContent=s.n; const row=scene.querySelector('.sr-'+k);
+    const off = bad? s.limit+50 : Math.floor(Math.random()*s.limit);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ const within = off < s.limit;
+      if(within){ if(row){row.classList.add('hit'); setTimeout(()=>row.classList.remove('hit'),500);} d.classList.add('done'); d.style.left='62%'; setTimeout(()=>d.remove(),leg); }
+      else { if(row){row.classList.add('bad'); setTimeout(()=>row.classList.remove('bad'),500);} d.classList.add('fail'); err++; elE.textContent=err; elE.className='stat-v bad'; setTimeout(()=>d.remove(),360); }
+    }, leg);
+  }
+  function loop(){ if(!running)return; access(Math.random()<0.25); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actAccess').onclick=()=>access(false);
+  document.getElementById('actBadAccess').onclick=()=>access(true);
+  render(); running=true; loop();
+  return {access};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Paging chops memory into equal, anonymous boxes. <b>Segmentation</b> thinks like an <b>architect:</b> divide the space by <b>purpose</b> — room by room.", dur:4600},
+  {cap:"A program has natural 'rooms': the <b>code</b>, the <b>data</b>, the <b>study</b> (heap, for working space), the <b>garage</b> (stack, for the comings and goings of functions).", dur:4800},
+  {cap:"Each room has a <b>location</b> (where it is in the house) and a <b>size</b> (how big it's allowed to be). The rooms aren't all the same size.", dur:4600, on(){SIM.access(false);}},
+  {cap:"To reach a spot, you name a <b>room + how many steps in.</b> You go to the room's location and walk in that far.", dur:4600, on(){SIM.access(false);}},
+  {cap:"But there's a check: your steps must stay <b>within the room's size.</b> A normal step lands fine, inside the walls.", dur:4600, on(){SIM.access(false);}},
+  {cap:"Now try to step <b>past the wall</b> into the next room.", dur:3600, on(){SIM.access(true);}},
+  {cap:"You're <span class='hl-bad'>stopped at the wall</span> — a segmentation fault. That boundary is real protection: you can't blunder from the study into the garage.", dur:4800, on(){SIM.access(true);}},
+  {cap:"Rooms also map neatly to rules — the code room is 'look, don't change'; the garage is 'no cooking here' — and to how we naturally picture a program.", dur:4600},
+  {cap:"The catch: rooms of all different sizes leave awkward gaps between them (external fragmentation) — so real houses often combine rooms <em>with</em> paging.", dur:4800, on(){SIM.access(false);}},
+  {cap:"Your turn 👉 <b>🚶 Step within a room</b> and try to <b>🚫 step past a wall</b> to watch the boundary allow and block.", dur:5200},
+  {cap:"Segmentation divides memory by purpose (code/data/heap/stack), each with a place and a size limit — intuitive and protective, but prone to gaps.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LFU Replacement — Keep the Tools You Reach For Most · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.frames{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); display:flex; gap:10px; z-index:2}
+.frame{width:54px; height:54px; border-radius:10px; border:2px solid var(--line2); background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:var(--fmono); font-weight:700; color:var(--accent-d); transition:.25s}
+.frame .pid{font-size:15px} .frame .cnt{font-size:8px; color:var(--muted); font-weight:400}
+.frame.hit{border-color:var(--good); background:#e7f7ef}
+.frame.evict{border-color:var(--bad); background:#fdeceb}
+.frame.lfu{box-shadow:0 0 0 3px rgba(185,115,11,.3)}
+.refstr{position:absolute; left:50%; top:72%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; letter-spacing:3px; z-index:3}
+.refstr b{color:var(--accent)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">LFU Replacement — Keep the Tools You Reach For Most</h1>
+  <p class="subtitle">A small toolbox can only hold a few tools. LFU's rule: when you need room, drop whichever tool you've reached for the fewest times. It keeps your most-used tools handy — though it can stubbornly hang onto something you used heavily once and never touch again.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Already in box</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Had to fetch</div><div class="stat-v" id="statFaults">0</div></div>
+  <div class="stat"><div class="stat-k">Drop</div><div class="stat-v" id="statEv">fewest uses</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:20%">3 slots · number = times reached for</div>
+<div class="frames" id="frames"></div>
+<div class="refstr" id="refstr"></div>
+<div class="acts">
+  <button class="act ok" id="actAccess">🔧 Reach for next tool</button>
+  <button class="act" id="actReset">🔄 Reset</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CAP=3; const refStr=[1,1,1,2,2,3,4,2,1,5,2,4];
+  let frames=[], count={}, hits=0, faults=0, i=0, running=false;
+  const framesEl=document.getElementById('frames'), refEl=document.getElementById('refstr'), elH=document.getElementById('statHits'), elF=document.getElementById('statFaults');
+  function lfuIndex(){ let min=Infinity, mi=0; frames.forEach((p,k)=>{ if(count[p]<min){min=count[p]; mi=k;} }); return mi; }
+  function render(flash){ const li = frames.length===CAP? lfuIndex() : -1; framesEl.innerHTML=''; for(let k=0;k<CAP;k++){ const p=frames[k]; const d=document.createElement('div'); d.className='frame'+(flash&&flash.idx===k?(' '+flash.cls):'')+(k===li&&p!==undefined?' lfu':''); d.innerHTML='<span class="pid">'+(p===undefined?'·':p)+'</span><span class="cnt">'+(p===undefined?'':('used '+count[p]+'×'))+'</span>'; framesEl.appendChild(d); }
+    refEl.innerHTML=refStr.map((p,k)=> k===((i-1+refStr.length)%refStr.length)&&i>0?('<b>'+p+'</b>'):p).join(' '); }
+  function access(){ if(document.hidden) return; const p=refStr[i%refStr.length]; i++; count[p]=(count[p]||0)+1;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ if(frames.includes(p)){ hits++; elH.textContent=hits; d.classList.add('done'); render({idx:frames.indexOf(p),cls:'hit'}); setTimeout(()=>d.remove(),leg); }
+      else { faults++; elF.textContent=faults; elF.className='stat-v bad'; d.classList.add('fail'); if(frames.length>=CAP){ frames.splice(lfuIndex(),1); } frames.push(p); render({idx:frames.indexOf(p),cls:'evict'}); setTimeout(()=>d.remove(),360); } }, leg);
+  }
+  function reset(){ frames=[]; count={}; hits=0; faults=0; i=0; elH.textContent=0; elF.textContent=0; elF.className='stat-v'; render(); }
+  function loop(){ if(!running)return; access(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAccess').onclick=access;
+  document.getElementById('actReset').onclick=reset;
+  render(); running=true; loop();
+  return {access,reset,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"LRU keeps what you used <em>recently</em>. <b>LFU</b> keeps what you use <em>most often</em> — counting how many times you reach for each tool.", dur:4600},
+  {cap:"Every tool keeps a <b>use count.</b> Each time you grab it, the count ticks up. The number under each tool shows how often it's been used.", dur:4600, on(){SIM.access();SIM.access();SIM.access();}},
+  {cap:"A tool you keep grabbing builds a <b>high count</b> — clearly a keeper, worth its spot in the box.", dur:4400, on(){SIM.access();}},
+  {cap:"When you need a new tool and the box is full, LFU drops the one with the <b>fewest uses</b> (highlighted) — the least-reached-for.", dur:4800, on(){SIM.access();SIM.access();}},
+  {cap:"So your go-to screwdriver stays put even if you haven't touched it in the last few jobs — frequency, not recency, keeps it safe.", dur:4600, on(){SIM.access();}},
+  {cap:"This shines when you have a clear set of <b>everyday tools</b> — a few you use constantly that should always be within reach.", dur:4600, on(){SIM.access();}},
+  {cap:"But LFU has a famous flaw: a tool you used <b>a hundred times during one big job</b> keeps its huge count and won't leave — even if that job's long over.", dur:4800, on(){SIM.access();}},
+  {cap:"The fix is <b>aging</b> — letting old counts fade over time — so last month's obsession stops hogging a slot. LFU + aging is a strong combo.", dur:4600, on(){SIM.access();}},
+  {cap:"Your turn 👉 <b>🔧 Reach for tools</b> to build up counts and watch the least-used one get dropped — then <b>🔄 reset.</b>", dur:5200},
+  {cap:"LFU drops the least-reached-for tool, protecting your everyday set — but can cling to a once-busy tool. Aging keeps the counts honest.", dur:4800}
+]});
+
+</script>
+</body></html>

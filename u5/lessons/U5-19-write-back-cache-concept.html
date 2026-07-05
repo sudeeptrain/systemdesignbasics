@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Write-Back Cache · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache .box,.db .box{transition:.3s}
+.dirty{position:absolute; left:50%; top:26%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--warn); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Write-Back Cache</h1>
+  <p class="subtitle">A write-back cache writes only to the cache and returns immediately, marking the entry dirty. The change is flushed to the database later — batched or on eviction. Writes are blazing fast, but a cache crash before the flush loses data, and the store is briefly stale.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Writes (to cache)</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Dirty entries</div><div class="stat-v" id="statDirty">0</div></div>
+  <div class="stat"><div class="stat-k">DB</div><div class="stat-v" id="statDb">may be stale</div></div>
+</div>
+<div class="dirty" id="dirty"></div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box">📱</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="node abs cache" data-show="1" style="left:50%;top:46%"><div class="box">⚡</div><div class="lbl"><span class="k">Cache</span></div></div>
+<div class="node abs db" data-show="1" style="left:84%;top:46%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✏️ Write (cache only)</button>
+  <button class="act" id="actFlush">💾 Flush dirty to DB</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let writes=0, dirty=0, running=false;
+  const elW=document.getElementById('statWrites'), elD=document.getElementById('statDirty'), elDb=document.getElementById('statDb'), dirtyEl=document.getElementById('dirty');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function setDirty(){ elD.textContent=dirty; elD.className='stat-v '+(dirty>0?'warn':''); dirtyEl.textContent=dirty>0?('🟠 '+dirty+' dirty — not yet in DB'):''; elDb.textContent=dirty>0?'stale':'up to date'; elDb.className='stat-v '+(dirty>0?'bad':'good'); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes; dirty++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('busy'); setTimeout(()=>cache.classList.remove('busy'),200);} d.classList.add('done'); d.style.left='16%'; setTimeout(()=>d.remove(),leg); setDirty(); }, leg);
+  }
+  function flush(){ if(document.hidden) return; if(dirty<=0){ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),200);} return; }
+    const n=dirty; for(let k=0;k<n;k++){ setTimeout(()=>{ const d=document.createElement('div'); d.className='dot done'; d.style.left='50%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .45s';d.style.left='84%';}); setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),200);} d.remove(); },460); }, k*180*simRate()); }
+    dirty=0; setTimeout(setDirty, n*180*simRate()+200);
+  }
+  function loop(){ if(!running)return; if(Math.random()<0.7) write(); else flush(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actFlush').onclick=flush;
+  setDirty(); running=true; loop();
+  return {write,flush,setDirty};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Write-through is safe but slow — every write waits on the database. <b>Write-back</b> chases speed instead: write to the cache and return at once.", dur:4800},
+  {cap:"A write updates only the <b>cache</b> and immediately returns to the app. No waiting on the database — blazing fast.", dur:4600, on(){SIM.write();}},
+  {cap:"The entry is marked <b>dirty:</b> the cache has the newest value, but the database doesn't know about it yet.", dur:4600, on(){SIM.write();}},
+  {cap:"Keep writing and dirty entries pile up. The database is now <span class='hl-bad'>stale</span> — it lags behind the cache.", dur:4600, on(){SIM.write();}},
+  {cap:"Later — on a timer, when the cache fills, or on eviction — the dirty entries are <b>flushed to the database</b> in a batch.", dur:4600, on(){SIM.flush();}},
+  {cap:"Batching is a big win: many writes to the same key collapse into one DB write, slashing database load.", dur:4600, on(){SIM.write();SIM.write();}},
+  {cap:"But here's the danger: if the <b>cache crashes before a flush</b>, those dirty writes are <span class='hl-bad'>gone for good.</span> Speed risks durability.", dur:4800},
+  {cap:"So write-back suits write-heavy workloads that can tolerate tiny loss windows — often paired with battery-backed or replicated caches.", dur:4600, on(){SIM.flush();}},
+  {cap:"Your turn 👉 <b>✏️ Write</b> (cache only, dirty grows) then <b>💾 Flush</b> to push the dirty entries to the database.", dur:5200},
+  {cap:"Write-back caches writes instantly and flushes later — fast and batch-friendly, but a crash before flush loses data. Speed vs durability.", dur:4800}
+]});
+
+</script>
+</body></html>

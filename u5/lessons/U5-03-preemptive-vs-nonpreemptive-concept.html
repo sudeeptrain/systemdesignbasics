@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preemptive vs Non-Preemptive Scheduling · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cpu .box{transition:.3s}
+.cpu.busy .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.cpu.long .box{border-color:var(--warn); box-shadow:0 0 0 4px rgba(185,115,11,.2)}
+.qcol{position:absolute; left:30%; top:24%; width:46px; height:52%; transform:translateX(-50%); border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:1}
+.qfill{position:absolute; left:0; right:0; bottom:0; height:0%; background:linear-gradient(180deg,#f0c050,#b9730b); transition:height .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Preemptive vs Non-Preemptive Scheduling</h1>
+  <p class="subtitle">Non-preemptive scheduling lets a running process keep the CPU until it finishes or blocks — simple, but one long job makes everyone wait. Preemptive scheduling can interrupt it after a time slice, so short jobs stay responsive. Responsiveness vs simplicity.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Jobs finished</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Non-preemptive</div></div>
+  <div class="stat"><div class="stat-k">Short jobs waiting</div><div class="stat-v" id="statWait">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🧩</div><div class="lbl"><span class="k">Jobs</span></div></div>
+<div class="qcol"><div class="qfill" id="qfill"></div></div>
+<div class="nlbl" style="left:30%;top:80%">short jobs waiting</div>
+<div class="node abs cpu" data-show="1" style="left:62%;top:50%"><div class="box">⚙️</div><div class="lbl"><span class="k" id="cpulbl">CPU</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:50%"><div class="box sm">🏁</div><div class="lbl"><span class="k">Done</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Non-preemptive / Preemptive</button>
+  <button class="act ok" id="actAddShort">➕ Add a short job</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='np', done=0, waiting=0, busy=false, running=false;
+  const elD=document.getElementById('statDone'), elM=document.getElementById('statMode'), elW=document.getElementById('statWait'), qfill=document.getElementById('qfill'), cpulbl=document.getElementById('cpulbl');
+  const cpu=scene.querySelector('.cpu');
+  function setWait(v){ waiting=Math.max(0,v); elW.textContent=waiting; qfill.style.height=Math.min(100,waiting*16)+'%'; elW.className='stat-v '+(waiting>3?'bad':waiting>1?'warn':''); }
+  function runJob(isLong){ if(busy) return; busy=true;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='30%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='62%'; });
+    setTimeout(()=>{ if(cpu)cpu.classList.add(isLong?'long':'busy'); cpulbl.textContent=isLong?'long job':'CPU';
+      if(isLong && mode==='np'){ // hogs the CPU; shorts pile up
+        let t=0; const grow=setInterval(()=>{ setWait(waiting+1); t++; if(t>=3) clearInterval(grow); }, 350*simRate());
+        setTimeout(()=>finish(d,isLong), 1700*simRate());
+      } else if(isLong && mode==='p'){ // sliced: shorts interleave between slices
+        setTimeout(()=>{ if(waiting>0){ drainShort(); } setTimeout(()=>{ if(waiting>0) drainShort(); finish(d,isLong); }, 700*simRate()); }, 600*simRate());
+      } else { setTimeout(()=>finish(d,isLong), 600*simRate()); }
+    }, leg);
+  }
+  function drainShort(){ if(waiting<=0) return; setWait(waiting-1); const s=document.createElement('div'); s.className='dot done'; s.style.left='62%'; s.style.top='62%'; scene.appendChild(s); requestAnimationFrame(()=>{s.style.transition='left .4s';s.style.left='88%';}); setTimeout(()=>s.remove(),440); done++; elD.textContent=done; }
+  function finish(d,isLong){ if(cpu)cpu.classList.remove('busy','long'); cpulbl.textContent='CPU'; d.classList.add('done'); d.style.left='88%'; setTimeout(()=>d.remove(),380); done++; elD.textContent=done; busy=false; }
+  function addShort(){ setWait(waiting+1); }
+  function setMode(){ mode=mode==='np'?'p':'np'; elM.textContent=mode==='np'?'Non-preemptive':'Preemptive'; elM.className='stat-v '+(mode==='np'?'warn':'good'); }
+  function loop(){ if(!running)return; if(!busy){ runJob(Math.random()<0.4); } else if(Math.random()<0.5){ addShort(); } setTimeout(loop, 900*simRate()); }
+  document.getElementById('actMode').onclick=setMode;
+  document.getElementById('actAddShort').onclick=addShort;
+  setWait(0); running=true; loop();
+  return {runJob,addShort,setMode,drainShort};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two philosophies for sharing one CPU. The difference is simple: <b>can the OS interrupt a running process, or not?</b>", dur:4600},
+  {cap:"<b>Non-preemptive:</b> once a process gets the CPU, it keeps it until it finishes or voluntarily blocks. The OS won't butt in.", dur:4600, on(){SIM.runJob(false);}},
+  {cap:"That's simple and predictable. But watch what a <b>long job</b> does to everyone else.", dur:4000, on(){SIM.runJob(true);}},
+  {cap:"The long job <b>hogs the CPU</b>, and short jobs <span class='hl-bad'>pile up waiting</span> — even quick tasks are stuck behind it. Poor responsiveness.", dur:4800, on(){SIM.addShort();SIM.addShort();}},
+  {cap:"<b>Preemptive</b> scheduling fixes this: the OS gives each process a <b>time slice</b>, then can interrupt it and switch to another. Flip the mode.", dur:4800, on(){SIM.setMode();}},
+  {cap:"Now when a long job runs, it's <b>paused after its slice</b> so waiting short jobs can <span class='hl-good'>slip in and finish quickly.</span>", dur:4800, on(){SIM.runJob(true);}},
+  {cap:"Short, interactive tasks stay snappy — your typing, your clicks — because nothing can monopolize the CPU for long.", dur:4600, on(){SIM.drainShort();}},
+  {cap:"The trade-off: preemption needs <b>context switches</b> (saving and restoring state), which add overhead. And it's more complex to get right.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 the mode</b> and <b>➕ add short jobs</b> to watch them starve under non-preemptive, then flow under preemptive.", dur:5200, on(){SIM.setMode();}},
+  {cap:"Non-preemptive: simple, but a hog blocks everyone. Preemptive: time-sliced and responsive, at the cost of switching overhead. Modern OSes are preemptive.", dur:4800}
+]});
+
+</script>
+</body></html>

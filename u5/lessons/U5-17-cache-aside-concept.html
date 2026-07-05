@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache-Aside Pattern · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache .box,.db .box{transition:.3s}
+.note{position:absolute; left:50%; top:76%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache-Aside Pattern</h1>
+  <p class="subtitle">In cache-aside (lazy loading), the application manages the cache. On a read it checks the cache first; on a miss it loads from the database and populates the cache itself. On a write it updates the database and invalidates the stale cache entry. Simple and resilient — the most common pattern.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reads served</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Cache</div><div class="stat-v" id="statCache">empty</div></div>
+  <div class="stat"><div class="stat-k">Cache misses</div><div class="stat-v good" id="statMiss">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:42%"><div class="box">📱</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="node abs cache" data-show="1" style="left:50%;top:42%"><div class="box">⚡</div><div class="lbl"><span class="k">Cache</span></div></div>
+<div class="node abs db" data-show="1" style="left:84%;top:42%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="note" id="note">cache starts empty</div>
+<div class="acts">
+  <button class="act ok" id="actRead">📖 Read a value</button>
+  <button class="act bad" id="actWrite">✏️ Write (update DB)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let cached=false, reads=0, miss=0, running=false, busy=false;
+  const elR=document.getElementById('statReads'), elC=document.getElementById('statCache'), elM=document.getElementById('statMiss'), note=document.getElementById('note');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function setCache(v){ cached=v; elC.textContent=v?'fresh ✓':'empty'; elC.className='stat-v '+(v?'good':''); }
+  function read(){ if(busy||document.hidden) return; busy=true; reads++; elR.textContent=reads;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),200);}
+      if(cached){ note.textContent='cache hit → return'; note.style.color='var(--good)'; d.classList.add('done'); d.style.left='16%'; setTimeout(()=>{d.remove(); busy=false;},leg); }
+      else { note.textContent='miss → load DB → fill cache'; note.style.color='var(--warn)'; miss++; elM.textContent=miss; elM.className='stat-v warn'; d.classList.add('fail');
+        d.style.left='84%'; setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),250);} setCache(true);
+          const g=document.createElement('div'); g.className='dot done'; g.style.left='84%'; g.style.top='54%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .6s';g.style.left='16%';}); setTimeout(()=>{g.remove(); busy=false;},620); }, leg); }
+    }, leg);
+  }
+  function write(){ if(document.hidden) return; note.textContent='write DB + invalidate cache'; note.style.color='var(--bad)';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),250);} d.classList.add('done'); setTimeout(()=>d.remove(),300); setCache(false); if(cache){cache.classList.add('crash'); setTimeout(()=>cache.classList.remove('crash'),300);} }, leg);
+  }
+  function loop(){ if(!running)return; if(Math.random()<0.8) read(); else write(); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actRead').onclick=read;
+  document.getElementById('actWrite').onclick=write;
+  setCache(false); running=true; loop();
+  return {read,write,setCache};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In <b>cache-aside</b> (lazy loading), the <b>application</b> is in charge of the cache — not the cache itself. Let's trace a read.", dur:4600},
+  {cap:"The app always <b>checks the cache first.</b> Right now the cache is empty, so the first read will miss.", dur:4400},
+  {cap:"<b>Miss:</b> the app doesn't give up — it <b>reads from the database</b> itself, then <b>writes the value into the cache</b> on the way back.", dur:4800, on(){SIM.read();}},
+  {cap:"The cache is now populated. The slow path happened once, lazily — only because someone actually asked for that data.", dur:4400},
+  {cap:"The <em>next</em> read for that value is a <span class='hl-good'>cache hit</span> — served fast, no database trip at all.", dur:4400, on(){SIM.read();}},
+  {cap:"Only data that's actually requested ever gets cached — so the cache fills with exactly what's in demand. Efficient by design.", dur:4600, on(){SIM.read();}},
+  {cap:"Now a <b>write.</b> The app updates the <b>database</b> and then <b>invalidates</b> the cached copy, so it can't serve stale data.", dur:4800, on(){SIM.write();}},
+  {cap:"The next read misses and reloads the fresh value. (Invalidate rather than update the cache — it's simpler and avoids subtle races.)", dur:4600, on(){SIM.read();}},
+  {cap:"A bonus: if the cache server dies, the app still works — it just hits the database directly. Cache-aside degrades gracefully.", dur:4600},
+  {cap:"Your turn 👉 <b>📖 Read values</b> (miss then hit) and <b>✏️ write</b> to invalidate the cache, forcing a fresh reload.", dur:5200},
+  {cap:"Cache-aside: app checks cache, loads-and-fills on miss, invalidates on write. Simple, demand-driven, and fault-tolerant — the default choice.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Hierarchy (L1 / L2 / L3 / RAM) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.lvl .box{transition:.3s}
+.lvl.hit .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.lat{position:absolute; font-family:var(--fmono); font-size:9px; color:var(--faint); transform:translateX(-50%); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache Hierarchy (L1 / L2 / L3 / RAM)</h1>
+  <p class="subtitle">A CPU has layers of memory: tiny, blazing-fast L1, then larger-but-slower L2 and L3, then big-but-slow RAM. The CPU checks each level in turn; the closer it finds the data, the faster the access. A hit found deep gets pulled up to L1 for next time.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Accesses</div><div class="stat-v accent" id="statAccesses">0</div></div>
+  <div class="stat"><div class="stat-k">Served by</div><div class="stat-v good" id="statLevel">—</div></div>
+  <div class="stat"><div class="stat-k">Relative cost</div><div class="stat-v" id="statCost">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:10%;top:48%"><div class="box">🧠</div><div class="lbl"><span class="k">CPU</span></div></div>
+<div class="node abs lvl l-0" data-show="1" style="left:34%;top:48%"><div class="box sm">L1</div><div class="lbl"><span class="k">tiny · 1ns</span></div></div>
+<div class="node abs lvl l-1" data-show="1" style="left:52%;top:48%"><div class="box sm">L2</div><div class="lbl"><span class="k">small · 4ns</span></div></div>
+<div class="node abs lvl l-2" data-show="1" style="left:70%;top:48%"><div class="box sm">L3</div><div class="lbl"><span class="k">bigger · 15ns</span></div></div>
+<div class="node abs lvl l-3" data-show="1" style="left:90%;top:48%"><div class="box">RAM</div><div class="lbl"><span class="k">huge · 100ns</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actHot">⚡ Hot data (in L1)</button>
+  <button class="act" id="actCold">🐢 Cold data (down to RAM)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const xs=[34,52,70,90]; const names=['L1','L2','L3','RAM']; const cost=['1ns ⚡','4ns','15ns','100ns 🐢'];
+  let accesses=0, running=false, busy=false;
+  const elA=document.getElementById('statAccesses'), elL=document.getElementById('statLevel'), elC=document.getElementById('statCost');
+  function access(depth){ if(busy||document.hidden) return; busy=true; accesses++; elA.textContent=accesses;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='10%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=300*simRate(); let k=0;
+    (function step(){ const x=xs[k]; d.style.transition='left '+leg+'ms'; d.style.left=x+'%';
+      setTimeout(()=>{ const lvl=scene.querySelector('.l-'+k); if(lvl){lvl.classList.add('hit'); setTimeout(()=>lvl.classList.remove('hit'),300);}
+        if(k>=depth){ d.classList.add('done'); elL.textContent=names[depth]; elL.className='stat-v '+(depth===0?'good':depth<3?'warn':'bad'); elC.textContent=cost[depth];
+          if(depth>0){ // promote toward L1
+            d.style.transition='left '+leg+'ms'; d.style.left=xs[0]+'%'; setTimeout(()=>{ const l1=scene.querySelector('.l-0'); if(l1){l1.classList.add('hit'); setTimeout(()=>l1.classList.remove('hit'),250);} d.remove(); busy=false; }, leg); }
+          else { setTimeout(()=>{ d.remove(); busy=false; }, 240); }
+          return; }
+        k++; step();
+      }, leg);
+    })();
+  }
+  function loop(){ if(!running)return; const r=Math.random(); access(r<0.5?0:r<0.75?1:r<0.9?2:3); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actHot').onclick=()=>access(0);
+  document.getElementById('actCold').onclick=()=>access(3);
+  running=true; loop();
+  return {access};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The CPU is fast, but main memory is far away (in CPU terms). To bridge the gap, processors stack <b>layers of cache</b> between them.", dur:4600},
+  {cap:"Closest is <b>L1:</b> tiny but absurdly fast — about 1ns. Then <b>L2</b>, then <b>L3</b>: each larger but a bit slower. Finally <b>RAM:</b> huge but ~100ns.", dur:4800},
+  {cap:"It's a classic trade-off: <b>fast memory is small and expensive; big memory is slow and cheap.</b> The hierarchy gives you the best of both.", dur:4600},
+  {cap:"The CPU checks the levels in order. If the data is in <b>L1</b>, it's served instantly — the fast path.", dur:4400, on(){SIM.access(0);}},
+  {cap:"If L1 misses, it tries L2, then L3 — each hop a little slower. A hit deeper down still beats going all the way to RAM.", dur:4600, on(){SIM.access(2);}},
+  {cap:"Worst case, it's <b>cold</b> — not cached anywhere — and the CPU must fetch from <span class='hl-bad'>RAM</span>, the slow path.", dur:4600, on(){SIM.access(3);}},
+  {cap:"But here's the magic: that fetched data is <b>pulled up into L1</b>, so the <em>next</em> access to it is lightning fast. Watch the promotion.", dur:4800, on(){SIM.access(3);}},
+  {cap:"This works because programs reuse data (locality), so a few slow misses pay off across many fast hits afterward.", dur:4600, on(){SIM.access(0);}},
+  {cap:"Your turn 👉 access <b>⚡ hot data</b> (L1 hit) and <b>🐢 cold data</b> (down to RAM, then promoted) to feel the levels.", dur:5200},
+  {cap:"The cache hierarchy trades size for speed across L1→L2→L3→RAM: check nearest first, promote what you fetch. Locality makes it pay off.", dur:4800}
+]});
+
+</script>
+</body></html>
