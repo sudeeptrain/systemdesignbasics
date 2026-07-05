@@ -1,0 +1,258 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Design · Unit 1 — Study Slides</title>
+<style>
+:root{--bg:#eef3f9;--surface:#fff;--ink:#13202f;--muted:#3f5266;--faint:#65788e;--line:#d3deeb;--line2:#b9c9dd;--accent:#1f6fe6;--accentd:#1657bf;--good:#0f8f5b;--warn:#b9730b;--bad:#d83a2e;--violet:#6a4fe0;--pink:#cc2f86;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(160deg,#eef3f9,#e6eef7);font-size:18px;line-height:1.5}
+#stage{height:100vh;display:flex;flex-direction:column;padding:18px 22px 64px;max-width:1180px;margin:0 auto}
+.head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:8px;margin-bottom:10px}
+.unit{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accentd);background:rgba(31,111,230,.08);border:1px solid var(--line2);padding:4px 10px;border-radius:999px}
+.tnum{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint)}
+.ttl{font-family:'Space Grotesk',ui-sans-serif,system-ui;font-weight:700;font-size:27px;letter-spacing:-.01em;flex:1;min-width:200px}
+.rating{font-size:14px;color:var(--warn)}
+.slide{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px -24px rgba(40,70,120,.5);padding:20px 26px;overflow:auto}
+.slide h2{font-family:'Space Grotesk',ui-sans-serif;font-size:21px;margin:0 0 12px;color:var(--accentd);display:flex;align-items:center;gap:8px}
+.slide h2 .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block}
+.slide.real h2 .dot{background:var(--pink)}
+ul{margin:6px 0 12px;padding-left:24px}
+li{margin:5px 0}
+li b{color:var(--accentd)}
+.sub{font-weight:700;color:var(--ink);margin:12px 0 4px;font-size:18px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0 12px}
+.kv .k{font-weight:700;color:var(--violet)}
+.kv .v{color:var(--muted)}
+table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:16.5px}
+th,td{border:1px solid var(--line2);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#eef4ff;color:var(--accentd);font-family:'IBM Plex Mono',monospace;font-size:14px}
+.note{margin:8px 0;padding:9px 13px;border-left:4px solid var(--good);background:#e9f7f0;border-radius:0 8px 8px 0;font-size:16.5px}
+.note.warn{border-left-color:var(--warn);background:#fff6e8}
+.note.key{border-left-color:var(--accent);background:#eaf2fe}
+.note.rw{border-left-color:var(--pink);background:#fdeef6}
+.foot{position:fixed;left:0;right:0;bottom:0;height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:15px}
+.foot button{font:inherit;font-size:15px;padding:6px 14px;border:1px solid var(--line2);background:#f3f7fc;border-radius:8px;cursor:pointer;color:var(--ink)}
+.foot button:hover{border-color:var(--accent);color:var(--accentd)}
+.counter{font-family:'IBM Plex Mono',monospace;color:var(--faint)}
+.spacer{flex:1}
+select{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff;max-width:42vw}
+.hint{color:var(--faint);font-size:13px}
+@media print{.foot{display:none}#stage{height:auto}.slide{break-inside:avoid;box-shadow:none}}
+</style><style>.mnav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;gap:8px;justify-content:center;align-items:center;padding:7px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 14px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:5px 12px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}#stage{padding-top:50px!important}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a href="index.html">▶ Animated Lessons</a><a class="cur">📊 Study Slides</a></div>
+<div id="stage">
+  <div class="head"><span class="unit">Unit 1 · Fundamentals</span><span class="tnum" id="tnum"></span><span class="ttl" id="ttl"></span><span class="rating" id="rating"></span></div>
+  <div class="slide" id="slide"></div>
+</div>
+<div class="foot">
+  <button onclick="prev()">◀ Prev</button>
+  <button onclick="next()">Next ▶</button>
+  <span class="counter" id="counter"></span>
+  <span class="spacer"></span>
+  <span class="hint">← → keys</span>
+  <select id="jump" onchange="jumpTo(this.value)"></select>
+</div>
+<script>
+const UNIT="Unit 1 — Fundamentals of System Design";
+const TOPICS=[
+{n:1,t:"What is System Design",r:"★★★★★",slides:[
+ {h:"Definition & goal",body:["<b>System design</b> = defining the architecture, components, data flow, and interfaces of a system to meet functional and non-functional requirements at scale.","Bridges <b>requirements → working system</b>: turn 'build a URL shortener for 100M users' into concrete services, databases, and APIs.","Two altitudes: <b>HLD</b> (services, data stores, communication) and <b>LLD</b> (classes, schemas, algorithms).",{kv:[["Functional","what it does — features, endpoints"],["Non-functional","how well — scale, latency, availability, cost"]]}]},
+ {h:"The interview/design process",body:["1) <b>Clarify</b> requirements & scope; 2) <b>Estimate</b> scale (users, QPS, storage); 3) define <b>APIs</b>; 4) <b>data model</b>; 5) <b>high-level</b> diagram; 6) <b>deep-dive</b> a component; 7) address <b>bottlenecks</b> (caching, sharding, LB).",{sub:"Always-present concerns"},"Scalability, availability, consistency, latency, cost, fault tolerance, security — trade them off explicitly.",{note:"There is no single 'correct' design — justify trade-offs for the given constraints."}]}
+]},
+{n:2,t:"Growth of an Application",r:"★★★★★",slides:[
+ {h:"Evolution stages",body:["<b>1. Single server</b>: web + app + DB on one box. Simple; a SPOF; limited.","<b>2. Split tiers</b>: separate DB from app server.","<b>3. Load balancer + multiple app servers</b> (stateless) for horizontal scale.","<b>4. DB scaling</b>: read replicas, then caching (Redis), then sharding.","<b>5. CDN</b> for static assets; <b>async</b> queues for heavy work.","<b>6. Microservices, multi-region, observability</b> at very large scale."]},
+ {h:"Drivers & principles",body:["Growth forces removing each <b>bottleneck</b> in turn — there's no need for step 6 at step 1's scale.","<b>Scale only what's needed</b>: premature distribution adds complexity & cost.",{kv:[["Statelessness","enables adding app servers freely"],["Caching","cheapest big win for read-heavy load"],["Async","decouples slow work from request path"]]},{note:"Rule of thumb: vertical-scale first (simple), then add LB + replicas + cache, then shard/microservices.",cls:"key"}]}
+]},
+{n:3,t:"Availability",r:"★★★★★",slides:[
+ {h:"What it means",body:["<b>Availability</b> = fraction of time the system is operational & serving requests. Availability = uptime / (uptime + downtime).","Measured in <b>'nines'</b>:",{tbl:{head:["Nines","Availability","Downtime/yr"],rows:[["Two 9s","99%","~3.65 days"],["Three 9s","99.9%","~8.8 hours"],["Four 9s","99.99%","~52 min"],["Five 9s","99.999%","~5 min"]]}}]},
+ {h:"How to improve it",body:["<b>Eliminate SPOFs</b>: redundancy at every tier (servers, DB, AZ, region).","<b>Failover</b> (active-passive) or <b>active-active</b> across nodes/regions.","<b>Health checks + load balancers</b> remove dead nodes automatically.","Graceful degradation, retries, circuit breakers.",{kv:[["Serial components","multiply: 0.99 × 0.99 = 98.01% (worse)"],["Parallel redundancy","1−(1−0.99)² = 99.99% (better)"]]},{note:"More components in series → lower availability. Redundancy in parallel raises it.",cls:"warn"}]}
+]},
+{n:4,t:"Reliability",r:"★★★★★",slides:[
+ {h:"Reliability vs availability",body:["<b>Reliability</b> = probability the system performs <b>correctly</b> over a period (no failures, correct results).","<b>Availability</b> = it's <b>up</b>. A system can be available but unreliable (up, but returning wrong/slow answers).",{kv:[["MTBF","Mean Time Between Failures — higher = more reliable"],["MTTR","Mean Time To Recovery — lower = faster healing"],["Availability ≈","MTBF / (MTBF + MTTR)"]]}]},
+ {h:"Building reliable systems",body:["Redundancy & replication; automated failover.","<b>Idempotent</b> operations + retries to survive transient faults.","Testing: unit, integration, <b>chaos engineering</b> (inject failures).","Monitoring & alerting to cut MTTR.","Data durability: replication, backups, write-ahead logs.",{note:"Reliability is about correctness over time; availability is about being reachable now."}]}
+]},
+{n:5,t:"Scalability",r:"★★★★★",slides:[
+ {h:"Definition",body:["<b>Scalability</b> = ability to handle growing load by adding resources, ideally with <b>near-linear</b> cost/performance.","Load dimensions: requests/sec, data volume, concurrent users, geography.",{kv:[["Vertical (scale up)","bigger machine"],["Horizontal (scale out)","more machines"]]},"<b>Statelessness</b> is the key enabler of horizontal scale — any server can handle any request."]},
+ {h:"What limits scaling",body:["<b>Shared state</b> (sticky sessions, single DB) becomes the bottleneck.","<b>Amdahl's Law</b>: speedup is capped by the serial (non-parallelizable) fraction.","Coordination & locking overhead grows with nodes.","Fixes: caching, sharding, async processing, CDNs, read replicas.",{note:"Design for scale by removing shared mutable state and avoiding single chokepoints.",cls:"key"}]}
+]},
+{n:6,t:"Vertical Scaling (Scale Up)",r:"★★★★★",slides:[
+ {h:"What & trade-offs",body:["Add more power to <b>one</b> machine: CPU, RAM, faster disk/NVMe.",{sub:"Pros"},"Simple — no code changes, no distribution. Strong consistency stays easy (one node). Less operational overhead.",{sub:"Cons"},"<b>Hard ceiling</b> (biggest box you can buy). Expensive at the top end. Still a <b>single point of failure</b>. Downtime to upgrade.",{note:"Good first move; eventually you hit a wall and must scale out.",cls:"warn"}]}
+]},
+{n:7,t:"Horizontal Scaling (Scale Out)",r:"★★★★★",slides:[
+ {h:"What & requirements",body:["Add <b>more machines</b> and spread load across them via a load balancer.",{sub:"Needs"},"<b>Stateless</b> app servers (or shared session store), a load balancer, and often data partitioning.",{sub:"Pros"},"Near-unlimited scale; built-in redundancy (lose one node, others serve); commodity hardware = cheaper.",{sub:"Cons"},"Complexity: distributed data, consistency, network failures; needs LB + service discovery."]},
+ {h:"Vertical vs horizontal",body:[{tbl:{head:["","Vertical","Horizontal"],rows:[["Method","bigger box","more boxes"],["Ceiling","hardware limit","≈ unlimited"],["Failure","SPOF","redundant"],["Complexity","low","high"],["Consistency","easy","harder"]]}},{note:"Modern systems use both: scale up nodes a bit, then scale out many."}]}
+]},
+{n:8,t:"Maintainability",r:"★★★★",slides:[
+ {h:"Three facets",body:[{kv:[["Operability","easy to run, monitor, deploy, debug in production"],["Simplicity","easy to understand; manage complexity, avoid accidental complexity"],["Evolvability","easy to change & extend as requirements shift"]]},"Achieved via: modularity, clear interfaces/abstractions, good docs, tests, observability, CI/CD, infrastructure-as-code.",{note:"Most of a system's cost is in maintenance, not initial build — design for change."}]}
+]},
+{n:9,t:"Consistency (overview)",r:"★★★★★",slides:[
+ {h:"The spectrum",body:["<b>Consistency</b> = all readers see the same, correct view of data.",{tbl:{head:["Model","Guarantee"],rows:[["Strong","every read sees the latest write (linearizable)"],["Eventual","replicas converge given no new writes; reads may be stale"],["Weak","no guarantee reads return latest"],["Causal","operations causally related are seen in order"]]}},"Trade-off: stronger consistency → higher latency & lower availability (CAP/PACELC).",{note:"Pick the weakest model your use case tolerates — it buys speed & availability.",cls:"key"}]}
+]},
+{n:10,t:"Fault Tolerance",r:"★★★★★",slides:[
+ {h:"Surviving failures",body:["<b>Fault tolerance</b> = system keeps working (perhaps degraded) despite component failures.","Techniques: <b>redundancy</b> (N+1, replicas), <b>failover</b>, <b>replication</b>, <b>graceful degradation</b>, retries with backoff, <b>circuit breakers</b>, bulkheads, timeouts.","Detect with health checks & heartbeats; recover automatically.",{kv:[["Failover","switch to standby on failure"],["Graceful degradation","drop non-essential features, stay up"],["Bulkhead","isolate failures so they don't cascade"]]},{note:"Assume everything fails eventually — design so no single failure takes the system down."}]}
+]},
+{n:11,t:"Latency",r:"★★★★★",slides:[
+ {h:"What it is",body:["<b>Latency</b> = time for a single request to complete (response delay). Lower is better.","Components: network RTT, queueing, processing, DB/disk, serialization.","Report <b>percentiles</b>, not averages: <b>p50, p95, p99</b> (tail latency). Averages hide outliers.",{note:"Tail latency (p99) dominates user experience — one slow dependency drags the whole request.",cls:"warn"}]},
+ {h:"Reducing latency",body:["<b>Caching</b> (memory > SSD > disk > network).","CDN / edge to cut distance.","Connection pooling, keep-alive, batching.","Async / parallelism for independent work.","Indexes, query tuning, fewer round trips.",{note:"Speed of light is a floor: ~1ms per ~100km RTT — geography sets minimum latency.",cls:"key"}]}
+]},
+{n:12,t:"Throughput",r:"★★★★★",slides:[
+ {h:"What it is",body:["<b>Throughput</b> = amount of work per unit time (requests/sec, MB/s, transactions/sec).","Limited by the <b>slowest stage</b> (the bottleneck).","<b>Little's Law</b>: L = λ × W (concurrency = arrival rate × time in system) — relates throughput, latency, concurrency."]},
+ {h:"Raising throughput",body:["Horizontal scaling + load balancing.","Batching & pipelining; async processing via queues.","Remove bottlenecks (DB, locks, single threads).","Caching to offload the backend.",{note:"High throughput and low latency can conflict — batching raises throughput but adds latency."}]}
+]},
+{n:13,t:"Performance vs Scalability",r:"★★★★★",slides:[
+ {h:"The distinction",body:["<b>Performance</b> = how fast for <b>one</b> user / one request (latency, response time).","<b>Scalability</b> = does it stay fast as <b>load grows</b>?",{kv:[["Performance problem","slow even for a single user"],["Scalability problem","fast for one user, slow under load"]]},"A system can be fast (good performance) but not scale (degrades with users), or scale well yet be inherently slow.",{note:"'Fast for one' ≠ 'fast for a million'. Optimize the right one.",cls:"key"}]}
+]},
+{n:14,t:"Latency vs Throughput",r:"★★★★★",slides:[
+ {h:"Two different metrics",body:["<b>Latency</b> = time per request (delay). <b>Throughput</b> = requests per unit time (volume).","Analogy: a highway — latency is travel time for one car; throughput is cars/hour.","You can have high throughput <b>and</b> high latency (a busy batch pipeline).",{sub:"The tension"},"Batching/queuing increases throughput but each item waits longer (more latency). Goal: <b>maximize throughput while keeping latency within SLO</b>.",{note:"Optimize latency for interactive systems, throughput for batch/analytics."}]}
+]},
+{n:15,t:"Availability vs Consistency",r:"★★★★★",slides:[
+ {h:"The CAP trade-off (preview)",body:["Under a <b>network partition</b>, a distributed system must choose:",{kv:[["CP","stay Consistent, sacrifice Availability (reject/block requests)"],["AP","stay Available, sacrifice Consistency (serve possibly-stale data)"]]},"<b>CA</b> isn't achievable for a distributed system that must tolerate partitions.","Examples: banking → CP (correctness first); social feed / shopping cart → AP (always responsive).",{note:"No partition? You can have both. The choice only bites during a partition (CAP) — and otherwise you trade latency vs consistency (PACELC).",cls:"key"}]}
+]},
+{n:16,t:"Modular Design",r:"★★★★",slides:[
+ {h:"Principles",body:["Split a system into <b>self-contained modules</b> with well-defined interfaces; hide internals (encapsulation).","Communicate through <b>contracts/APIs</b>, not shared internals.",{sub:"Benefits"},"Independent development & testing, reuse, easier reasoning, localized change, parallel teams.","Foundation for microservices, layered, and hexagonal architectures.",{note:"Aim for high cohesion within a module and low coupling between modules."}]}
+]},
+{n:17,t:"Clean Code Principles",r:"★★★",slides:[
+ {h:"Core ideas",body:["Readable, intention-revealing names; small functions doing one thing; minimal side effects.",{kv:[["DRY","Don't Repeat Yourself"],["KISS","Keep It Simple"],["YAGNI","You Aren't Gonna Need It"]]},{sub:"SOLID (OOP)"},"<b>S</b>ingle responsibility · <b>O</b>pen/closed · <b>L</b>iskov substitution · <b>I</b>nterface segregation · <b>D</b>ependency inversion.",{note:"Clean code lowers maintenance cost and bugs; it's a maintainability lever, not vanity."}]}
+]},
+{n:18,t:"CI/CD Pipeline",r:"★★★★★",slides:[
+ {h:"CI vs CD",body:[{kv:[["CI (Continuous Integration)","merge often; auto build + test every change"],["Continuous Delivery","every passing build is deployable (manual release)"],["Continuous Deployment","every passing build auto-released to prod"]]},{sub:"Pipeline stages"},"commit → build → unit/integration tests → security scan → staging → (gate) → production."]},
+ {h:"Why & how",body:["<b>Quality gates</b> catch bugs before users; failing tests stop the pipeline.","Small, frequent, automated deploys = small blast radius, easy rollback.","Pair with deployment strategies: <b>rolling, blue-green, canary</b>.",{note:"CI/CD decouples 'deploy' from 'release' (feature flags) and makes shipping routine & safe.",cls:"key"}]}
+]},
+{n:19,t:"Back-of-the-Envelope / Capacity Estimation",r:"★★★★★",slides:[
+ {h:"Why & the powers of two/ten",body:["Quick math to size a system: <b>QPS, storage, bandwidth, memory, servers.</b>",{tbl:{head:["Power","Value","Name"],rows:[["10³","Thousand","KB"],["10⁶","Million","MB"],["10⁹","Billion","GB"],["10¹²","Trillion","TB"]]}},"1 day ≈ <b>86,400s ≈ 10⁵</b> s. Char ≈ 1 byte; typical row/object sizes you assume."]},
+ {h:"A worked pattern",body:["<b>QPS</b> = daily requests / 86,400; <b>peak</b> ≈ 2–10× average.","<b>Storage/yr</b> = writes/day × size × 365 (× replication factor).","<b>Bandwidth</b> = QPS × payload size.","<b>Read:write ratio</b> drives caching & replica decisions.",{note:"Round aggressively; the goal is the right order of magnitude, not precision."}]}
+]},
+{n:20,t:"Single Point of Failure (SPOF)",r:"★★★★★",slides:[
+ {h:"Identify & eliminate",body:["<b>SPOF</b> = one component whose failure takes down the whole system.","Common SPOFs: single DB, single LB, single server, one AZ/region, a shared cache, DNS.",{sub:"Remove by"},"Redundancy (N+1), replication, multi-AZ/multi-region, clustered load balancers, failover.",{note:"Trace every request path and ask: 'if this one thing dies, are we down?' If yes, add redundancy.",cls:"warn"}]}
+]},
+{n:21,t:"Redundancy & Replication",r:"★★★★★",slides:[
+ {h:"Concepts",body:["<b>Redundancy</b> = spare/duplicate components ready to take over.","<b>Replication</b> = keeping copies of data on multiple nodes.",{kv:[["Active-active","all replicas serve traffic (load + HA)"],["Active-passive","standby waits, promoted on failover"]]}]},
+ {h:"Sync vs async replication",body:[{tbl:{head:["","Synchronous","Asynchronous"],rows:[["Write ack","after replicas confirm","after primary only"],["Latency","higher","lower"],["Data loss","none on failover","possible (lag)"],["Consistency","strong","eventual"]]}},{note:"Replication gives HA + read scaling + durability; the sync/async choice trades latency for safety."}]}
+]},
+{n:22,t:"Coupling vs Cohesion",r:"★★★★",slides:[
+ {h:"Definitions",body:[{kv:[["Coupling","degree of interdependence BETWEEN modules — want LOW"],["Cohesion","how related the responsibilities WITHIN a module are — want HIGH"]]},"<b>Low coupling</b>: change one module without touching others; communicate via stable interfaces/events.","<b>High cohesion</b>: a module does one well-defined job.",{note:"Goal: high cohesion + low coupling → modular, testable, evolvable systems. Microservices push this to the service boundary.",cls:"key"}]}
+]},
+{n:23,t:"SLA vs SLO vs SLI",r:"★★★★★",slides:[
+ {h:"The three levels",body:[{kv:[["SLI","Indicator — a measured metric (e.g., % requests <300ms)"],["SLO","Objective — internal target for an SLI (e.g., 99.9% <300ms)"],["SLA","Agreement — external contract with penalties if SLOs missed"]]},"Relationship: <b>SLI is measured → compared to SLO (target) → SLA is the promise to customers</b> (usually looser than SLO).",{note:"Set SLO stricter than SLA so you have buffer before breaching the contract."}]}
+]},
+{n:24,t:"Error Budgets",r:"★★★★",slides:[
+ {h:"Balancing reliability & velocity",body:["<b>Error budget = 100% − SLO.</b> E.g., 99.9% SLO → 0.1% allowed failure (~43 min/month).","It's the amount of unreliability you're <b>allowed to spend</b>.",{sub:"How it's used"},"Budget left → ship features/take risks. Budget exhausted → freeze risky changes, focus on reliability.",{note:"Error budgets turn 'reliability vs new features' from an argument into a data-driven decision.",cls:"key"}]}
+]},
+{n:25,t:"Disaster Recovery (RTO / RPO)",r:"★★★★",slides:[
+ {h:"The two targets",body:[{kv:[["RTO","Recovery Time Objective — how fast you must restore service"],["RPO","Recovery Point Objective — how much DATA loss is acceptable (time)"]]},"Low RPO needs frequent/continuous replication; low RTO needs hot standby & automation.",{sub:"Strategies (cost ↑, RTO/RPO ↓)"},"Backup-&-restore → pilot light → warm standby → <b>active-active multi-region</b>."]},
+ {h:"Notes",body:["Test DR regularly (game days) — untested backups often fail.","Geo-redundancy protects against region-wide outages.",{note:"RPO = data you can lose; RTO = time you can be down. Both are business decisions balancing cost vs risk.",cls:"warn"}]}
+]},
+{n:26,t:"Cost / Cost-Efficiency Trade-offs",r:"★★★★",slides:[
+ {h:"Levers & trade-offs",body:["Reliability, performance, and speed-of-delivery all cost money — design to the requirement, not the maximum.",{sub:"Cost levers"},"Right-sizing instances; autoscaling; spot/reserved instances; caching to cut DB load; storage tiering (hot/cold); turning off idle resources; egress/bandwidth awareness.","Extra nines get exponentially expensive (99.999% ≫ 99.9% in cost).",{note:"Cheapest, fastest, most reliable — pick the balance the business actually needs."}]}
+]},
+{n:27,t:"Resilience & Graceful Degradation",r:"★★★★★",slides:[
+ {h:"Staying useful under stress",body:["<b>Resilience</b> = absorb failures/load spikes and recover.","<b>Graceful degradation</b> = shed non-essential features instead of failing entirely (e.g., show cached/stale data, hide recommendations).",{sub:"Patterns"},"Circuit breaker, bulkhead, timeouts, retries+backoff+jitter, rate limiting, load shedding, fallbacks, caching.",{note:"Better to serve a degraded experience than a blank error page. Fail soft, not hard.",cls:"key"}]}
+]},
+{n:28,t:"Idempotency (core concept)",r:"★★★★★",slides:[
+ {h:"Why it matters",body:["<b>Idempotent</b> operation = repeating it has the same effect as doing it once. Critical because networks make clients <b>retry</b>.","HTTP: <b>GET, PUT, DELETE</b> idempotent; <b>POST</b> is not (retry → duplicate).",{sub:"Idempotency keys"},"Client sends a unique key; server records it and returns the original result on retries — no double charge/order.",{note:"Make write APIs retry-safe with idempotency keys; it's foundational for reliable distributed systems."}]}
+]},
+{n:29,t:"Numbers Every Engineer Should Know",r:"★★★★",slides:[
+ {h:"Latency orders of magnitude",body:[{tbl:{head:["Operation","Approx latency"],rows:[["L1 cache reference","~1 ns"],["Main memory (RAM)","~100 ns"],["SSD random read","~16 µs (×100+ RAM)"],["Datacenter round trip","~0.5 ms"],["Disk (HDD) seek","~5–10 ms"],["Cross-continent RTT","~150 ms"]]}}]},
+ {h:"How to use them",body:["Memory ≫ SSD ≫ disk ≫ network — push hot data up the hierarchy (caching).","One cross-region call (~150ms) can blow a latency budget — keep chatty calls local / batch them.","Sequential disk read ≫ random; design storage for sequential access (logs, LSM).",{note:"Know the ratios, not the exact numbers: RAM~100ns, datacenter~0.5ms, cross-continent~150ms.",cls:"key"}]}
+]}
+];
+// ---------- staff-level deep-dive add-ons (per topic number) ----------
+const DD="Deep dive: why · when · when-not";
+const EXTRA={
+1:[{h:DD,body:["<b>In one line:</b> turning fuzzy requirements into a concrete, scalable architecture under real constraints — traffic, money, deadlines.",{sub:"Why it's needed"},"Without deliberate design you get <i>accidental architecture</i>: bottlenecks, rewrites, 3am outages. It aligns the team on trade-offs <b>before</b> code is written.",{sub:"Use it for"},"Any non-trivial backend; capacity/roadmap planning; Senior/Staff interviews.",{sub:"Avoid over-doing it when"},"Throwaway scripts, prototypes, or a CRUD MVP where time-to-market ≫ scale.",{note:"Staff insight: interviews score your <b>trade-off reasoning</b>, not a 'correct' diagram. Always open with assumptions + back-of-envelope numbers.",cls:"key"}]}],
+2:[{h:DD,body:["<b>In one line:</b> the predictable march from one box → LB+replicas → cache → shard → microservices/multi-region as load grows.",{sub:"Why it's needed"},"Each stage removes the <i>current</i> bottleneck. Skipping ahead buys complexity you can't operate; lagging behind means outages under load.",{sub:"Use it for"},"Startup scaling roadmaps; the interview question 'how does this scale to 10×?'",{sub:"Avoid when"},"Don't build step-6 (microservices, multi-region) for step-1 traffic — classic YAGNI.",{note:"Staff insight: 'scale the bottleneck, not the system.' Most startups die of self-inflicted complexity, not of traffic.",cls:"key"}]}],
+3:[{h:DD,body:["<b>In one line:</b> the fraction of time the system is up and answering — counted in nines.",{sub:"Why it's needed"},"Downtime = lost revenue + eroded trust; SLAs carry financial penalties. Ignore it and one bad dependency drags the whole product down.",{sub:"Use it for"},"User-facing services, payments, anything with an SLA (ecommerce, banking, streaming).",{sub:"Avoid paying for it when"},"Internal batch/analytics that tolerate downtime — don't buy five nines you don't need.",{note:"Staff insight: each extra nine ≈ 10× cost. Components in series <b>multiply</b> — more hops on the critical path = lower availability. Shorten the critical path; add redundancy in parallel.",cls:"warn"}]}],
+4:[{h:DD,body:["<b>In one line:</b> probability of <i>correct</i> operation over time (MTBF / MTTR) — not just being up.",{sub:"Why it's needed"},"'Up but returning wrong data' destroys trust faster than honest downtime. Captures correctness, not mere reachability.",{sub:"Use it for"},"Data-integrity-critical systems: finance, healthcare, orders, ledgers.",{sub:"Less critical for"},"Experimental/throwaway features where occasional wrongness is harmless.",{note:"Staff insight: you can't prevent every failure — optimize <b>MTTR</b> (fast recovery: runbooks, automation, instant rollback) over chasing infinite MTBF.",cls:"key"}]}],
+5:[{h:DD,body:["<b>In one line:</b> handle growing load by adding resources with near-linear cost/performance.",{sub:"Why it's needed"},"Success kills unscalable systems; vertical limits arrive fast. Ignore it and your launch/виral moment becomes your outage.",{sub:"Use it for"},"Anything with growth, spiky traffic, or multi-tenancy.",{sub:"Avoid when"},"Fixed, small, predictable load — distribution complexity isn't free.",{note:"Staff insight: <b>statelessness is the cheat code</b> — remove shared mutable state and most scaling problems vanish. Amdahl's Law caps you on the serial fraction.",cls:"key"}]}],
+6:[{h:DD,body:["<b>In one line:</b> scale up — a bigger machine (more CPU/RAM/NVMe).",{sub:"Why it's needed"},"Simplest possible scaling: no code changes, no distribution, consistency stays trivial. Buys time cheaply early on.",{sub:"Use it for"},"Early-stage apps; single-node databases needing strong consistency.",{sub:"Avoid when"},"You hit the hardware ceiling, need HA (still a SPOF), or can't tolerate a reboot's downtime.",{note:"Staff insight: vertical-scale to buy time, but it has a hard wall and one reboot = downtime. Databases scale UP much further than people assume — exhaust this before sharding.",cls:"warn"}]}],
+7:[{h:DD,body:["<b>In one line:</b> scale out — more machines behind a load balancer.",{sub:"Why it's needed"},"Near-unlimited scale + built-in redundancy on commodity hardware. The only way past a single machine's ceiling.",{sub:"Use it for"},"Stateless web/app tiers, read-heavy and global workloads.",{sub:"Avoid when"},"Tiny constant load, or a strongly-consistent single-writer workload that fights distribution.",{note:"Staff insight: the app tier is the <i>easy</i> part (make it stateless + a shared session store). The hard part is always the <b>data tier</b> — sharding & consistency.",cls:"key"}]}],
+8:[{h:DD,body:["<b>In one line:</b> how easily the system is operated, understood, and changed (operability + simplicity + evolvability).",{sub:"Why it's needed"},"~70% of a system's cost is <b>after</b> launch. Unmaintainable systems rot, slow teams, and breed outages.",{sub:"Use it for"},"Any long-lived, team-owned system.",{sub:"Less relevant for"},"Genuine one-offs / spikes you'll delete.",{note:"Staff insight: optimize for the next engineer (often you, in 6 months). Boring + observable + documented beats clever every time.",cls:"key"}]}],
+9:[{h:DD,body:["<b>In one line:</b> all readers see an agreed, correct view of the data.",{sub:"Why it's needed"},"Stale/conflicting reads cause real bugs — double-spend, oversold inventory. The model you pick is a core architectural decision.",{sub:"Use it for"},"Strong → money, inventory, uniqueness; Eventual → feeds, likes, catalogs.",{sub:"Avoid strong when"},"Stale-tolerant reads — you'd pay latency & availability for nothing.",{note:"Staff insight: pick the <b>weakest model that's still correct</b> for the use case. Consistency is a latency/availability tax — pay only where required.",cls:"key"}]}],
+10:[{h:DD,body:["<b>In one line:</b> keep working (possibly degraded) despite component failures.",{sub:"Why it's needed"},"At scale something is <i>always</i> broken; one untolerated failure cascades into a full outage.",{sub:"Use it for"},"All production user-facing systems.",{sub:"Skip for"},"Dev/throwaway environments.",{note:"Staff insight: design assuming every dependency fails — <b>timeouts + retries(+jitter) + circuit breakers + fallbacks</b>. A call with no timeout is a guaranteed future outage.",cls:"warn"}]}],
+11:[{h:DD,body:["<b>In one line:</b> time for one request to complete — always reported as p50/p95/<b>p99</b>.",{sub:"Why it's needed"},"Tail latency is what users actually feel; slow pages crush conversion & retention.",{sub:"Use it for"},"Interactive & real-time systems (web, mobile, gaming, trading).",{sub:"De-prioritize for"},"Batch/analytics — optimize throughput there instead.",{note:"Staff insight: averages lie — chase <b>p99</b>. In a fan-out, the <i>slowest</i> dependency sets the whole request's latency.",cls:"key"}]}],
+12:[{h:DD,body:["<b>In one line:</b> amount of work completed per unit time (req/s, MB/s).",{sub:"Why it's needed"},"Defines capacity & cost-efficiency; the slowest stage (bottleneck) caps it.",{sub:"Use it for"},"Pipelines, ingestion, batch, messaging.",{sub:"Less central for"},"Purely interactive flows where single-request speed dominates.",{note:"Staff insight: Little's Law — L = λ × W. Batching raises throughput but adds latency; always know which one you're optimizing.",cls:"key"}]}],
+13:[{h:DD,body:["<b>In one line:</b> performance = fast for one user; scalability = stays fast under load.",{sub:"Why it's needed"},"They have different fixes; conflating them wastes effort (adding servers won't fix slow code).",{sub:"Use it for"},"Diagnosing 'it's slow' — ask: always slow, or only under load?",{sub:"N/A"},"Always relevant in design discussions.",{note:"Staff insight: a <b>profiler</b> fixes performance; <b>architecture</b> fixes scalability. Never throw machines at an O(n²).",cls:"key"}]}],
+14:[{h:DD,body:["<b>In one line:</b> latency = delay per request; throughput = volume per second.",{sub:"Why it's needed"},"Optimizing one can hurt the other; the trade-off drives batch sizes & queue depths.",{sub:"Use it for"},"Tuning queues, batching, concurrency limits.",{sub:"N/A"},"Always relevant.",{note:"Staff insight: highway analogy — more lanes (throughput) ≠ faster cars (latency). Fix a latency SLO first, then maximize throughput under it.",cls:"key"}]}],
+15:[{h:DD,body:["<b>In one line:</b> during a partition you must choose Consistency (CP) or Availability (AP).",{sub:"Why it's needed"},"Forces an explicit business decision instead of a silent, surprising default.",{sub:"Use it for"},"Any replicated datastore; CP for banking, AP for social/shopping cart.",{sub:"N/A when"},"Single-node systems (no partition to survive).",{note:"Staff insight: ask 'is stale data dangerous here?' Money → CP; feeds → AP. Real systems are mostly AP with small, targeted CP islands.",cls:"key"}]}],
+16:[{h:DD,body:["<b>In one line:</b> split the system into self-contained modules with clear interfaces; hide internals.",{sub:"Why it's needed"},"Enables localized change, parallel teams, reuse, and testability; the foundation for microservices later.",{sub:"Use it for"},"Any growing codebase or service.",{sub:"Overkill for"},"Tiny scripts.",{note:"Staff insight: high cohesion + low coupling. <b>Modularize the monolith first</b> — clean module seams make later service extraction almost free.",cls:"key"}]}],
+17:[{h:DD,body:["<b>In one line:</b> readable, simple, intention-revealing code (DRY/KISS/YAGNI + SOLID).",{sub:"Why it's needed"},"Code is read ~10× more than written; messy code multiplies bugs and onboarding time.",{sub:"Use it for"},"Any shared, long-lived codebase.",{sub:"Relax for"},"Throwaway spikes & experiments.",{note:"Staff insight: clarity beats cleverness. Clean code is a <b>maintainability</b> lever, not vanity — it directly lowers defect & change cost.",cls:"key"}]}],
+18:[{h:DD,body:["<b>In one line:</b> automated path from commit → tested build → production, with quality gates.",{sub:"Why it's needed"},"Manual deploys are slow, rare, and risky; big-bang releases have huge blast radius.",{sub:"Use it for"},"Any team shipping continuously.",{sub:"Adapt for"},"Regulated systems may gate the final release — but still automate build/test/staging.",{note:"Staff insight: decouple <b>deploy from release</b> (feature flags). Small frequent deploys + canary + auto-rollback = routine, safe shipping.",cls:"key"}]}],
+19:[{h:DD,body:["<b>In one line:</b> quick math to size QPS, storage, bandwidth, memory, and server count.",{sub:"Why it's needed"},"Validates feasibility & cost before building; a must-do, scored step in interviews.",{sub:"Use it for"},"Design kickoffs, capacity planning, sanity-checking a proposal.",{sub:"Don't"},"Over-precision — order of magnitude is the goal.",{note:"Staff insight: memorize 86,400 s/day ≈ 10⁵; peak ≈ 2–10× average; the <b>read:write ratio</b> decides your caching/replica strategy. Round aggressively.",cls:"key"}]}],
+20:[{h:DD,body:["<b>In one line:</b> any single component whose failure takes the whole system down.",{sub:"Why it's needed"},"A SPOF caps your maximum achievable availability no matter how good everything else is.",{sub:"Use it for"},"Auditing every request path before launch / during reviews.",{sub:"Acceptable for"},"Non-critical internal tools where downtime is cheap.",{note:"Staff insight: trace the request and ask 'if this dies, are we down?' The sneaky SPOFs people miss: DNS, the load balancer itself, a shared cache, a single AZ.",cls:"warn"}]}],
+21:[{h:DD,body:["<b>In one line:</b> spare components (redundancy) + multiple data copies (replication).",{sub:"Why it's needed"},"Delivers HA, durability, and read scaling; removes SPOFs.",{sub:"Use it for"},"Stateful tiers (DBs, caches) and critical services.",{sub:"Skip for"},"Dev environments where cost > value.",{note:"Staff insight: replication ≠ backup — it faithfully copies your mistakes/deletes too. Sync = no loss + more latency; async = fast + risk losing lagged writes on failover.",cls:"warn"}]}],
+22:[{h:DD,body:["<b>In one line:</b> minimize dependence <i>between</i> modules (coupling), maximize relatedness <i>within</i> one (cohesion).",{sub:"Why it's needed"},"Determines change cost and blast radius; bad boundaries make every change ripple.",{sub:"Use it for"},"Drawing service/module boundaries (bounded contexts).",{sub:"N/A"},"Always relevant.",{note:"Staff insight: microservices sharing a database are a <b>distributed monolith</b> — the worst of both worlds. Couple only through stable contracts/events.",cls:"warn"}]}],
+23:[{h:DD,body:["<b>In one line:</b> SLI (measured metric) → SLO (internal target) → SLA (external contract with penalties).",{sub:"Why it's needed"},"Turns vague 'reliable' into a number and aligns engineering with the business.",{sub:"Use it for"},"Any service with real consumers (internal or paying).",{sub:"Premature for"},"Pre-product-market-fit prototypes.",{note:"Staff insight: set the <b>SLO stricter than the SLA</b> for buffer, and measure SLIs users actually feel (latency, error rate) — not CPU%.",cls:"key"}]}],
+24:[{h:DD,body:["<b>In one line:</b> error budget = 100% − SLO = the unreliability you're allowed to spend.",{sub:"Why it's needed"},"Ends the endless 'ship features vs improve stability' argument with data.",{sub:"Use it for"},"Mature SRE orgs balancing velocity and reliability.",{sub:"Too early for"},"Small/early teams without solid SLOs yet.",{note:"Staff insight: budget remaining → ship fast & take risks; budget exhausted → freeze risky changes, invest in reliability. You <i>can</i> be too reliable (wasted velocity).",cls:"key"}]}],
+25:[{h:DD,body:["<b>In one line:</b> RTO = how fast you must recover; RPO = how much data loss is acceptable.",{sub:"Why it's needed"},"Region outages, deletions, and disasters happen — undefined targets mean chaotic recovery.",{sub:"Use it for"},"Business-critical data and services.",{sub:"Relax for"},"Easily re-creatable / derived data.",{note:"Staff insight: both are <b>business</b> decisions (cost vs risk). An untested DR plan is no plan — run game days. Tiers: backup→pilot-light→warm-standby→active-active.",cls:"warn"}]}],
+26:[{h:DD,body:["<b>In one line:</b> design to the requirement, not the theoretical maximum — money is a first-class constraint.",{sub:"Why it's needed"},"Cloud bills balloon silently; extra nines cost exponentially.",{sub:"Use it for"},"Any system at real scale.",{sub:"Don't"},"Prematurely optimize a trivial bill (engineer time costs more).",{note:"Staff insight: biggest levers — cache to cut DB load, autoscale, storage tiering (hot/cold), kill idle resources, watch egress. 'Architecting for cost' is a Staff-level skill.",cls:"key"}]}],
+27:[{h:DD,body:["<b>In one line:</b> absorb failures/spikes (resilience) and shed non-essential features instead of failing entirely (graceful degradation).",{sub:"Why it's needed"},"A degraded experience beats a blank error page; protects core flows under stress.",{sub:"Use it for"},"User-facing systems at scale (serve stale/cached, hide recommendations).",{sub:"Doesn't apply to"},"All-or-nothing transactional operations (a payment can't half-succeed).",{note:"Staff insight: pre-decide what to drop under load (personalization, recommendations, non-critical calls). Fail <b>soft</b>, not hard.",cls:"key"}]}],
+28:[{h:DD,body:["<b>In one line:</b> doing an operation twice has the same effect as doing it once.",{sub:"Why it's needed"},"Networks force retries; without idempotency a retry = duplicate charge/order. Distributed delivery is at-least-once.",{sub:"Use it for"},"Payments, order creation, any write API, queue/stream consumers.",{sub:"Not needed for"},"Naturally safe reads (GET).",{note:"Staff insight: <b>idempotency keys</b> make writes retry-safe; consumers MUST dedupe (inbox pattern). This is foundational, not optional, at scale.",cls:"key"}]}],
+29:[{h:DD,body:["<b>In one line:</b> the canonical latency ladder every engineer keeps in their head.",{sub:"Why it's needed"},"Lets you gut-check a design in seconds and spot chatty/cross-region calls instantly.",{sub:"Use it for"},"Estimation, storage choices, finding hidden round-trips.",{sub:"Don't"},"Quote exact nanoseconds — the <b>ratios</b> are what matter.",{note:"Staff insight: RAM ~100ns · datacenter RT ~0.5ms · disk seek ~10ms · cross-continent ~150ms. Memory ≫ SSD ≫ disk ≫ network → cache up the hierarchy; keep chatty calls local.",cls:"key"}]}]
+};
+// ---------- renderer ----------
+const RW={
+2:"Instagram scaled to 14M users with ~3 engineers by scaling Postgres + memcached <i>before</i> sharding — textbook staged growth.",
+3:"Amazon measured every +100ms latency ≈ 1% lost sales; AWS S3 targets 99.99% availability with service credits if missed.",
+4:"Netflix runs <b>Chaos Monkey</b>, randomly killing production instances to prove the system keeps working.",
+5:"Google Search scales horizontally across hundreds of thousands of commodity machines.",
+6:"Stack Overflow famously serves billions of requests from a handful of big vertically-scaled servers + SQL Server.",
+7:"Netflix runs thousands of <b>stateless</b> EC2 instances behind load balancers, adding/removing them on demand.",
+9:"Google <b>Spanner</b> gives globally strong (external) consistency for AdWords using TrueTime atomic clocks.",
+10:"Netflix (Hystrix + multi-AZ) keeps serving when whole instances or availability zones fail.",
+11:"Amazon: +100ms → ~1% fewer sales; Google: +400ms → measurably fewer searches. Tail latency = revenue.",
+12:"LinkedIn's Kafka moves ~7 trillion messages/day — a throughput-first design.",
+14:"Netflix tunes its encoding pipeline for throughput (batch) but playback start-time for latency.",
+15:"Amazon's cart uses DynamoDB (AP, always writable); a bank ledger picks CP (correct over available).",
+16:"Amazon's 2002 'Bezos API Mandate' forced every team to expose data only via service interfaces — the seed of its service architecture.",
+18:"Amazon deploys to production roughly every 11.7 seconds; Etsy ships 50+ times/day — CI/CD at scale.",
+19:"Sizing a Twitter timeline (QPS, fan-out, storage) is the canonical back-of-envelope interview drill.",
+20:"The 2021 Facebook outage — a single bad BGP/config change — took down FB, Instagram & WhatsApp globally. A config SPOF.",
+21:"Google's GFS/Colossus keep 3 replicas of every chunk; AWS RDS Multi-AZ replicates synchronously to a standby.",
+23:"Google's SRE book defined SLI/SLO/SLA; AWS S3 publishes a 99.9% SLA backed by service credits.",
+24:"Google SRE uses <b>error budgets</b> to gate launches — burn the budget, freeze risky releases.",
+25:"Banks run active-active across regions (near-zero RTO/RPO); Netflix regularly evacuates an entire AWS region as a drill.",
+26:"Dropbox saved an estimated $75M over two years by migrating off AWS onto its own 'Magic Pocket' storage.",
+27:"Netflix degrades gracefully — if recommendations fail, it serves cached/fallback rows instead of an error page.",
+28:"Stripe's payment APIs use <b>idempotency keys</b> so a retried charge never bills the customer twice.",
+29:"Jeff Dean's 'Numbers Everyone Should Know' (Google) is the latency ladder engineers memorize."
+};
+let flat=[], idx=0;
+const BUDGET=18;
+function wt(body){let w=0;body.forEach(b=>{ if(typeof b==='string')w+=1.1; else if(b.sub!==undefined)w+=0.8; else if(b.kv)w+=0.6*b.kv.length+0.5; else if(b.tbl)w+=1.0*(b.tbl.rows.length+1)+1; else if(b.note!==undefined)w+=1.6;});return w;}
+function buildFlat(){ flat=[]; TOPICS.forEach((tp,ti)=>{
+  const base=tp.slides.map(s=>({h:s.h,body:s.body.slice()}));
+  const ex=EXTRA[tp.n]; let slides=base;
+  if(ex&&ex[0]&&ex[0].body){ let xb=ex[0].body; if(RW[tp.n]) xb=xb.concat([{note:'🏢 Real-world — '+RW[tp.n],cls:'rw'}]); const last=base[base.length-1];
+    if(wt(last.body)+wt(xb)<=BUDGET){ last.body=last.body.concat([{sub:"⭐ Interview deep dive"}],xb); }
+    else { slides=base.concat([{h:ex[0].h||DD,body:xb}]); } }
+  slides.forEach((s,si)=>flat.push({tp,ti,s,si,sn:slides.length})); }); }
+function blk(b){ if(typeof b==='string') return '<li>'+b+'</li>';
+  if(b.sub) return '</ul><div class="sub">'+b.sub+'</div><ul>';
+  if(b.note) return '</ul><div class="note '+(b.cls||(b.note===true?'':''))+'">'+(b.text||'')+'</div><ul>';
+  if(b.kv){ return '</ul><div class="kv">'+b.kv.map(r=>'<div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div>').join('')+'</div><ul>'; }
+  if(b.tbl){ const h='<tr>'+b.tbl.head.map(x=>'<th>'+x+'</th>').join('')+'</tr>'; const rows=b.tbl.rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join(''); return '</ul><table>'+h+rows+'</table><ul>'; }
+  return ''; }
+// note objects come through as {note:'warn'|'key'|true, ...} — normalize
+function noteHtml(b){ const cls=(b.note===true)?'':b.note; return '</ul><div class="note '+cls+'">'+b[1]+'</div><ul>'; }
+function render(){ const f=flat[idx]; const tp=f.tp, s=f.s;
+  document.getElementById('tnum').textContent='Topic '+tp.n+'/'+TOPICS.length;
+  document.getElementById('ttl').textContent=tp.t;
+  document.getElementById('rating').textContent=tp.r||'';
+  const slide=document.getElementById('slide');
+  let html='<h2><span class="dot"></span>'+s.h+'</h2><ul>';
+  s.body.forEach(b=>{
+    if(typeof b==='string'){ html+='<li>'+b+'</li>'; return; }
+    if(b.sub!==undefined){ html+='</ul><div class="sub">'+b.sub+'</div><ul>'; return; }
+    if(b.kv){ html+='</ul><div class="kv">'+b.kv.map(r=>'<div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div>').join('')+'</div><ul>'; return; }
+    if(b.tbl){ const hh='<tr>'+b.tbl.head.map(x=>'<th>'+x+'</th>').join('')+'</tr>'; const rr=b.tbl.rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join(''); html+='</ul><table>'+hh+rr+'</table><ul>'; return; }
+    if(b.note!==undefined){ html+='</ul><div class="note '+(b.cls||'')+'">'+b.note+'</div><ul>'; return; }
+  });
+  html+='</ul>';
+  slide.innerHTML=html; slide.scrollTop=0;
+  document.getElementById('counter').textContent='Slide '+(f.si+1)+'/'+f.sn+'  ·  ('+(idx+1)+'/'+flat.length+' total)';
+}
+function next(){ if(idx<flat.length-1){idx++;render();} }
+function prev(){ if(idx>0){idx--;render();} }
+function jumpTo(v){ const ti=+v; idx=flat.findIndex(f=>f.ti===ti); render(); }
+function buildJump(){ const sel=document.getElementById('jump'); sel.innerHTML=TOPICS.map((tp,i)=>'<option value="'+i+'">'+tp.n+'. '+tp.t+'</option>').join(''); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();next();} if(e.key==='ArrowLeft')prev(); });
+buildFlat(); buildJump(); render();
+</script><style>body.embed .mnav{display:none!important}body.embed #stage{padding-top:8px!important}body.embed .foot .hint{display:none}body.embed{background:#eef3f9}</style><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")==="1")document.body.classList.add("embed");var t=p.get("t");if(t!==null&&typeof flat!=="undefined"){var T=+t;if(p.get("only")==="1"){flat=flat.filter(function(f){return f.ti===T;});var j=document.getElementById("jump");if(j)j.style.display="none";idx=0;}else{var k=flat.findIndex(function(f){return f.ti===T;});idx=k<0?0:k;}if(typeof render==="function")render();}}catch(e){}})();</script><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")!=="1")return;if(typeof next!=="function"||typeof prev!=="function")return;var _n=next,_p=prev;next=function(){ if(typeof idx!=="undefined"&&typeof flat!=="undefined"&&idx>=flat.length-1){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(1);return;} } _n(); };prev=function(){ if(typeof idx!=="undefined"&&idx<=0){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(-1);return;} } _p(); };}catch(e){}})();</script></body></html>
