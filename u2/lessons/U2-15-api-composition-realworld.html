@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Composition — A Travel Agent · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.merge{position:absolute; left:50%; bottom:13%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--accent-d); z-index:4; opacity:0; transition:.3s}
+.merge.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">API Composition — A Travel Agent</h1>
+  <p class="subtitle">You want one holiday, but it lives across three companies. A travel agent calls the airline, the hotel, and the car-hire firm — ideally all at once — and hands you a single bundled itinerary. You made one request; they did the gathering.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Itineraries built</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Suppliers</div><div class="stat-v" id="statSrc">3</div></div>
+  <div class="stat"><div class="stat-k">Calls made</div><div class="stat-v good" id="statPar">in parallel ✓</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🧳</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:38%;top:50%"><div class="box composer">🧑‍💼</div><div class="lbl"><span class="k">Travel agent</span></div></div>
+<div id="sources"></div>
+<div class="merge" id="merge">🧩 bundled: flight + hotel + car → one itinerary</div>
+<div class="acts">
+  <button class="act ok" id="actAddSource">➕ Add a supplier</button>
+  <button class="act" id="actCompose">🧬 Build the itinerary</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const swrap=document.getElementById('sources');
+  let sources=[{e:'✈️',n:'Airline'},{e:'🏨',n:'Hotel'},{e:'🚗',n:'Car hire'}];
+  const pool=[{e:'🎟️',n:'Tours'},{e:'🛡️',n:'Insurance'}];
+  let reqs=0, running=false;
+  const elR=document.getElementById('statReqs'), elS=document.getElementById('statSrc'), merge=document.getElementById('merge');
+  function ys(n){const a=[],top=18,bot=84;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ swrap.innerHTML=''; const y=ys(sources.length);
+    sources.forEach((s,i)=>{ s.y=y[i]; const el=document.createElement('div'); el.className='node abs vis s-'+i; el.style.left='72%'; el.style.top=y[i]+'%';
+      el.innerHTML='<div class="box sm">'+s.e+'</div><div class="lbl"><span class="k">'+s.n+'</span></div>'; swrap.appendChild(el); s.el=el; }); elS.textContent=sources.length; }
+  function compose(){ if(document.hidden) return; let back=0;
+    sources.forEach((s,i)=>{ const d=document.createElement('div'); d.className='dot'; d.style.left='38%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='72%'; d.style.top=s.y+'%'; });
+      setTimeout(()=>{ d.classList.add('done'); if(s.el){s.el.classList.add('active'); setTimeout(()=>s.el.classList.remove('active'),200);}
+        d.style.left='38%'; d.style.top='50%'; setTimeout(()=>{ d.remove(); back++; if(back===sources.length){ merge.classList.add('on'); setTimeout(()=>merge.classList.remove('on'),1200*simRate()); reqs++; elR.textContent=reqs; } }, leg); }, leg);
+    });
+  }
+  function addSource(){ if(sources.length<5 && pool.length){ sources.push(pool.shift()); render(); } }
+  function loop(){ if(!running)return; compose(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actAddSource').onclick=addSource;
+  document.getElementById('actCompose').onclick=compose;
+  render(); running=true; loop();
+  return {compose,addSource,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You want <b>one holiday</b> — but it lives across three separate companies: an airline, a hotel, and a car-hire firm.", dur:4600},
+  {cap:"Rather than phone all three yourself, you ask a <b>travel agent</b> to put it together.", dur:4400},
+  {cap:"On your request, the agent <b>contacts every supplier</b> — ideally all at once, in parallel.", dur:4600, on(){SIM.compose();}},
+  {cap:"Each supplier sends back their piece. The agent waits for them, then <b>bundles</b> it all into one itinerary.", dur:4800},
+  {cap:"You made a <b>single request</b> and got a single tidy plan — the gathering and stitching happened behind the desk.", dur:4400},
+  {cap:"Calling suppliers <b>in parallel</b> matters: your wait is the <em>slowest</em> supplier, not the sum of all three.", dur:4600, on(){SIM.compose();}},
+  {cap:"Want more on the trip? <b>Add a supplier</b> — guided tours — and the agent folds it into the same itinerary.", dur:4600, on(){SIM.addSource();}},
+  {cap:"The watch-outs are real too: one slow supplier delays the whole booking, and if one's closed, you handle the gap.", dur:4600, on(){SIM.compose();}},
+  {cap:"Your turn 👉 <b>➕ Add a supplier</b> and <b>🧬 build the itinerary</b> to watch the fan-out and bundle.", dur:5200},
+  {cap:"API composition is your travel agent: gather from many services, merge into one answer. The backbone of every 'details' screen.", dur:4800}
+]});
+
+</script>
+</body></html>

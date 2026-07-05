@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hexagonal — A Universal Power Socket · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.core{position:absolute; left:50%; top:48%; transform:translate(-50%,-50%); width:130px; height:118px; background:linear-gradient(180deg,#eef4ff,#dbe8fb); border:2.5px solid var(--accent);
+  clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0% 50%); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-family:var(--fmono); color:var(--accent-d); text-align:center; z-index:2}
+.adp{position:absolute; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:11px; text-align:center; background:#fff; border:1.5px solid var(--line2); border-radius:9px; padding:6px 9px; z-index:3; transition:.3s}
+.adp.swap{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Hexagonal — A Universal Power Socket</h1>
+  <p class="subtitle">A laptop doesn't care which country's wall socket it's in. It exposes a standard plug; a cheap adapter bridges to whatever's on the wall. Swap the adapter — UK, EU, US — and the laptop runs unchanged. That's ports and adapters.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Sessions powered</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Wall adapter</div><div class="stat-v" id="statDB">UK plug</div></div>
+  <div class="stat"><div class="stat-k">Switch</div><div class="stat-v" id="statDrv">Wall switch</div></div>
+</div>
+<div class="core">LAPTOP<br>(just needs<br>power)</div>
+<div class="adp d-driver" style="left:16%;top:30%">🎛️ <span id="drvname">Wall switch</span><br><span style="color:var(--faint)">(turns it on)</span></div>
+<div class="adp d-db" style="left:84%;top:30%">🔌 <span id="dbname">UK plug</span> adapter<br><span style="color:var(--faint)">(to the wall)</span></div>
+<div class="adp" style="left:84%;top:74%">🔋 Battery adapter<br><span style="color:var(--faint)">(to a power bank)</span></div>
+<div class="adp" style="left:16%;top:74%">📱 Remote switch<br><span style="color:var(--faint)">(turns it on)</span></div>
+<div class="acts">
+  <button class="act ok" id="actSwapDB">🔄 Swap the wall adapter</button>
+  <button class="act" id="actSwapDriver">🔄 Swap the switch</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let calls=0, db='UK plug', drv='Wall switch', running=false;
+  const elC=document.getElementById('statCalls'), elDB=document.getElementById('statDB'), elDrv=document.getElementById('statDrv');
+  const dbN=document.getElementById('dbname'), drvN=document.getElementById('drvname');
+  const dbAdp=scene.querySelector('.d-db'), drvAdp=scene.querySelector('.d-driver');
+  function call(){ if(document.hidden) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='30%'; scene.appendChild(d);
+    const leg=400*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='48%'; });
+    setTimeout(()=>{ d.style.left='84%'; d.style.top='30%'; setTimeout(()=>{ d.classList.add('done'); d.style.left='50%'; d.style.top='48%';
+      setTimeout(()=>{ d.style.left='16%'; d.style.top='30%'; calls++; elC.textContent=calls; setTimeout(()=>d.remove(),leg); }, leg); }, leg); }, leg);
+  }
+  function swapDB(){ db=db==='UK plug'?'EU plug':'UK plug'; elDB.textContent=db; dbN.textContent=db; dbAdp.classList.add('swap'); setTimeout(()=>dbAdp.classList.remove('swap'),1000*simRate()); }
+  function swapDriver(){ drv=drv==='Wall switch'?'Remote':'Wall switch'; elDrv.textContent=drv; drvN.textContent=drv; drvAdp.classList.add('swap'); setTimeout(()=>drvAdp.classList.remove('swap'),1000*simRate()); }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actSwapDB').onclick=swapDB;
+  document.getElementById('actSwapDriver').onclick=swapDriver;
+  running=true; loop();
+  return {call,swapDB,swapDriver};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your laptop has one simple need: <b>power.</b> It doesn't care about voltage standards or what country you're in.", dur:4600},
+  {cap:"It exposes a <b>standard plug</b> — a port. Whatever's on the wall connects through a small <b>adapter.</b>", dur:4600, on(){SIM.call();}},
+  {cap:"Power flows: switch on → through the laptop → out to the wall adapter → and back. The laptop just works.", dur:4600, on(){SIM.call();}},
+  {cap:"Now travel abroad and <b>swap the wall adapter</b> from a UK plug to an EU plug.", dur:4400, on(){SIM.swapDB();}},
+  {cap:"The laptop doesn't change one bit — it still sees its standard plug. Only the <b>adapter</b> to the outside world changed.", dur:4800},
+  {cap:"You can swap <em>how it turns on</em> too — a wall switch or a remote — without touching the laptop itself.", dur:4400, on(){SIM.swapDriver();}},
+  {cap:"Or plug into a battery bank instead of the wall. Same laptop, a different adapter on the same port.", dur:4400, on(){SIM.call();}},
+  {cap:"That's <b>hexagonal architecture</b>: the core (laptop) defines standard ports; adapters bridge to databases, APIs, or tests.", dur:4800},
+  {cap:"Your turn 👉 <b>🔄 Swap the wall adapter</b> and <b>🔄 swap the switch</b> — the laptop runs untouched.", dur:5200},
+  {cap:"Ports & adapters keep your core logic ignorant of the outside world — swap any external piece without rewiring the core.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microservices — A Food Court · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.svc.scaling .box{border-color:var(--good) !important; box-shadow:0 0 0 4px rgba(18,163,104,.18) !important}
+.inst{position:absolute; width:14px; height:14px; border-radius:4px; background:var(--good); border:1px solid #0c7a4d; z-index:3; transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Microservices — A Food Court</h1>
+  <p class="subtitle">A food court is microservices you can eat at. Each stall is its own little business — own kitchen, own staff, own menu. The busy pizza stall can add cooks without touching sushi, and if one stall closes, the rest keep serving.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Customers served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Busiest stall</div><div class="stat-v warn" id="statHot">Pizza</div></div>
+  <div class="stat"><div class="stat-k">Closed stalls</div><div class="stat-v good" id="statDown">0</div></div>
+</div>
+<div class="wireline" style="left:16%;width:18%;top:52%"></div>
+<div class="node abs gw" data-show="1" style="left:38%;top:52%"><div class="box">🪧</div><div class="lbl"><span class="k">Court directory</span></div></div>
+<div class="node abs svc s-0" data-show="1" style="left:72%;top:20%"><div class="box sm">🍕</div><div class="lbl"><span class="k">Pizza</span></div></div>
+<div class="node abs svc s-1" data-show="1" style="left:72%;top:44%"><div class="box sm">🍔</div><div class="lbl"><span class="k">Burgers</span></div></div>
+<div class="node abs svc s-2" data-show="1" style="left:72%;top:68%"><div class="box sm">🍣</div><div class="lbl"><span class="k">Sushi</span></div></div>
+<div class="node abs svc s-3" data-show="1" style="left:72%;top:90%"><div class="box sm">☕</div><div class="lbl"><span class="k">Coffee</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actScale">➕ Add cooks to busy stall</button>
+  <button class="act bad" id="actKill">💥 A stall closes</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const names=['Pizza','Burgers','Sushi','Coffee'];
+  const svc=[0,1,2,3].map(i=>({i,el:scene.querySelector('.s-'+i),x:72,y:[20,44,68,90][i],alive:true,inst:1}));
+  let reqs=0, hot=0, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elHot=document.getElementById('statHot'), elDown=document.getElementById('statDown');
+  function downCount(){ return svc.filter(s=>!s.alive).length; }
+  function fmt(){ elHot.textContent=names[hot]; elDown.textContent=downCount(); elDown.className='stat-v '+(downCount()?'bad':'good'); }
+  function req(){ if(document.hidden) return;
+    let idx = Math.random()<0.5 ? hot : (rr++%4);
+    const s=svc[idx];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='38%'; d.style.top='52%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=s.x+'%'; d.style.top=s.y+'%'; });
+    setTimeout(()=>{ if(!s.alive){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      d.classList.add('done'); reqs++; elR.textContent=reqs; if(s.el){s.el.classList.add('active'); setTimeout(()=>s.el.classList.remove('active'),200);} setTimeout(()=>d.remove(),280); }, leg);
+  }
+  function scale(){ const s=svc[hot]; if(s.inst<4){ s.inst++; s.el.classList.add('scaling'); setTimeout(()=>s.el.classList.remove('scaling'),900*simRate());
+    const dot=document.createElement('div'); dot.className='inst'; dot.style.left=(s.x+6)+'%'; dot.style.top=(s.y- (s.inst*4))+'%'; scene.appendChild(dot); setTimeout(()=>dot.remove(),2000*simRate()); } }
+  function kill(){ const live=svc.filter(s=>s.alive && s.i!==hot); const s=(live[0]||svc.find(x=>x.alive)); if(s){ s.alive=false; if(s.el){s.el.classList.add('crash'); }
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left=s.x+'%'; d.style.top=s.y+'%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate());
+    setTimeout(()=>{ s.alive=true; if(s.el)s.el.classList.remove('crash'); fmt(); }, 3600*simRate()); fmt(); } }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 520*simRate()); }
+  document.getElementById('actScale').onclick=scale;
+  document.getElementById('actKill').onclick=kill;
+  fmt(); running=true; loop();
+  return {scale,kill,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>food court</b> is microservices you can taste. Each stall — Pizza, Burgers, Sushi, Coffee — is its own little business.", dur:4800},
+  {cap:"Own kitchen, own staff, own menu. A directory points each customer to the right stall.", dur:4400},
+  {cap:"At lunchtime the <b>pizza stall</b> gets slammed while sushi stays quiet. Note the busiest stall.", dur:4400},
+  {cap:"You don't rebuild the whole court — you just <b>add cooks to pizza.</b> Scale only what's busy.", dur:4600, on(){SIM.scale();}},
+  {cap:"Each stall scales to its own demand. Sushi doesn't pay for pizza's lunch rush.", dur:4200, on(){SIM.scale();}},
+  {cap:"Now a stall <span class='hl-bad'>closes</span> — out of ingredients.", dur:3600, on(){SIM.kill();}},
+  {cap:"Customers there are turned away, but every <em>other</em> stall keeps serving. The failure is <b>isolated.</b>", dur:4600},
+  {cap:"And each stall can change its menu (deploy) whenever it likes, without closing the whole court.", dur:4400},
+  {cap:"Your turn 👉 <b>➕ add cooks</b> to the busy stall and <b>💥 close a stall</b> to watch the rest carry on.", dur:5200, on(){SIM.fmt();}},
+  {cap:"The catch: more stalls means more coordination — shared seating, signage, deliveries. Microservices trade simplicity for independence.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quorum (R + W &gt; N) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rep2{transition:.25s}
+.rep2.wr{border-color:var(--accent) !important; box-shadow:0 0 0 4px rgba(31,111,230,.18) !important}
+.rep2.rd{border-color:var(--good) !important; box-shadow:0 0 0 4px rgba(18,163,104,.18) !important}
+.ver{position:absolute; font-family:var(--fmono); font-size:11px; font-weight:700; color:var(--accent-d); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Quorum (R + W &gt; N)</h1>
+  <p class="subtitle">With N replicas, you don't need every copy to agree — just a majority. If your write quorum W and read quorum R overlap (R + W > N), every read is guaranteed to see the latest write.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">R + W vs N</div><div class="stat-v good" id="statRW">3+3 &gt; 5 ✓</div></div>
+  <div class="stat"><div class="stat-k">Stale reads</div><div class="stat-v good" id="statStale">0</div></div>
+  <div class="stat"><div class="stat-k">Operations</div><div class="stat-v accent" id="statOps">0</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:9%">5 replicas (N = 5)</div>
+<div id="reps"></div>
+<div class="acts">
+  <button class="act ok" id="actStrict">🔒 Strict: R=3, W=3</button>
+  <button class="act bad" id="actLoose">⚡ Loose: R=2, W=2</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const N=5; let R=3, W=3, ops=0, stale=0, version=0, running=false;
+  const reps=[]; const elRW=document.getElementById('statRW'), elStale=document.getElementById('statStale'), elOps=document.getElementById('statOps');
+  const wrap=document.getElementById('reps');
+  function layout(){ wrap.innerHTML=''; for(let i=0;i<N;i++){ const x=18+i*16, y=44;
+    const b=document.createElement('div'); b.className='wbox rep2'; b.textContent='🗄️'; b.style.left=x+'%'; b.style.top=y+'%'; wrap.appendChild(b);
+    const v=document.createElement('div'); v.className='ver'; v.style.left=(x-1.2)+'%'; v.style.top=(y+10)+'%'; v.textContent='v0'; wrap.appendChild(v);
+    reps[i]={x,y,el:b,ver:0,vel:v}; } }
+  function fmt(){ const ok=(R+W)>N; elRW.textContent=R+'+'+W+(ok?' > ':' ≤ ')+N+(ok?' ✓':' ✗'); elRW.className='stat-v '+(ok?'good':'bad');
+    elStale.textContent=stale; elStale.className='stat-v '+(stale?'bad':'good'); }
+  function clearMarks(){ reps.forEach(r=>{ r.el.classList.remove('wr','rd'); }); }
+  function write(){ version++; clearMarks();
+    // write to first W replicas
+    for(let i=0;i<W;i++){ reps[i].ver=version; reps[i].vel.textContent='v'+version; reps[i].el.classList.add('wr'); const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='20%'; scene.appendChild(d);
+      const tx=reps[i].x; requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left=tx+'%'; d.style.top='44%'; }); setTimeout(()=>{d.classList.add('done'); setTimeout(()=>d.remove(),250);},420*simRate()); }
+  }
+  function read(){ ops++; elOps.textContent=ops;
+    // read from last R replicas
+    let best=-1; for(let i=N-R;i<N;i++){ reps[i].el.classList.add('rd'); best=Math.max(best,reps[i].ver); }
+    const fresh = best===version;
+    if(!fresh){ stale++; }
+    const d=document.createElement('div'); d.className='dot'+(fresh?'':' fail'); d.style.left=reps[N-1].x+'%'; d.style.top='44%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left='50%'; d.style.top='78%'; });
+    setTimeout(()=>{ if(fresh)d.classList.add('done'); setTimeout(()=>d.remove(),300); }, 420*simRate());
+    fmt();
+  }
+  function cycle(){ if(document.hidden) return; write(); setTimeout(()=>{ clearMarks(); read(); }, 900*simRate()); }
+  function loop(){ if(!running)return; cycle(); setTimeout(loop, 2400*simRate()); }
+  document.getElementById('actStrict').onclick=()=>{ R=3; W=3; fmt(); };
+  document.getElementById('actLoose').onclick=()=>{ R=2; W=2; fmt(); };
+  layout(); fmt(); running=true; loop();
+  return {write,read,cycle,fmt,setStrict:()=>{R=3;W=3;fmt();},setLoose:()=>{R=2;W=2;fmt();}};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Data is copied across <b>N = 5 replicas</b>. You don't need all five to agree on every operation — just enough of them.", dur:4600},
+  {cap:"A <b>write quorum W</b> is how many replicas must accept a write before it counts. Here W = 3.", dur:4400, on(){SIM.write();}},
+  {cap:"A <b>read quorum R</b> is how many you ask on a read, taking the newest version you find. Here R = 3.", dur:4400, on(){SIM.read();}},
+  {cap:"The magic rule: if <b>R + W &gt; N</b>, the read set and write set <em>must</em> overlap on at least one replica.", dur:4800},
+  {cap:"That overlapping replica holds the latest write — so the read is <span class='hl-good'>guaranteed fresh.</span> 3 + 3 &gt; 5. ✓", dur:4600, on(){SIM.cycle();}},
+  {cap:"Now get greedy for speed — drop to <b>R = 2, W = 2.</b> Fewer replicas to wait for, faster ops.", dur:4400, on(){SIM.setLoose();}},
+  {cap:"But 2 + 2 = 4, which is <em>not</em> &gt; 5. The read and write sets can <span class='hl-bad'>miss each other</span> — stale reads appear.", dur:4800, on(){SIM.cycle();}},
+  {cap:"So quorums are a dial: bigger R+W = stronger consistency; smaller = lower latency. You choose the balance.", dur:4600, on(){SIM.setStrict();}},
+  {cap:"Your turn 👉 toggle <b>🔒 Strict</b> vs <b>⚡ Loose</b> and watch stale reads appear only when R + W ≤ N.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Quorums give tunable consistency without locking every replica: keep R + W &gt; N and reads always see the newest write.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BFF — A Translator per Guest · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.payload{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--good); z-index:4; opacity:0; transition:.3s}
+.payload.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">BFF — A Translator per Guest</h1>
+  <p class="subtitle">A museum tour has guests speaking different languages. One generic guide pleases no one. So each guest gets a personal translator who relays the same facts, tailored: short for the child, technical for the expert, in each one's own tongue.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Questions answered</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Guests</div><div class="stat-v" id="statFE">3</div></div>
+  <div class="stat"><div class="stat-k">Each gets</div><div class="stat-v good" id="statTailor">tailored ✓</div></div>
+</div>
+<div id="clients"></div>
+<div id="bffs"></div>
+<div class="node abs" data-show="1" style="left:84%;top:50%"><div class="box sm">🏛️</div><div class="lbl"><span class="k">Museum<br>facts</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actAddClient">➕ A new guest joins</button>
+  <button class="act" id="actTrace">💬 Everyone asks a question</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const cwrap=document.getElementById('clients'), bwrap=document.getElementById('bffs');
+  let clients=[{e:'🧑',n:'Expert',p:'deep detail'},{e:'🧒',n:'Child',p:'simple words'},{e:'🧓',n:'Tourist',p:'in français'}];
+  const pool=[{e:'👩‍🦽',n:'Visitor',p:'large print'},{e:'🧑‍🎓',n:'Student',p:'exam notes'}];
+  let reqs=0, running=false;
+  const elR=document.getElementById('statReqs'), elFE=document.getElementById('statFE');
+  function ys(n){const a=[],top=20,bot=82;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ cwrap.innerHTML=''; bwrap.innerHTML=''; const y=ys(clients.length);
+    clients.forEach((c,i)=>{ c.y=y[i];
+      const cl=document.createElement('div'); cl.className='node abs vis'; cl.style.left='14%'; cl.style.top=y[i]+'%'; cl.innerHTML='<div class="box sm">'+c.e+'</div><div class="lbl"><span class="k">'+c.n+'</span></div>'; cwrap.appendChild(cl);
+      const bf=document.createElement('div'); bf.className='node abs vis bf-'+i; bf.style.left='48%'; bf.style.top=y[i]+'%'; bf.innerHTML='<div class="box sm" style="font-size:18px">🗣️</div><div class="lbl"><span class="k">Translator</span></div>'; bwrap.appendChild(bf);
+      const pl=document.createElement('div'); pl.className='payload'; pl.style.left='60%'; pl.style.top=(y[i]-7)+'%'; pl.textContent=c.p; bwrap.appendChild(pl); c.pl=pl;
+    }); elFE.textContent=clients.length; }
+  function trace(){ if(document.hidden) return; clients.forEach((c,i)=>{ setTimeout(()=>{
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top=c.y+'%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='48%'; });
+    setTimeout(()=>{ d.style.left='84%'; setTimeout(()=>{ d.classList.add('done'); d.style.left='48%'; if(c.pl){c.pl.classList.add('on'); setTimeout(()=>c.pl.classList.remove('on'),700);} setTimeout(()=>{ d.style.left='14%'; reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),leg); }, leg); }, leg); }, leg); }, i*150*simRate()); }); }
+  function addClient(){ if(clients.length<5 && pool.length){ clients.push(pool.shift()); render(); } }
+  function loop(){ if(!running)return; trace(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actAddClient').onclick=addClient;
+  document.getElementById('actTrace').onclick=trace;
+  render(); running=true; loop();
+  return {trace,addClient,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A museum tour has very different guests: an expert, a child, a French-speaking tourist. They all want the <em>same</em> facts — shaped differently.", dur:4800},
+  {cap:"One generic guide would bore the expert and baffle the child. So each guest gets a <b>personal translator.</b>", dur:4600},
+  {cap:"Every guest talks to <b>their own translator</b>, who fetches the museum facts and relays them in just the right form.", dur:4600, on(){SIM.trace();}},
+  {cap:"The child's translator keeps it <b>simple</b>; the expert's adds <b>deep detail</b>; the tourist's speaks <b>French.</b> Same facts, tailored.", dur:4800},
+  {cap:"Without per-guest translators, you'd hand everyone an identical dense leaflet — wasteful and unhelpful.", dur:4400},
+  {cap:"A <b>new guest joins</b> who needs large print — give them <b>their own translator</b>, touching nobody else's experience.", dur:4600, on(){SIM.addClient();}},
+  {cap:"Each translator can adapt independently to its guest, while they all draw on the one shared set of facts.", dur:4400, on(){SIM.trace();}},
+  {cap:"That's the <b>Backend for Frontend</b> pattern: one tailored backend per client — web, mobile, TV — over shared services.", dur:4600},
+  {cap:"Your turn 👉 <b>➕ Add a guest</b> and <b>💬 ask a question</b> to watch each translator tailor its answer.", dur:5200},
+  {cap:"BFF = a translator per frontend. A little duplication, in exchange for every client getting exactly what suits it.", dur:4800}
+]});
+
+</script>
+</body></html>

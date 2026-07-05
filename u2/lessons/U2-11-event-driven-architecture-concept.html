@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event-Driven Architecture · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bus{position:absolute; left:44%; top:14%; bottom:14%; width:18px; transform:translateX(-50%); border-radius:10px; background:linear-gradient(180deg,#cfe0fb,#9cc0f3); border:1.5px solid var(--accent); z-index:1}
+.buslbl{position:absolute; left:44%; top:7%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--accent-d); font-weight:600}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Event-Driven Architecture</h1>
+  <p class="subtitle">Instead of calling each other directly, services publish events to a bus and others react. The producer never waits or even knows who is listening — so you can add new reactions without touching it.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Events published</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Consumers</div><div class="stat-v" id="statCons">3</div></div>
+  <div class="stat"><div class="stat-k">Producer waits?</div><div class="stat-v good" id="statWait">No — fire & forget</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:15%;top:50%"><div class="box">🛒</div><div class="lbl"><span class="k">Order service</span><br><span class="k" style="font-weight:400">(producer)</span></div></div>
+<div class="buslbl">Event bus</div>
+<div class="bus"></div>
+<div id="consumers"></div>
+<div class="acts">
+  <button class="act ok" id="actEmit">⚡ Publish "OrderPlaced"</button>
+  <button class="act" id="actAddConsumer">➕ Add a consumer</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const BUSX=44, PRODX=15;
+  let consumers=[{n:'Email',e:'📧'},{n:'Inventory',e:'📦'},{n:'Analytics',e:'📊'}], events=0, running=false;
+  const wrap=document.getElementById('consumers');
+  const elE=document.getElementById('statEvents'), elC=document.getElementById('statCons');
+  function ys(n){const a=[],top=22,bot=86;for(let i=0;i<n;i++)a.push(n===1?54:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(consumers.length);
+    consumers.forEach((c,i)=>{ c.y=y[i]; const el=document.createElement('div'); el.className='wbox'; el.textContent=c.e; el.style.left='76%'; el.style.top=y[i]+'%'; wrap.appendChild(el);
+      const lab=document.createElement('div'); lab.className='nlbl'; lab.style.left='76%'; lab.style.top=(y[i]+11)+'%'; lab.textContent=c.n; wrap.appendChild(lab); c.el=el; });
+    elC.textContent=consumers.length; }
+  function emit(){ if(document.hidden) return; events++; elE.textContent=events;
+    // producer → bus
+    const d=document.createElement('div'); d.className='dot'; d.style.left=PRODX+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=BUSX+'%'; });
+    setTimeout(()=>{ d.remove(); // fan out from bus to every consumer
+      consumers.forEach(c=>{ const f=document.createElement('div'); f.className='dot'; f.style.left=BUSX+'%'; f.style.top=c.y+'%'; scene.appendChild(f);
+        requestAnimationFrame(()=>{ f.style.transition='left '+leg+'ms'; f.style.left='76%'; });
+        setTimeout(()=>{ f.classList.add('done'); if(c.el){c.el.classList.add('busy'); setTimeout(()=>c.el.classList.remove('busy'),300);} setTimeout(()=>f.remove(),300); }, leg); });
+    }, leg);
+  }
+  function addConsumer(){ const pool=[{n:'Shipping',e:'🚚'},{n:'Fraud check',e:'🕵️'},{n:'Loyalty',e:'⭐'},{n:'Recommend',e:'🎯'}];
+    if(consumers.length<6){ consumers.push(pool[(consumers.length-3)%pool.length]); render(); } }
+  function loop(){ if(!running)return; emit(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actEmit').onclick=emit;
+  document.getElementById('actAddConsumer').onclick=addConsumer;
+  render(); running=true; loop();
+  return {emit,addConsumer};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In <b>event-driven architecture</b>, services don't call each other directly. They announce that something <em>happened.</em>", dur:4600},
+  {cap:"The order service publishes an event — <b>\"OrderPlaced\"</b> — onto a shared <b>event bus</b>, then moves on instantly.", dur:4600, on(){SIM.emit();}},
+  {cap:"It's <span class='hl-good'>fire-and-forget</span>: the producer never waits and doesn't even know who's listening.", dur:4400},
+  {cap:"The bus <b>fans the event out</b> to every interested consumer — Email, Inventory, Analytics — all at once.", dur:4400, on(){SIM.emit();}},
+  {cap:"Each consumer reacts on its own time: send the receipt, decrement stock, update the dashboard. Fully decoupled.", dur:4600},
+  {cap:"Now the superpower: <b>add a new consumer</b> — say Shipping — without changing the producer at all.", dur:4400, on(){SIM.addConsumer();}},
+  {cap:"The order service is none the wiser; the new service just starts reacting to the same events.", dur:4200, on(){SIM.emit();}},
+  {cap:"The bus also <b>buffers spikes</b>: if a consumer is slow, events queue up instead of overwhelming it.", dur:4400},
+  {cap:"Your turn 👉 <b>⚡ Publish</b> an event and <b>➕ add consumers</b> to watch the fan-out grow.", dur:5200},
+  {cap:"Trade-off: great decoupling and scalability, but harder to trace a flow and reason about ordering. Powerful, asynchronous.", dur:4800}
+]});
+
+</script>
+</body></html>

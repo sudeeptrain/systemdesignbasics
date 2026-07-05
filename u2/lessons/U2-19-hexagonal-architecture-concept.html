@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hexagonal (Ports &amp; Adapters) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.core{position:absolute; left:50%; top:48%; transform:translate(-50%,-50%); width:130px; height:118px; background:linear-gradient(180deg,#eef4ff,#dbe8fb); border:2.5px solid var(--accent);
+  clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0% 50%); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-family:var(--fmono); color:var(--accent-d); text-align:center; z-index:2}
+.adp{position:absolute; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:11px; text-align:center; background:#fff; border:1.5px solid var(--line2); border-radius:9px; padding:6px 9px; z-index:3; transition:.3s}
+.adp.swap{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Hexagonal (Ports &amp; Adapters)</h1>
+  <p class="subtitle">Put your business logic in the center, talking only to ports (interfaces). Everything external — databases, REST, queues, tests — plugs in through adapters. Swap any adapter without touching the core domain.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Calls handled</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">DB adapter</div><div class="stat-v" id="statDB">SQL</div></div>
+  <div class="stat"><div class="stat-k">Driver</div><div class="stat-v" id="statDrv">REST</div></div>
+</div>
+<div class="core">DOMAIN<br>(business<br>logic)</div>
+<div class="adp d-driver" style="left:16%;top:30%">▶️ <span id="drvname">REST</span> adapter<br><span style="color:var(--faint)">(driving)</span></div>
+<div class="adp d-db" style="left:84%;top:30%">🗄️ <span id="dbname">SQL</span> adapter<br><span style="color:var(--faint)">(driven)</span></div>
+<div class="adp" style="left:84%;top:74%">📨 Queue adapter<br><span style="color:var(--faint)">(driven)</span></div>
+<div class="adp" style="left:16%;top:74%">🧪 Test adapter<br><span style="color:var(--faint)">(driving)</span></div>
+<div class="acts">
+  <button class="act ok" id="actSwapDB">🔄 Swap DB adapter</button>
+  <button class="act" id="actSwapDriver">🔄 Swap driver adapter</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let calls=0, db='SQL', drv='REST', running=false;
+  const elC=document.getElementById('statCalls'), elDB=document.getElementById('statDB'), elDrv=document.getElementById('statDrv');
+  const dbN=document.getElementById('dbname'), drvN=document.getElementById('drvname');
+  const dbAdp=scene.querySelector('.d-db'), drvAdp=scene.querySelector('.d-driver');
+  function call(){ if(document.hidden) return;
+    // driver adapter → core → db adapter → back
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='30%'; scene.appendChild(d);
+    const leg=400*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='48%'; });
+    setTimeout(()=>{ d.style.left='84%'; d.style.top='30%'; setTimeout(()=>{ d.classList.add('done'); d.style.left='50%'; d.style.top='48%';
+      setTimeout(()=>{ d.style.left='16%'; d.style.top='30%'; calls++; elC.textContent=calls; setTimeout(()=>d.remove(),leg); }, leg); }, leg); }, leg);
+  }
+  function swapDB(){ db=db==='SQL'?'In-memory':'SQL'; elDB.textContent=db; dbN.textContent=db; dbAdp.classList.add('swap'); setTimeout(()=>dbAdp.classList.remove('swap'),1000*simRate()); }
+  function swapDriver(){ drv=drv==='REST'?'gRPC':'REST'; elDrv.textContent=drv; drvN.textContent=drv; drvAdp.classList.add('swap'); setTimeout(()=>drvAdp.classList.remove('swap'),1000*simRate()); }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actSwapDB').onclick=swapDB;
+  document.getElementById('actSwapDriver').onclick=swapDriver;
+  running=true; loop();
+  return {call,swapDB,swapDriver};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Hexagonal architecture</b> puts your <b>business logic</b> in the center — and keeps it ignorant of the outside world.", dur:4600},
+  {cap:"The core talks only through <b>ports</b> — interfaces it defines. It never imports a database driver or web framework.", dur:4800},
+  {cap:"Everything external plugs in via <b>adapters</b>: a REST adapter drives the core; a SQL adapter is driven by it.", dur:4800, on(){SIM.call();}},
+  {cap:"A request enters through the driving adapter, the core does its work, and a driven adapter handles persistence.", dur:4600, on(){SIM.call();}},
+  {cap:"Now the magic: <b>swap the DB adapter</b> from SQL to in-memory. The core domain doesn't change at all.", dur:4600, on(){SIM.swapDB();}},
+  {cap:"Likewise, <b>swap the driver</b> from REST to gRPC — same business logic, different way in.", dur:4400, on(){SIM.swapDriver();}},
+  {cap:"This is why it's so testable: plug a <b>test adapter</b> into the same ports and exercise the core with no real database.", dur:4800, on(){SIM.call();}},
+  {cap:"The domain sits safely in the middle while infrastructure changes around it. Dependencies point <em>inward.</em>", dur:4600},
+  {cap:"Your turn 👉 <b>🔄 Swap the DB</b> and <b>🔄 swap the driver</b> — the core keeps running, untouched.", dur:5200},
+  {cap:"Ports & adapters = business logic isolated from infrastructure. Swappable, testable, and built to outlive any framework.", dur:4800}
+]});
+
+</script>
+</body></html>
