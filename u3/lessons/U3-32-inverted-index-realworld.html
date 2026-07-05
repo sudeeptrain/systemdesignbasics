@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inverted Index — Recipes by Ingredient · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.docs{position:absolute; left:7%; top:20%; width:24%; z-index:2}
+.doc3{font-family:var(--fmono); font-size:10.5px; padding:5px 7px; border-radius:6px; background:#fff; border:1.5px solid var(--line2); margin-bottom:5px; transition:.2s}
+.doc3.hit{border-color:var(--good); background:#e7f7ef}
+.idx{position:absolute; right:7%; top:20%; width:34%; z-index:2; opacity:.3; transition:.4s}
+.idx.on{opacity:1}
+.irow{font-family:var(--fmono); font-size:10.5px; padding:4px 7px; border-radius:6px; background:#eef4ff; border:1.5px solid var(--accent); margin-bottom:5px; color:var(--accent-d)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Inverted Index — Recipes by Ingredient</h1>
+  <p class="subtitle">You've got eggs to use up. Reading every recipe to find which ones use eggs is slow. A cookbook's ingredient index flips it around: look up "egg" and it lists exactly which recipes contain it. That flip — from recipe→ingredients to ingredient→recipes — is an inverted index.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Searches</div><div class="stat-v accent" id="statSearches">0</div></div>
+  <div class="stat"><div class="stat-k">Recipes read (last)</div><div class="stat-v" id="statScan">—</div></div>
+  <div class="stat"><div class="stat-k">Ingredient index</div><div class="stat-v bad" id="statIdx">not built</div></div>
+</div>
+<div class="docs" id="docs"></div>
+<div class="nlbl" style="left:50%;top:50%">ingredient → recipes</div>
+<div class="idx" id="idx"></div>
+<div class="acts">
+  <button class="act ok" id="actIndex">🏗️ Build ingredient index</button>
+  <button class="act" id="actSearch">🔎 Find recipes by ingredient</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const docsEl=document.getElementById('docs'), idxEl=document.getElementById('idx');
+  const elS=document.getElementById('statSearches'), elSc=document.getElementById('statScan'), elI=document.getElementById('statIdx');
+  const docs=[['egg','flour'],['flour','milk'],['rice','egg'],['milk','rice'],['flour','egg']];
+  const words=['egg','flour','milk','rice'];
+  const names=['Omelette','Pancake','Fried rice','Rice pudding','Crepe'];
+  let searches=0, indexed=false, running=false;
+  function renderDocs(){ docsEl.innerHTML=''; docs.forEach((d,i)=>{ const r=document.createElement('div'); r.className='doc3 d-'+i; r.textContent=names[i]+': '+d.join(', '); docsEl.appendChild(r); }); }
+  function renderIdx(){ idxEl.innerHTML=''; if(!indexed){ idxEl.classList.remove('on'); return; } idxEl.classList.add('on');
+    words.forEach(w=>{ const list=docs.map((d,i)=>d.includes(w)?names[i]:null).filter(Boolean); const r=document.createElement('div'); r.className='irow'; r.textContent='"'+w+'" → '+list.join(', '); idxEl.appendChild(r); }); }
+  function search(){ if(document.hidden) return; searches++; elS.textContent=searches;
+    const w=words[Math.floor(Math.random()*words.length)]; [...docsEl.children].forEach(r=>r.classList.remove('hit'));
+    if(indexed){ const matches=docs.map((d,i)=>d.includes(w)?i:-1).filter(i=>i>=0);
+      const d=document.createElement('div'); d.className='dot'; d.style.left='62%'; d.style.top='50%'; scene.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transition='left .4s'; d.style.left='30%'; });
+      setTimeout(()=>{ d.classList.add('done'); matches.forEach(mi=>{ const r=docsEl.querySelector('.d-'+mi); if(r)r.classList.add('hit'); }); elSc.textContent='0 (index hit)'; elSc.className='stat-v good'; setTimeout(()=>d.remove(),300); }, 420*simRate());
+    } else { let i=0; const step=()=>{ if(i>=docs.length){ elSc.textContent=docs.length+' (read all)'; elSc.className='stat-v bad'; return; }
+        const r=docsEl.querySelector('.d-'+i); if(r){ r.style.borderColor='var(--warn)'; if(docs[i].includes(w)) r.classList.add('hit'); setTimeout(()=>{if(r)r.style.borderColor='';},400); }
+        i++; setTimeout(step, 240*simRate()); }; step();
+    }
+  }
+  function buildIndex(){ indexed=true; elI.textContent='built ✓'; elI.className='stat-v good'; renderIdx(); }
+  function loop(){ if(!running)return; search(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actIndex').onclick=buildIndex;
+  document.getElementById('actSearch').onclick=search;
+  renderDocs(); renderIdx(); running=true; loop();
+  return {search,buildIndex,renderIdx};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You've got eggs to use up. Which of your recipes call for <b>eggs</b>? A normal cookbook makes you work for the answer.", dur:4600},
+  {cap:"The slow way: <b>read every recipe</b>, scanning each ingredient list to see if eggs appear. Watch it crawl through them all.", dur:4600, on(){SIM.search();}},
+  {cap:"Five recipes, fine. A cookbook of thousands? Reading every one for every ingredient question is hopeless.", dur:4400},
+  {cap:"So cookbooks add an <b>ingredient index</b> at the back. It flips the data: instead of recipe → ingredients, it's <b>ingredient → recipes.</b>", dur:4800, on(){SIM.buildIndex();}},
+  {cap:"For every ingredient, a ready-made list of exactly which recipes use it. The work was done once, when the index was built.", dur:4600},
+  {cap:"Now \"egg\" is a <b>direct lookup</b>: flip to the index, read off the recipe list. No scanning any recipes at all.", dur:4800, on(){SIM.search();}},
+  {cap:"Watch 'recipes read' drop to <span class='hl-good'>zero.</span> That's an <b>inverted index</b> — the heart of every search engine.", dur:4600, on(){SIM.search();}},
+  {cap:"Add ranking and typo-tolerance on top and you've got Elasticsearch and web search: instant full-text lookup over millions of documents.", dur:4600},
+  {cap:"Your turn 👉 <b>🏗️ Build the ingredient index</b> and <b>🔎 search by ingredient</b> to compare reading-all with an instant list.", dur:5200, on(){SIM.renderIdx();}},
+  {cap:"An inverted index trades a little build-time work and storage for near-instant search — how you find a needle in millions of documents.", dur:4800}
+]});
+
+</script>
+</body></html>

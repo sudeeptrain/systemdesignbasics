@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warehouse vs Lake vs Lakehouse · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.repo{position:absolute; left:60%; top:20%; width:34%; min-height:60%; border:2px solid var(--line2); border-radius:14px; z-index:2; padding:10px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; transition:.3s}
+.item{font-family:var(--fmono); font-size:10px; padding:5px 7px; border-radius:6px; text-align:center; transition:.3s; opacity:0; transform:scale(.85)}
+.item.on{opacity:1; transform:none}
+.item.struct{background:#eaf2fe; border:1.5px solid var(--accent); color:var(--accent-d)}
+.item.raw{background:#fff7e9; border:1.5px solid var(--warn); color:var(--warn)}
+.rhdr{position:absolute; left:60%; top:12%; font-family:var(--fmono); font-size:12px; font-weight:700; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Warehouse vs Lake vs Lakehouse</h1>
+  <p class="subtitle">Three ways to store data for analytics. A warehouse holds clean, structured tables (schema-on-write). A lake holds raw files of any kind (schema-on-read). A lakehouse adds warehouse-like structure and reliability on top of cheap lake storage.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Items ingested</div><div class="stat-v accent" id="statItems">0</div></div>
+  <div class="stat"><div class="stat-k">Store</div><div class="stat-v" id="statMode">Warehouse</div></div>
+  <div class="stat"><div class="stat-k">Schema</div><div class="stat-v good" id="statSchema">on write (clean)</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">📥</div><div class="lbl"><span class="k">Incoming<br>data</span></div></div>
+<div class="rhdr" id="rhdr">🏛️ Data warehouse</div>
+<div class="repo" id="repo"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Warehouse / Lake / Lakehouse</button>
+  <button class="act ok" id="actIngest">📥 Ingest data</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const repo=document.getElementById('repo'), rhdr=document.getElementById('rhdr');
+  const elI=document.getElementById('statItems'), elM=document.getElementById('statMode'), elS=document.getElementById('statSchema');
+  const modes=['warehouse','lake','lakehouse'];
+  let mode=0, items=0, running=false;
+  function clean(){ repo.innerHTML=''; }
+  function ingest(){ if(document.hidden) return; if(repo.children.length>=8) clean();
+    items++; elI.textContent=items; const m=modes[mode];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); const el=document.createElement('div');
+      if(m==='warehouse'){ el.className='item struct'; el.innerHTML='📊<br>table'; }
+      else if(m==='lake'){ const raw=[['🖼️','img'],['📄','json'],['🎬','video'],['📊','csv']][items%4]; el.className='item raw'; el.innerHTML=raw[0]+'<br>'+raw[1]; }
+      else { el.className='item '+(items%2?'struct':'raw'); el.innerHTML=(items%2?'📊<br>table':'📄<br>raw'); }
+      repo.appendChild(el); requestAnimationFrame(()=>el.classList.add('on')); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function setMode(i){ mode=i; clean(); const m=modes[i];
+    elM.textContent=m==='warehouse'?'Warehouse':m==='lake'?'Data lake':'Lakehouse'; elM.className='stat-v '+(m==='warehouse'?'accent':m==='lake'?'warn':'good');
+    elS.textContent=m==='warehouse'?'on write (clean)':m==='lake'?'on read (raw)':'on read + tables';
+    rhdr.textContent=m==='warehouse'?'🏛️ Data warehouse':m==='lake'?'🌊 Data lake':'🏠 Lakehouse';
+    repo.style.borderColor=m==='warehouse'?'var(--accent)':m==='lake'?'var(--warn)':'var(--good)'; }
+  function loop(){ if(!running)return; ingest(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode((mode+1)%3);
+  document.getElementById('actIngest').onclick=ingest;
+  setMode(0); running=true; loop();
+  return {ingest,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Once you want analytics over <em>all</em> your data, you need somewhere to put it. Three options have emerged.", dur:4600},
+  {cap:"A <b>data warehouse</b> stores clean, structured tables. Data is shaped and validated <em>before</em> it goes in — schema-on-write.", dur:4800, on(){SIM.ingest();}},
+  {cap:"That makes queries fast and reliable, but ingesting is work: everything must be transformed to fit the schema first.", dur:4600, on(){SIM.ingest();}},
+  {cap:"A <b>data lake</b> takes the opposite stance: dump in <b>raw files of any kind</b> — JSON, images, CSV, logs — as-is.", dur:4600, on(){SIM.setMode(1);}},
+  {cap:"Cheap and flexible — you store everything now and figure out structure later, when you read it (schema-on-read).", dur:4800, on(){SIM.ingest();}},
+  {cap:"But a lake can become a <b>swamp</b>: no structure, no guarantees, hard to trust or query well at scale.", dur:4400, on(){SIM.ingest();}},
+  {cap:"A <b>lakehouse</b> is the hybrid: keep the cheap, open storage of a lake, but add warehouse-style <b>tables, schemas, and transactions</b> on top.", dur:4800, on(){SIM.setMode(2);}},
+  {cap:"You get raw flexibility <em>and</em> reliable, fast analytics from one place — the modern direction (Delta Lake, Iceberg).", dur:4600, on(){SIM.ingest();}},
+  {cap:"Your turn 👉 cycle <b>🔀 Warehouse / Lake / Lakehouse</b> and <b>📥 ingest</b> to compare structured, raw, and hybrid storage.", dur:5200, on(){SIM.setMode(0);}},
+  {cap:"Warehouse = clean & structured; lake = raw & flexible; lakehouse = both. Pick by how varied your data and queries are.", dur:4800}
+]});
+
+</script>
+</body></html>

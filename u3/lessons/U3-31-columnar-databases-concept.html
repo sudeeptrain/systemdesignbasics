@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Columnar Databases · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.grid6{position:absolute; left:48%; top:22%; transform:translateX(-50%); display:grid; grid-template-columns:repeat(5,1fr); gap:3px; z-index:2}
+.cell6{width:34px; height:22px; border-radius:4px; border:1px solid var(--line2); background:#fff; font-family:var(--fmono); font-size:9px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:.15s}
+.cell6.read{background:#eaf2fe; border-color:var(--accent); color:var(--accent-d)}
+.cell6.skip{opacity:.35}
+.complbl{position:absolute; left:48%; bottom:24%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--good); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Columnar Databases</h1>
+  <p class="subtitle">Row stores keep each record's fields together; columnar stores keep each column together. For analytics — "average price across millions of rows" — that means reading just one column off disk, and since a column holds similar values, it compresses beautifully.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Scans</div><div class="stat-v accent" id="statScans">0</div></div>
+  <div class="stat"><div class="stat-k">Layout</div><div class="stat-v" id="statMode">Row store</div></div>
+  <div class="stat"><div class="stat-k">Cells read (last)</div><div class="stat-v" id="statRead">—</div></div>
+</div>
+<div class="nlbl" style="left:48%;top:14%;transform:translateX(-50%)">query: AVG(price) over all rows</div>
+<div class="grid6" id="grid"></div>
+<div class="complbl" id="complbl"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Row store / Columnar</button>
+  <button class="act ok" id="actScan">📊 Run analytics scan</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const grid=document.getElementById('grid'), complbl=document.getElementById('complbl');
+  const ROWS=6, COLS=5; const headers=['id','name','price','city','date']; const priceCol=2;
+  let cells=[], mode='row', scans=0, running=false;
+  const elS=document.getElementById('statScans'), elM=document.getElementById('statMode'), elR=document.getElementById('statRead');
+  function build(){ grid.innerHTML=''; cells=[]; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const el=document.createElement('div'); el.className='cell6'; el.textContent= r===0? headers[c] : (c===priceCol? ('$'+(10+r*3)) : '•'); el.dataset.r=r; el.dataset.c=c; grid.appendChild(el); cells.push(el); } }
+  function scan(){ if(document.hidden) return; scans++; elS.textContent=scans; cells.forEach(c=>c.classList.remove('read','skip'));
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),240);
+      if(mode==='row'){ // must read every cell (whole rows) to get the price column
+        cells.forEach(c=>{ if(+c.dataset.r>0) c.classList.add('read'); }); elR.textContent=(ROWS-1)*COLS+' (all)'; elR.className='stat-v bad'; complbl.textContent='';
+      } else { // read only the price column
+        cells.forEach(c=>{ if(+c.dataset.r>0){ if(+c.dataset.c===priceCol) c.classList.add('read'); else c.classList.add('skip'); } });
+        elR.textContent=(ROWS-1)+' (one column)'; elR.className='stat-v good'; complbl.textContent='similar values → compresses ~10×';
+      } }, leg);
+  }
+  function setMode(m){ mode=m; build(); elM.textContent=m==='row'?'Row store':'Columnar'; elM.className='stat-v '+(m==='row'?'warn':'good'); complbl.textContent=''; }
+  function loop(){ if(!running)return; scan(); setTimeout(loop, 1800*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='row'?'col':'row');
+  document.getElementById('actScan').onclick=scan;
+  setMode('row'); running=true; loop();
+  return {scan,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Analytics queries often touch <b>one column across millions of rows</b>: \"average price,\" \"sum of sales.\" Storage layout decides the cost.", dur:4800},
+  {cap:"A <b>row store</b> keeps each record's fields together on disk — great for grabbing a whole row (the OLTP pattern).", dur:4600},
+  {cap:"But to average just the <b>price</b>, a row store must read <em>every</em> cell of every row to reach that one column.", dur:4800, on(){SIM.scan();}},
+  {cap:"Watch it light up the <span class='hl-bad'>entire table</span> just to use one column. Lots of wasted I/O.", dur:4400, on(){SIM.scan();}},
+  {cap:"A <b>columnar</b> database flips the layout: it stores each column together, contiguously.", dur:4200, on(){SIM.setMode('col');}},
+  {cap:"Now the same query reads <b>only the price column</b> — skipping name, city, and date entirely. Far less data off disk.", dur:4800, on(){SIM.scan();}},
+  {cap:"Bonus: a column holds <b>similar values</b> (all prices, all dates), so it <span class='hl-good'>compresses dramatically</span> — often 10× or more.", dur:4800, on(){SIM.scan();}},
+  {cap:"Less data read, less data stored. That's why analytics engines — Redshift, BigQuery, ClickHouse — are columnar.", dur:4600},
+  {cap:"The trade: fetching a whole single row means gathering pieces from every column, so columnar is poor for OLTP writes.", dur:4600, on(){SIM.setMode('row');}},
+  {cap:"Your turn 👉 flip <b>🔀 Row / Columnar</b> and <b>📊 scan</b> to compare reading whole rows with reading one column.", dur:5200},
+  {cap:"Columnar storage powers analytics: read only the columns you need, compress them hard. Row stores still win for transactions.", dur:4800}
+]});
+
+</script>
+</body></html>

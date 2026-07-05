@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Locking — Library Hold vs Wiki Edit · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rowbox{position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); width:140px; text-align:center; font-family:var(--fmono); font-size:12px; padding:12px; border-radius:10px; border:2px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.rowbox.locked{border-color:var(--bad); background:#fdeceb}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Locking — Library Hold vs Wiki Edit</h1>
+  <p class="subtitle">Pessimistic: borrow the only library copy and nobody else can touch it until you return it — safe, but they wait. Optimistic: everyone edits a shared wiki page freely, and if someone saved before you, you just redo your change on the fresh version.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Edits saved</div><div class="stat-v accent" id="statEdits">0</div></div>
+  <div class="stat"><div class="stat-k">Strategy</div><div class="stat-v" id="statMode">Library hold</div></div>
+  <div class="stat"><div class="stat-k">Clashes / waits</div><div class="stat-v" id="statConf">0</div></div>
+</div>
+<div class="rowbox" id="rowbox">📄 the page<br>edits: <span id="qty">5</span><br><span style="color:var(--faint)">v<span id="ver">1</span></span></div>
+<div class="node abs" data-show="1" style="left:20%;top:74%"><div class="box sm">🅰️</div><div class="lbl"><span class="k">Editor A</span></div></div>
+<div class="node abs" data-show="1" style="left:80%;top:74%"><div class="box sm">🅱️</div><div class="lbl"><span class="k">Editor B</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Library hold / Wiki edit</button>
+  <button class="act ok" id="actEdit">✍️ A & B edit at once</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const rowbox=document.getElementById('rowbox'), qtyEl=document.getElementById('qty'), verEl=document.getElementById('ver');
+  let mode='pess', edits=0, conf=0, qty=5, ver=1, busy=false, running=false;
+  const elE=document.getElementById('statEdits'), elM=document.getElementById('statMode'), elC=document.getElementById('statConf');
+  function hop(fx,fy,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .42s, top .42s'; d.style.left='50%'; d.style.top='30%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),240); }, 420*simRate()); }
+  function edit(){ if(busy) return; busy=true;
+    if(mode==='pess'){ rowbox.classList.add('locked'); hop(20,74,'',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits;
+        elC.textContent=(+elC.textContent.split(' ')[0]+1)+' waits'; elC.className='stat-v warn';
+        setTimeout(()=>{ rowbox.classList.remove('locked'); hop(80,74,'done',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; busy=false; }); }, 500*simRate());
+      });
+    } else { const readVer=ver; hop(20,74,'done',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; });
+      hop(80,74,'',()=>{ if(ver!==readVer){ conf++; elC.textContent=conf+' redos'; elC.className='stat-v bad'; const x=document.createElement('div'); x.className='dot fail'; x.style.left='50%'; x.style.top='30%'; scene.appendChild(x); setTimeout(()=>x.remove(),500*simRate());
+          setTimeout(()=>{ hop(80,74,'done',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; busy=false; }); }, 600*simRate());
+        } else { qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; busy=false; } });
+    }
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='pess'?'Library hold':'Wiki edit'; elM.className='stat-v '+(m==='pess'?'warn':'good'); elC.textContent='0'; }
+  function loop(){ if(!running)return; if(!busy) edit(); setTimeout(loop, 3000*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='pess'?'opt':'pess');
+  document.getElementById('actEdit').onclick=edit;
+  setMode('pess'); running=true; loop();
+  return {edit,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two people want to change the <b>same thing</b> at once. There are two philosophies for preventing a mess.", dur:4600},
+  {cap:"<b>Library hold</b> assumes a clash is likely, so it plays safe: Editor A <b>checks out the only copy</b> and locks it.", dur:4600, on(){SIM.setMode('pess');}},
+  {cap:"While A has it, Editor B simply <b>waits</b> in line. No clash is possible — but B is blocked until A returns the copy.", dur:4800, on(){SIM.edit();}},
+  {cap:"Safe and simple, but holds hurt flow: if A is slow, everyone behind them sits idle. That's <b>pessimistic locking.</b>", dur:4600},
+  {cap:"<b>Wiki edit</b> bets clashes are <em>rare</em>, so it takes no lock — everyone edits the shared page freely at the same time.", dur:4600, on(){SIM.setMode('opt');}},
+  {cap:"Each edit is based on a page <b>version number.</b> When you save, the wiki checks: \"is this still the version I started from?\"", dur:4800, on(){SIM.edit();}},
+  {cap:"A saves first and bumps the version. Now B's save sees a <span class='hl-bad'>changed version</span> — so B's edit is rejected.", dur:4600},
+  {cap:"B isn't blocked, it just <b>redoes</b> the change on the fresh page and saves again. No locks held — that's <b>optimistic locking.</b>", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 Library hold / Wiki edit</b> and <b>✍️ edit at once</b> to compare waiting with redoing.", dur:5200, on(){SIM.setMode('pess');}},
+  {cap:"Pessimistic: lock and wait — best when clashes are common. Optimistic: edit freely, redo on clash — best when they're rare.", dur:4800}
+]});
+
+</script>
+</body></html>

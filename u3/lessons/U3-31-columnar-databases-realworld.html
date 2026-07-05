@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Columnar — Totalling a Ledger Column · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.grid6{position:absolute; left:48%; top:22%; transform:translateX(-50%); display:grid; grid-template-columns:repeat(5,1fr); gap:3px; z-index:2}
+.cell6{width:34px; height:22px; border-radius:4px; border:1px solid var(--line2); background:#fff; font-family:var(--fmono); font-size:9px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:.15s}
+.cell6.read{background:#eaf2fe; border-color:var(--accent); color:var(--accent-d)}
+.cell6.skip{opacity:.35}
+.complbl{position:absolute; left:48%; bottom:24%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--good); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Columnar — Totalling a Ledger Column</h1>
+  <p class="subtitle">To add up a year of expenses, you want all the amounts in one neat column you can run your finger straight down. If the amounts are scattered across full rows of date, vendor, and notes, you waste effort skipping past everything you don't need.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Tallies run</div><div class="stat-v accent" id="statScans">0</div></div>
+  <div class="stat"><div class="stat-k">Layout</div><div class="stat-v" id="statMode">Row by row</div></div>
+  <div class="stat"><div class="stat-k">Cells read (last)</div><div class="stat-v" id="statRead">—</div></div>
+</div>
+<div class="nlbl" style="left:48%;top:14%;transform:translateX(-50%)">task: total the AMOUNT column for the year</div>
+<div class="grid6" id="grid"></div>
+<div class="complbl" id="complbl"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Row by row / Down the column</button>
+  <button class="act ok" id="actScan">🧮 Total the amounts</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const grid=document.getElementById('grid'), complbl=document.getElementById('complbl');
+  const ROWS=6, COLS=5; const headers=['date','vendor','amount','tax','note']; const priceCol=2;
+  let cells=[], mode='row', scans=0, running=false;
+  const elS=document.getElementById('statScans'), elM=document.getElementById('statMode'), elR=document.getElementById('statRead');
+  function build(){ grid.innerHTML=''; cells=[]; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const el=document.createElement('div'); el.className='cell6'; el.textContent= r===0? headers[c] : (c===priceCol? ('$'+(10+r*3)) : '•'); el.dataset.r=r; el.dataset.c=c; grid.appendChild(el); cells.push(el); } }
+  function scan(){ if(document.hidden) return; scans++; elS.textContent=scans; cells.forEach(c=>c.classList.remove('read','skip'));
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),240);
+      if(mode==='row'){ cells.forEach(c=>{ if(+c.dataset.r>0) c.classList.add('read'); }); elR.textContent=(ROWS-1)*COLS+' (whole rows)'; elR.className='stat-v bad'; complbl.textContent='';
+      } else { cells.forEach(c=>{ if(+c.dataset.r>0){ if(+c.dataset.c===priceCol) c.classList.add('read'); else c.classList.add('skip'); } });
+        elR.textContent=(ROWS-1)+' (just the column)'; elR.className='stat-v good'; complbl.textContent='all amounts together → compresses well';
+      } }, leg);
+  }
+  function setMode(m){ mode=m; build(); elM.textContent=m==='row'?'Row by row':'Down the column'; elM.className='stat-v '+(m==='row'?'warn':'good'); complbl.textContent=''; }
+  function loop(){ if(!running)return; scan(); setTimeout(loop, 1800*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='row'?'col':'row');
+  document.getElementById('actScan').onclick=scan;
+  setMode('row'); running=true; loop();
+  return {scan,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You need to <b>total a year of expenses</b> — just add up the amount column. How your ledger is laid out decides how hard that is.", dur:4800},
+  {cap:"A normal ledger is <b>row by row</b>: each line has date, vendor, amount, tax, note — all jumbled together across the page.", dur:4600},
+  {cap:"To sum the amounts, your finger must cross <em>every</em> cell of every row, <b>skipping past</b> dates and vendors to reach each number.", dur:4800, on(){SIM.scan();}},
+  {cap:"Watch it light up the <span class='hl-bad'>whole ledger</span> just to grab one column. So much wasted skimming.", dur:4400, on(){SIM.scan();}},
+  {cap:"A <b>columnar</b> layout flips it: keep all the amounts together in one neat column.", dur:4200, on(){SIM.setMode('col');}},
+  {cap:"Now you run your finger <b>straight down the amounts</b> — ignoring dates, vendors, and notes entirely. Far less work.", dur:4800, on(){SIM.scan();}},
+  {cap:"Bonus: a column of similar values (all amounts, all dates) <span class='hl-good'>compresses</span> beautifully — less to store and read.", dur:4800, on(){SIM.scan();}},
+  {cap:"That's why analytics databases store data by column. Big sweeps over one field become fast and cheap.", dur:4400},
+  {cap:"The trade: fetching one whole <em>row</em> means gathering bits from every column — so columnar is poor for single-record edits.", dur:4600, on(){SIM.setMode('row');}},
+  {cap:"Your turn 👉 flip <b>🔀 Row by row / Down the column</b> and <b>🧮 total</b> to compare crossing rows with running down a column.", dur:5200},
+  {cap:"Columnar storage powers analytics: read only the column you need and compress it hard. Row storage still wins for transactions.", dur:4800}
+]});
+
+</script>
+</body></html>

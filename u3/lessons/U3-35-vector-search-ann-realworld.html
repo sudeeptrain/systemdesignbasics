@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vector Search / ANN — Find a Friend in a Crowd · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.space{position:absolute; left:34%; top:14%; width:60%; height:74%; border:1.5px solid var(--line2); border-radius:12px; background:#fbfdff; z-index:1}
+.pt{position:absolute; width:13px; height:13px; border-radius:50%; transform:translate(-50%,-50%); background:#aebfd6; border:1px solid #8aa; z-index:3; transition:.2s}
+.pt.scan{background:var(--warn); border-color:#b9730b}
+.pt.hop{background:var(--accent); border-color:#1657bf; box-shadow:0 0 0 4px rgba(31,111,230,.18)}
+.pt.hit{background:var(--good); border-color:#0c7a4d; box-shadow:0 0 0 4px rgba(18,163,104,.2)}
+.pt.q{background:var(--pink); border-color:#a01f63; width:18px; height:18px}
+.hnedge{position:absolute; height:1.5px; background:rgba(31,111,230,.25); transform-origin:left center; z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Vector Search / ANN — Find a Friend in a Crowd</h1>
+  <p class="subtitle">To find your friend in a packed stadium you don't inspect all 50,000 faces. You spot someone you half-recognise, head their way, then ask them to point you closer, and again — a few hops and you've arrived. That's how approximate nearest-neighbour search works.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Searches</div><div class="stat-v accent" id="statSearches">0</div></div>
+  <div class="stat"><div class="stat-k">People checked (last)</div><div class="stat-v" id="statEx">—</div></div>
+  <div class="stat"><div class="stat-k">Method</div><div class="stat-v" id="statMode">Check everyone</div></div>
+</div>
+<div class="space" id="space"></div>
+<div id="pts"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Check everyone / Hop closer (ANN)</button>
+  <button class="act ok" id="actSearch">🔎 Find your friend</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ptsEl=document.getElementById('pts');
+  let pts=[], mode='exact', searches=0, running=false;
+  const elS=document.getElementById('statSearches'), elEx=document.getElementById('statEx'), elM=document.getElementById('statMode');
+  function build(){ ptsEl.innerHTML=''; pts=[]; for(let i=0;i<22;i++){ const x=38+Math.random()*52, y=20+Math.random()*60;
+    const el=document.createElement('div'); el.className='pt'; el.style.left=x+'%'; el.style.top=y+'%'; ptsEl.appendChild(el); pts.push({x,y,el}); } }
+  function clear(){ pts.forEach(p=>p.el.className='pt'); [...ptsEl.querySelectorAll('.hnedge')].forEach(e=>e.remove()); }
+  function search(){ if(document.hidden) return; searches++; elS.textContent=searches; clear();
+    const qx=38+Math.random()*52, qy=20+Math.random()*60;
+    const q=document.createElement('div'); q.className='pt q'; q.style.left=qx+'%'; q.style.top=qy+'%'; ptsEl.appendChild(q);
+    const nearest=pts.map(p=>({p,d:Math.hypot(p.x-qx,p.y-qy)})).sort((a,b)=>a.d-b.d);
+    if(mode==='exact'){ pts.forEach((p,k)=>setTimeout(()=>{ p.el.classList.add('scan'); if(k===pts.length-1){ setTimeout(()=>{ nearest[0].p.el.className='pt hit'; },200); } }, k*70*simRate()));
+      elEx.textContent=pts.length+' (all)'; elEx.className='stat-v bad';
+    } else { let cur=pts[Math.floor(Math.random()*pts.length)]; const path=[cur]; let examined=1;
+      for(let step=0; step<4; step++){ const cand=pts.map(p=>({p,d:Math.hypot(p.x-cur.x,p.y-cur.y)})).filter(o=>o.p!==cur).sort((a,b)=>a.d-b.d).slice(0,4); examined+=cand.length;
+        const best=cand.map(o=>({p:o.p,d:Math.hypot(o.p.x-qx,o.p.y-qy)})).sort((a,b)=>a.d-b.d)[0]; if(!best || Math.hypot(cur.x-qx,cur.y-qy)<=best.d) break; cur=best.p; path.push(cur); }
+      path.forEach((p,k)=>setTimeout(()=>{ p.el.classList.add(k===path.length-1?'hit':'hop'); if(k>0){ const a=path[k-1]; const w=scene.clientWidth||900,h=scene.clientHeight||460; const ax=a.x/100*w,ay=a.y/100*h,bx=p.x/100*w,by=p.y/100*h; const e=document.createElement('div'); e.className='hnedge'; e.style.left=a.x+'%'; e.style.top=a.y+'%'; e.style.width=Math.hypot(bx-ax,by-ay)+'px'; e.style.transform='rotate('+(Math.atan2(by-ay,bx-ax)*180/Math.PI)+'deg)'; ptsEl.appendChild(e); } }, k*340*simRate()));
+      elEx.textContent='~'+examined+' (few)'; elEx.className='stat-v good';
+    }
+    setTimeout(()=>q.remove(), 2000*simRate());
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='exact'?'Check everyone':'Hop closer (ANN)'; elM.className='stat-v '+(m==='exact'?'bad':'good'); }
+  function loop(){ if(!running)return; search(); setTimeout(loop, 2600*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='exact'?'ann':'exact');
+  document.getElementById('actSearch').onclick=search;
+  build(); setMode('exact'); running=true; loop();
+  return {search,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're meeting a friend in a packed stadium of 50,000 people. How do you actually find them quickly?", dur:4600},
+  {cap:"The thorough way: <b>inspect every single face</b> until you spot them. Guaranteed to work — and impossibly slow.", dur:4600, on(){SIM.search();}},
+  {cap:"That's an <b>exact search</b>: checking all the points. Its cost grows with the whole crowd. Useless at stadium scale.", dur:4400},
+  {cap:"So you accept 'good enough'. <b>ANN</b> — Approximate Nearest Neighbour — finds them <em>almost</em> always, without checking everyone.", dur:4800},
+  {cap:"Switch to <b>hop closer.</b> You spot someone you half-recognise and head their way.", dur:4400, on(){SIM.setMode('ann');}},
+  {cap:"Ask them to point you toward your friend, move, ask again — each <b>hop</b> gets you closer. A few jumps and you've arrived.", dur:4800, on(){SIM.search();}},
+  {cap:"Watch 'people checked' drop from <em>everyone</em> to just a <span class='hl-good'>handful.</span> You navigated, you didn't scan.", dur:4600, on(){SIM.search();}},
+  {cap:"The trade: now and then you'd land on your friend's neighbour instead of them exactly — a tiny error for an enormous speed-up.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 Check everyone / Hop closer</b> and <b>🔎 search</b> to compare scanning all with a few smart hops.", dur:5200},
+  {cap:"ANN methods like HNSW power real-time vector search behind recommendations and RAG — approximate, but fast enough for billions.", dur:4800}
+]});
+
+</script>
+</body></html>
