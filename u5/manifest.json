@@ -1,0 +1,1276 @@
+[
+  {
+    "file": "U5-01-process-lifecycle-concept.html",
+    "id": "U5-01-process-lifecycle-concept",
+    "title": "Process Lifecycle",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actDispatch",
+      "actIO"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-01-process-lifecycle-realworld.html",
+    "id": "U5-01-process-lifecycle-realworld",
+    "title": "Process Lifecycle — An Employee's Workday",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actDispatch",
+      "actIO"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-02-process-scheduler-concept.html",
+    "id": "U5-02-process-scheduler-concept",
+    "title": "Process Scheduler",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actArrive",
+      "actDispatch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-02-process-scheduler-realworld.html",
+    "id": "U5-02-process-scheduler-realworld",
+    "title": "Process Scheduler — Calling the Next Patient",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actArrive",
+      "actDispatch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-03-preemptive-vs-nonpreemptive-concept.html",
+    "id": "U5-03-preemptive-vs-nonpreemptive-concept",
+    "title": "Preemptive vs Non-Preemptive Scheduling",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actMode",
+      "actAddShort"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-03-preemptive-vs-nonpreemptive-realworld.html",
+    "id": "U5-03-preemptive-vs-nonpreemptive-realworld",
+    "title": "Preemptive vs Non-Preemptive — The Supermarket Checkout",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actMode",
+      "actAddShort"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-04-race-condition-concept.html",
+    "id": "U5-04-race-condition-concept",
+    "title": "Race Condition",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statActual"
+    ],
+    "buttons": [
+      "actSafe",
+      "actRace"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-04-race-condition-realworld.html",
+    "id": "U5-04-race-condition-realworld",
+    "title": "Race Condition — Two Waiters, One Order Pad",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statActual"
+    ],
+    "buttons": [
+      "actSafe",
+      "actRace"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-05-mutex-lock-concept.html",
+    "id": "U5-05-mutex-lock-concept",
+    "title": "Mutex / Lock",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actEnter",
+      "actContend"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-05-mutex-lock-realworld.html",
+    "id": "U5-05-mutex-lock-realworld",
+    "title": "Mutex / Lock — The Single Restroom Key",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actEnter",
+      "actContend"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-06-memory-allocation-concept.html",
+    "id": "U5-06-memory-allocation-concept",
+    "title": "Memory Allocation",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statUsed"
+    ],
+    "buttons": [
+      "actAlloc",
+      "actFree"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-06-memory-allocation-realworld.html",
+    "id": "U5-06-memory-allocation-realworld",
+    "title": "Memory Allocation — A Parking Lot",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statUsed"
+    ],
+    "buttons": [
+      "actAlloc",
+      "actFree"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-07-paging-concept.html",
+    "id": "U5-07-paging-concept",
+    "title": "Paging",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actRandom"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-07-paging-realworld.html",
+    "id": "U5-07-paging-realworld",
+    "title": "Paging — A Coat-Check with Numbered Cubbies",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actRandom"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-08-segmentation-concept.html",
+    "id": "U5-08-segmentation-concept",
+    "title": "Segmentation",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actBadAccess"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-08-segmentation-realworld.html",
+    "id": "U5-08-segmentation-realworld",
+    "title": "Segmentation — A House Divided by Room",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actBadAccess"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-09-virtual-memory-concept.html",
+    "id": "U5-09-virtual-memory-concept",
+    "title": "Virtual Memory",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actGrow"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-09-virtual-memory-realworld.html",
+    "id": "U5-09-virtual-memory-realworld",
+    "title": "Virtual Memory — A Small Desk, a Big Filing Cabinet",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actGrow"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-10-page-fault-concept.html",
+    "id": "U5-10-page-fault-concept",
+    "title": "Page Fault",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actHit",
+      "actFault"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-10-page-fault-realworld.html",
+    "id": "U5-10-page-fault-realworld",
+    "title": "Page Fault — Fetching a File from the Archive",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actHit",
+      "actFault"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-11-thrashing-concept.html",
+    "id": "U5-11-thrashing-concept",
+    "title": "Thrashing",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statWork"
+    ],
+    "buttons": [
+      "actAddProcess",
+      "actRemove"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-11-thrashing-realworld.html",
+    "id": "U5-11-thrashing-realworld",
+    "title": "Thrashing — A Desk Too Small for the Job",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statWork"
+    ],
+    "buttons": [
+      "actAddProcess",
+      "actRemove"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-12-fifo-page-replacement-concept.html",
+    "id": "U5-12-fifo-page-replacement-concept",
+    "title": "FIFO Page Replacement",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actReset"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-12-fifo-page-replacement-realworld.html",
+    "id": "U5-12-fifo-page-replacement-realworld",
+    "title": "FIFO Replacement — Clearing the Fridge by Date",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actReset"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-13-lru-page-replacement-concept.html",
+    "id": "U5-13-lru-page-replacement-concept",
+    "title": "LRU Page Replacement",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actReset"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-13-lru-page-replacement-realworld.html",
+    "id": "U5-13-lru-page-replacement-realworld",
+    "title": "LRU Replacement — Clearing Out the Wardrobe",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actReset"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-14-lfu-page-replacement-concept.html",
+    "id": "U5-14-lfu-page-replacement-concept",
+    "title": "LFU Page Replacement",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actReset"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-14-lfu-page-replacement-realworld.html",
+    "id": "U5-14-lfu-page-replacement-realworld",
+    "title": "LFU Replacement — Keep the Tools You Reach For Most",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actReset"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-15-cache-hierarchy-concept.html",
+    "id": "U5-15-cache-hierarchy-concept",
+    "title": "Cache Hierarchy (L1 / L2 / L3 / RAM)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actHot",
+      "actCold"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-15-cache-hierarchy-realworld.html",
+    "id": "U5-15-cache-hierarchy-realworld",
+    "title": "Cache Hierarchy — From Countertop to Basement",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actHot",
+      "actCold"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-16-cache-hit-vs-miss-concept.html",
+    "id": "U5-16-cache-hit-vs-miss-concept",
+    "title": "Cache Hit vs Cache Miss",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actHit",
+      "actMiss"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-16-cache-hit-vs-miss-realworld.html",
+    "id": "U5-16-cache-hit-vs-miss-realworld",
+    "title": "Cache Hit vs Miss — The Fridge or the Shop",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actHit",
+      "actMiss"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-17-cache-aside-concept.html",
+    "id": "U5-17-cache-aside-concept",
+    "title": "Cache-Aside Pattern",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actRead",
+      "actWrite"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-17-cache-aside-realworld.html",
+    "id": "U5-17-cache-aside-realworld",
+    "title": "Cache-Aside — Your Personal Address Book",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actRead",
+      "actWrite"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-18-write-through-cache-concept.html",
+    "id": "U5-18-write-through-cache-concept",
+    "title": "Write-Through Cache",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-18-write-through-cache-realworld.html",
+    "id": "U5-18-write-through-cache-realworld",
+    "title": "Write-Through — Planner and Shared Calendar Together",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-19-write-back-cache-concept.html",
+    "id": "U5-19-write-back-cache-concept",
+    "title": "Write-Back Cache",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actFlush"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-19-write-back-cache-realworld.html",
+    "id": "U5-19-write-back-cache-realworld",
+    "title": "Write-Back — Sticky Notes Now, Calendar Later",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actFlush"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-20-distributed-cache-concept.html",
+    "id": "U5-20-distributed-cache-concept",
+    "title": "Distributed Cache (Redis Cluster)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actGet",
+      "actAddNode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-20-distributed-cache-realworld.html",
+    "id": "U5-20-distributed-cache-realworld",
+    "title": "Distributed Cache — Books Split Across Library Branches",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actGet",
+      "actAddNode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-21-cdn-cache-concept.html",
+    "id": "U5-21-cdn-cache-concept",
+    "title": "CDN Cache",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actExpire"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-21-cdn-cache-realworld.html",
+    "id": "U5-21-cdn-cache-realworld",
+    "title": "CDN Cache — The Corner Newsstand",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actExpire"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-22-cache-invalidation-concept.html",
+    "id": "U5-22-cache-invalidation-concept",
+    "title": "Cache Invalidation",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actUpdate",
+      "actInvalidate"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-22-cache-invalidation-realworld.html",
+    "id": "U5-22-cache-invalidation-realworld",
+    "title": "Cache Invalidation — The Outdated Printed Menu",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actUpdate",
+      "actInvalidate"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U5-23-cache-eviction-concept.html",
+    "id": "U5-23-cache-eviction-concept",
+    "title": "Cache Eviction (LRU / LFU)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-23-cache-eviction-realworld.html",
+    "id": "U5-23-cache-eviction-realworld",
+    "title": "Cache Eviction — Making Room on a Full Shelf",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statHits"
+    ],
+    "buttons": [
+      "actAccess",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-24-threads-vs-processes-concept.html",
+    "id": "U5-24-threads-vs-processes-concept",
+    "title": "Threads vs Processes",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statThreads"
+    ],
+    "buttons": [
+      "actAddThread",
+      "actAddProcess"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-24-threads-vs-processes-realworld.html",
+    "id": "U5-24-threads-vs-processes-realworld",
+    "title": "Threads vs Processes — Shared Office vs Separate Companies",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statThreads"
+    ],
+    "buttons": [
+      "actAddThread",
+      "actAddProcess"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-25-concurrency-vs-parallelism-concept.html",
+    "id": "U5-25-concurrency-vs-parallelism-concept",
+    "title": "Concurrency vs Parallelism",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actMode",
+      "actAddTask"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-25-concurrency-vs-parallelism-realworld.html",
+    "id": "U5-25-concurrency-vs-parallelism-realworld",
+    "title": "Concurrency vs Parallelism — One Chef or Many",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actMode",
+      "actAddTask"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-26-context-switching-concept.html",
+    "id": "U5-26-context-switching-concept",
+    "title": "Context Switching",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSwitches"
+    ],
+    "buttons": [
+      "actSwitch",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-26-context-switching-realworld.html",
+    "id": "U5-26-context-switching-realworld",
+    "title": "Context Switching — Swapping Between Craft Projects",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSwitches"
+    ],
+    "buttons": [
+      "actSwitch",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-27-deadlock-concept.html",
+    "id": "U5-27-deadlock-concept",
+    "title": "Deadlock",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDeadlocks"
+    ],
+    "buttons": [
+      "actDeadlock",
+      "actPrevent"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-27-deadlock-realworld.html",
+    "id": "U5-27-deadlock-realworld",
+    "title": "Deadlock — Two Cars at a One-Lane Bridge",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDeadlocks"
+    ],
+    "buttons": [
+      "actDeadlock",
+      "actPrevent"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-28-semaphore-mutex-spinlock-concept.html",
+    "id": "U5-28-semaphore-mutex-spinlock-concept",
+    "title": "Semaphore vs Mutex vs Spinlock",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actMode",
+      "actAcquire"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-28-semaphore-mutex-spinlock-realworld.html",
+    "id": "U5-28-semaphore-mutex-spinlock-realworld",
+    "title": "Semaphore vs Mutex vs Spinlock — Getting a Desk",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actMode",
+      "actAcquire"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-29-ipc-concept.html",
+    "id": "U5-29-ipc-concept",
+    "title": "Inter-Process Communication (IPC)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actSend",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-29-ipc-realworld.html",
+    "id": "U5-29-ipc-realworld",
+    "title": "IPC — How Two Neighbors Share",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actSend",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-30-copy-on-write-concept.html",
+    "id": "U5-30-copy-on-write-concept",
+    "title": "Copy-on-Write",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCopies"
+    ],
+    "buttons": [
+      "actRead",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-30-copy-on-write-realworld.html",
+    "id": "U5-30-copy-on-write-realworld",
+    "title": "Copy-on-Write — Photocopy Only What You'll Mark Up",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCopies"
+    ],
+    "buttons": [
+      "actRead",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-31-tlb-concept.html",
+    "id": "U5-31-tlb-concept",
+    "title": "TLB (Translation Lookaside Buffer)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actFlush"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-31-tlb-realworld.html",
+    "id": "U5-31-tlb-realworld",
+    "title": "TLB — A Speed-Dial Note vs the Phone Book",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAccesses"
+    ],
+    "buttons": [
+      "actAccess",
+      "actFlush"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-32-read-through-write-around-concept.html",
+    "id": "U5-32-read-through-write-around-concept",
+    "title": "Read-Through & Write-Around Cache",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actRead",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-32-read-through-write-around-realworld.html",
+    "id": "U5-32-read-through-write-around-realworld",
+    "title": "Read-Through & Write-Around — A Librarian Who Fetches",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actRead",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-33-cache-stampede-concept.html",
+    "id": "U5-33-cache-stampede-concept",
+    "title": "Cache Stampede / Thundering Herd",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDbHits"
+    ],
+    "buttons": [
+      "actExpire",
+      "actMitigate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-33-cache-stampede-realworld.html",
+    "id": "U5-33-cache-stampede-realworld",
+    "title": "Cache Stampede — The Rush When the Sign Comes Down",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDbHits"
+    ],
+    "buttons": [
+      "actExpire",
+      "actMitigate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-34-cache-warming-negative-caching-concept.html",
+    "id": "U5-34-cache-warming-negative-caching-concept",
+    "title": "Cache Warming & Negative Caching",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDbHits"
+    ],
+    "buttons": [
+      "actWarm",
+      "actNegative"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-34-cache-warming-negative-caching-realworld.html",
+    "id": "U5-34-cache-warming-negative-caching-realworld",
+    "title": "Cache Warming & Negative Caching — Prep Before the Rush",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDbHits"
+    ],
+    "buttons": [
+      "actWarm",
+      "actNegative"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-35-ttl-cache-coherence-concept.html",
+    "id": "U5-35-ttl-cache-coherence-concept",
+    "title": "TTL Strategies & Cache Coherence",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actTTL",
+      "actSync"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U5-35-ttl-cache-coherence-realworld.html",
+    "id": "U5-35-ttl-cache-coherence-realworld",
+    "title": "TTL & Coherence — Expiry Dates and Synced Branch Menus",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actTTL",
+      "actSync"
+    ],
+    "steps": 10
+  }
+]

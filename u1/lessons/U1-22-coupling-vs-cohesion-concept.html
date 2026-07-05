@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coupling vs Cohesion · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cgrp{position:absolute; font-family:var(--fmono); font-size:12px; font-weight:600; transform:translateX(-50%); z-index:2}
+.mesh{position:absolute; height:2.5px; background:#e0a6b6; transform-origin:left center; z-index:1; border-radius:3px}
+.cohpulse .box{border-color:var(--good) !important; box-shadow:0 0 0 5px rgba(18,163,104,.18) !important}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Coupling vs Cohesion</h1>
+  <p class="subtitle">Two opposite goals. Low coupling = modules barely depend on each other, so a change stays local. High cohesion = each module does one focused job. Watch a single change ripple through both designs.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Tight design ripple</div><div class="stat-v bad" id="statTight">—</div></div>
+  <div class="stat"><div class="stat-k">Loose design ripple</div><div class="stat-v good" id="statLoose">—</div></div>
+  <div class="stat"><div class="stat-k">Changes made</div><div class="stat-v accent" id="statChanges">0</div></div>
+</div>
+<div class="cgrp" style="left:30%;top:12%;color:var(--bad)">Tightly coupled 🕸️</div>
+<div class="cgrp" style="left:73%;top:12%;color:var(--good)">Loosely coupled ✨</div>
+<div class="mesh" id="meshA"></div><div class="mesh" id="meshB"></div><div class="mesh" id="meshC"></div>
+<div class="node abs lmod l-0" data-show="1" style="left:22%;top:32%"><div class="box sm">🧩</div></div>
+<div class="node abs lmod l-1" data-show="1" style="left:38%;top:32%"><div class="box sm">🧩</div></div>
+<div class="node abs lmod l-2" data-show="1" style="left:30%;top:66%"><div class="box sm">🧩</div></div>
+<div class="node abs rmod r-0" data-show="1" style="left:65%;top:32%"><div class="box sm">🧩</div></div>
+<div class="node abs rmod r-1" data-show="1" style="left:81%;top:32%"><div class="box sm">🧩</div></div>
+<div class="node abs rmod r-2" data-show="1" style="left:73%;top:66%"><div class="box sm">🧩</div></div>
+<div class="node abs" data-show="1" style="left:73%;top:48%"><div class="box sm" style="font-size:18px">🚪</div></div>
+<div class="acts">
+  <button class="act bad" id="actChange">✏️ Change a module</button>
+  <button class="act ok" id="actCohesion">🎯 Show cohesion</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const L=[{x:22,y:32},{x:38,y:32},{x:30,y:66}].map((p,i)=>({...p,el:scene.querySelector('.l-'+i)}));
+  const R=[{x:65,y:32},{x:81,y:32},{x:73,y:66}].map((p,i)=>({...p,el:scene.querySelector('.r-'+i)}));
+  let changes=0, running=false;
+  const elT=document.getElementById('statTight'), elLo=document.getElementById('statLoose'), elCh=document.getElementById('statChanges');
+  // draw mesh lines among left modules
+  function line(el,a,b){ const dx=b.x-a.x, dy=(b.y-a.y)*0.0; const w=scene.clientWidth||900, h=scene.clientHeight||460;
+    const ax=a.x/100*w, ay=a.y/100*h, bx=b.x/100*w, by=b.y/100*h; const len=Math.hypot(bx-ax,by-ay); const ang=Math.atan2(by-ay,bx-ax)*180/Math.PI;
+    el.style.left=a.x+'%'; el.style.top=a.y+'%'; el.style.width=len+'px'; el.style.transform='rotate('+ang+'deg)'; }
+  function drawMesh(){ line(document.getElementById('meshA'),L[0],L[1]); line(document.getElementById('meshB'),L[0],L[2]); line(document.getElementById('meshC'),L[1],L[2]); }
+  function ripple(from,to){ const d=document.createElement('div'); d.className='dot fail'; d.style.left=from.x+'%'; d.style.top=from.y+'%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=to.x+'%'; d.style.top=to.y+'%'; });
+    setTimeout(()=>{ to.el.classList.add('cohpulse'); setTimeout(()=>to.el.classList.remove('cohpulse'),600); d.remove(); }, leg); }
+  function change(){
+    if(document.hidden) return;
+    changes++; elCh.textContent=changes;
+    const i=Math.floor(Math.random()*3);
+    L[i].el.classList.add('active'); setTimeout(()=>L[i].el.classList.remove('active'),800*simRate());
+    L.forEach((o,j)=>{ if(j!==i) ripple(L[i],o); });
+    elT.textContent='3 / 3 hit'; elT.className='stat-v bad';
+    R[i].el.classList.add('active'); setTimeout(()=>R[i].el.classList.remove('active'),800*simRate());
+    elLo.textContent='1 / 3 hit'; elLo.className='stat-v good';
+  }
+  function cohesion(){ [...L,...R].forEach((m,k)=>setTimeout(()=>{ m.el.classList.add('cohpulse'); setTimeout(()=>m.el.classList.remove('cohpulse'),500); }, k*120)); }
+  function loop(){ if(!running)return; change(); setTimeout(loop, 3200*simRate()); }
+  document.getElementById('actChange').onclick=change;
+  document.getElementById('actCohesion').onclick=cohesion;
+  setTimeout(drawMesh,60); window.addEventListener('resize',drawMesh);
+  running=true; loop();
+  return {change,cohesion};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two designs, same four modules. On the <span class='hl-bad'>left</span> they're <b>tightly coupled</b> — wired to each other directly.", dur:4400},
+  {cap:"On the <span class='hl-good'>right</span>, the same modules are <b>loosely coupled</b> — they talk only through a clean shared interface.", dur:4400},
+  {cap:"Now make <b>one change</b> to a module and watch it hit both designs at once.", dur:4000, on(){SIM.change();}},
+  {cap:"Tight side: the change <span class='hl-bad'>ripples to all three</span> modules — touch one, retest everything.", dur:4400},
+  {cap:"Loose side: the change <span class='hl-good'>stays in one module.</span> Same edit, a fraction of the blast radius.", dur:4400},
+  {cap:"That's <b>coupling</b>: how much modules depend on each other. You want it <em>low</em> — changes that stay local.", dur:4600},
+  {cap:"The other half is <b>cohesion</b>: how focused each module is. You want it <em>high</em> — each piece does one job well.", dur:4600, on(){SIM.cohesion();}},
+  {cap:"High cohesion + low coupling is the sweet spot: focused modules that barely depend on one another.", dur:4400},
+  {cap:"Your turn 👉 <b>✏️ Change a module</b> to compare ripple, and <b>🎯 Show cohesion</b> to see focused pieces.", dur:5200, on(){SIM.change();}},
+  {cap:"Aim for <span class='hl-good'>high cohesion, low coupling</span> — it's the quiet secret behind systems that stay easy to change.", dur:4800}
+]});
+
+</script>
+</body></html>

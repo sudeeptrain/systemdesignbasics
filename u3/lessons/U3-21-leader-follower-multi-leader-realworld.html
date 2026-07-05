@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leader–Follower vs Multi-Leader — Head Chefs · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ldrn .box{transition:.3s}
+.ldrn.active .box{border-color:var(--accent); box-shadow:0 0 0 4px rgba(31,111,230,.16)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Leader–Follower vs Multi-Leader — Head Chefs</h1>
+  <p class="subtitle">With one head chef, every plate passes through them — perfectly consistent, but a bottleneck. With a head chef in each branch kitchen, plates fly out fast everywhere — until two of them tweak the same signature recipe and the versions clash.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Dishes sent out</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Setup</div><div class="stat-v" id="statMode">One head chef</div></div>
+  <div class="stat"><div class="stat-k">Recipe clashes</div><div class="stat-v good" id="statConf">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:28%"><div class="box sm">🧑‍🍳</div><div class="lbl"><span class="k">Cook A</span></div></div>
+<div class="node abs" data-show="1" style="left:13%;top:72%"><div class="box sm">🧑‍🍳</div><div class="lbl"><span class="k">Cook B</span></div></div>
+<div class="node abs ldrn l-0" data-show="1" style="left:48%;top:28%"><div class="box sm">👨‍🍳</div><div class="lbl"><span class="k" id="l0name">Head chef</span></div></div>
+<div class="node abs ldrn l-1" data-show="1" style="left:48%;top:72%"><div class="box sm" id="l1box">🍳</div><div class="lbl"><span class="k" id="l1name">Line cook</span></div></div>
+<div class="node abs" data-show="1" style="left:82%;top:50%"><div class="box sm">🍽️</div><div class="lbl"><span class="k">Plates out</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 One chef / Multiple head chefs</button>
+  <button class="act ok" id="actWrite">✍️ Both tweak the same recipe</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='single', writes=0, conf=0, running=false;
+  const elW=document.getElementById('statWrites'), elM=document.getElementById('statMode'), elC=document.getElementById('statConf');
+  const l0=scene.querySelector('.l-0'), l1=scene.querySelector('.l-1'), l1name=document.getElementById('l1name'), l1box=document.getElementById('l1box');
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .42s, top .42s'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),240); }, 420*simRate()); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes;
+    if(mode==='single'){ l0.classList.add('active'); setTimeout(()=>l0.classList.remove('active'),300);
+      hop(13,28,48,28,'done',()=>{ hop(48,28,82,50,'done'); }); hop(13,72,48,28,'done');
+    } else { l0.classList.add('active'); l1.classList.add('active'); setTimeout(()=>{l0.classList.remove('active');l1.classList.remove('active');},300);
+      hop(13,28,48,28,'done'); hop(13,72,48,72,'done',()=>{ conf++; elC.textContent=conf; elC.className='stat-v bad';
+        hop(48,28,65,50,'fail'); hop(48,72,65,50,'fail',()=>{ const x=document.createElement('div'); x.className='dot fail'; x.style.left='65%'; x.style.top='50%'; scene.appendChild(x); setTimeout(()=>x.remove(),520*simRate()); }); });
+    }
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='single'?'One head chef':'Multiple head chefs'; elM.className='stat-v '+(m==='single'?'good':'warn');
+    l1name.textContent=m==='single'?'Line cook':'Head chef 2'; if(l1box)l1box.textContent=m==='single'?'🍳':'👨‍🍳'; }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='single'?'multi':'single');
+  document.getElementById('actWrite').onclick=write;
+  setMode('single'); running=true; loop();
+  return {write,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A restaurant must decide: <em>who gets to change the recipes?</em> That choice splits two kitchen setups — and two replication styles.", dur:4800},
+  {cap:"<b>One head chef:</b> every change to a dish goes through them. The line cooks just follow what the head chef decides.", dur:4800, on(){SIM.write();}},
+  {cap:"Even when two cooks want to tweak the same dish, the single head chef <b>decides the order</b> — so there's never a clash. Simple.", dur:4800, on(){SIM.write();}},
+  {cap:"The downsides: every change funnels through one person (a bottleneck), and if the head chef is out, the kitchen stalls.", dur:4600},
+  {cap:"<b>Multiple head chefs:</b> put one in each branch kitchen, so plates fly out fast everywhere, locally.", dur:4600, on(){SIM.setMode('multi');}},
+  {cap:"Great for a busy chain… until two head chefs change the <b>same signature recipe</b> at the same time.", dur:4200, on(){SIM.write();}},
+  {cap:"Now you have a genuine <span class='hl-bad'>clash</span> — two different versions of one dish — that someone must reconcile.", dur:4800, on(){SIM.write();}},
+  {cap:"You resolve it with rules: newest wins, or merge the changes — powerful, but real extra coordination.", dur:4600, on(){SIM.setMode('single');}},
+  {cap:"Your turn 👉 flip <b>🔀 one chef / many chefs</b> and <b>✍️ tweak the same recipe</b> from both to see clashes appear.", dur:5200},
+  {cap:"Single-leader: simple, consistent, bottlenecked. Multi-leader: fast and resilient everywhere, but you must resolve conflicts.", dur:4800}
+]});
+
+</script>
+</body></html>

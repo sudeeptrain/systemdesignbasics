@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latency · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.srv{transition:none}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Latency</h1>
+  <p class="subtitle">Latency is the time for one request to travel out and back. Distance and hops add delay — move the server near or far and watch the milliseconds change.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Latency (round trip)</div><div class="stat-v warn" id="statMs">— ms</div></div>
+  <div class="stat"><div class="stat-k">Server distance</div><div class="stat-v accent" id="statDist">Near</div></div>
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v" id="statN">0</div></div>
+</div>
+<div class="wireline" id="wire" style="left:12%;width:48%;top:58%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:58%"><div class="box">🧑</div><div class="lbl"><span class="k">User</span></div></div>
+<div class="node abs" id="srvNode" data-show="1" style="left:60%;top:58%"><div class="box srv">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="acts">
+  <button class="act" id="actSend">📨 Send request</button>
+  <button class="act" id="actDist">🌍 Move server far</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const UX=12, Y=58, MSPP=11;
+  let srvX=60, n=0;
+  const srvNode=document.getElementById('srvNode'), wire=document.getElementById('wire');
+  const elMs=document.getElementById('statMs'), elN=document.getElementById('statN'), elD=document.getElementById('statDist'), btnD=document.getElementById('actDist');
+  function modelMs(){ return Math.round((srvX-UX)*MSPP*2); }
+  function place(){ srvNode.style.left=srvX+'%'; wire.style.width=(srvX-UX)+'%';
+    const far=srvX>70; elD.textContent=far?'Far 🌍':'Near 🏠'; elMs.textContent='~'+modelMs()+' ms';
+    btnD.textContent=far?'🏠 Move server near':'🌍 Move server far'; }
+  function send(){
+    if(document.hidden) return;
+    n++; elN.textContent=n;
+    const leg=(srvX-UX)*MSPP*simRate()*1.3;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=UX+'%'; d.style.top=Y+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms linear'; d.style.left=srvX+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.transition='left '+leg+'ms linear'; d.style.left=UX+'%';
+      setTimeout(()=>{ elMs.textContent=modelMs()+' ms'; d.remove(); }, leg+90); }, leg+70);
+  }
+  function loop(){ send(); setTimeout(loop, 2800*simRate()); }
+  function toggleDist(){ srvX = srvX>70?60:86; place(); }
+  document.getElementById('actSend').onclick=send;
+  btnD.onclick=toggleDist;
+  place(); loop();
+  return {send,toggleDist};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Latency</b> is the time for a single request to go out and come back. Think of it as a stopwatch on one round trip.", dur:4200},
+  {cap:"The user fires a request; it travels the wire to the server and the clock runs the whole way.", dur:4000, on(){SIM.send();}},
+  {cap:"The server replies and the response travels <span class='hl-good'>all the way back</span>. That full out-and-back time is the latency.", dur:4200},
+  {cap:"Latency is dominated by <b>distance and hops</b> — every extra mile and every extra stop adds milliseconds.", dur:4200},
+  {cap:"Watch what happens when we push the server far away 🌍 — the trip gets visibly longer.", dur:4200, on(){SIM.toggleDist();}},
+  {cap:"Same request, more distance, <span class='hl-warn'>higher latency.</span> Nothing about the work changed — only the travel.", dur:4200},
+  {cap:"Bring it back close 🏠 — a cache or a nearby server — and the milliseconds drop right back down.", dur:4200, on(){SIM.toggleDist();}},
+  {cap:"That's why we put CDNs and caches near users: shorten the path, shrink the latency.", dur:4200},
+  {cap:"Your turn 👉 <b>📨 Send request</b> to time a trip, and <b>🌍 Move server</b> to feel distance become delay.", dur:5200},
+  {cap:"Remember: latency is about <em>one</em> request's wait. Next we'll compare it with throughput — a very different number.", dur:4400}
+]});
+
+</script>
+</body></html>

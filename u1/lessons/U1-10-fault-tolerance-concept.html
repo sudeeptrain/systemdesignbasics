@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fault Tolerance · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.role{position:absolute; font-family:var(--fmono); font-size:11px; font-weight:600; transform:translate(-50%,-50%); padding:2px 8px; border-radius:999px; z-index:3; transition:.3s}
+.role.active{background:var(--good); color:#fff}
+.role.standby{background:var(--line2); color:var(--ink)}
+.hb{position:absolute; left:72%; top:55%; width:3px; height:30%; transform:translate(-50%,-50%); background:repeating-linear-gradient(180deg,var(--good) 0 5px,transparent 5px 11px); z-index:1; opacity:.7; animation:hbflash 1.1s ease-in-out infinite}
+@keyframes hbflash{0%,100%{opacity:.3}50%{opacity:.85}}
+.hb.dead{background:#e9c4c4; animation:none}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Fault Tolerance</h1>
+  <p class="subtitle">Fault tolerance means the system keeps working through failures, not just avoiding them. An active node serves; a standby waits. When the active dies, the standby is promoted — automatically.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v good" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Failovers</div><div class="stat-v accent" id="statFailovers">0</div></div>
+  <div class="stat"><div class="stat-k">Serving from</div><div class="stat-v" id="statActive">Node A</div></div>
+</div>
+<div class="wireline" id="wA" style="left:14%;width:54%;top:34%"></div>
+<div class="wireline" id="wB" style="left:14%;width:54%;top:78%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">👥</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs" data-show="1" style="left:72%;top:34%"><div class="box na">🖥️</div><div class="lbl"><span class="k">Node A</span></div></div>
+<div class="role" id="roleA" style="left:84%;top:34%">ACTIVE</div>
+<div class="node abs" data-show="1" style="left:72%;top:78%"><div class="box nb">🖥️</div><div class="lbl"><span class="k">Node B</span></div></div>
+<div class="role" id="roleB" style="left:84%;top:78%">standby</div>
+<div class="hb" id="hb"></div>
+<div class="acts">
+  <button class="act bad" id="actKill">💥 Kill active node</button>
+  <button class="act ok" id="actHeal">♻ Heal</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const U={x:12,y:55}, A={x:72,y:34}, B={x:72,y:78};
+  let active='A', aAlive=true, bAlive=true, served=0, failovers=0, running=false;
+  const elS=document.getElementById('statServed'), elF=document.getElementById('statFailovers'), elAct=document.getElementById('statActive');
+  const roleA=document.getElementById('roleA'), roleB=document.getElementById('roleB'), hb=document.getElementById('hb');
+  const naEl=scene.querySelector('.na'), nbEl=scene.querySelector('.nb');
+  function fmt(){ roleA.textContent=active==='A'?'ACTIVE':'standby'; roleA.className='role '+(active==='A'?'active':'standby');
+    roleB.textContent=active==='B'?'ACTIVE':'standby'; roleB.className='role '+(active==='B'?'active':'standby');
+    elAct.textContent='Node '+active; elS.textContent=served; elF.textContent=failovers; }
+  function target(){ return active==='A'?A:B; }
+  function aliveActive(){ return active==='A'?aAlive:bAlive; }
+  function spawn(){ if(document.hidden) return; if(!aliveActive()) return;
+    const t=target(); const d=document.createElement('div'); d.className='dot'; d.style.left=U.x+'%'; d.style.top=U.y+'%'; scene.appendChild(d);
+    const leg=540*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=t.x+'%'; d.style.top=t.y+'%'; });
+    setTimeout(()=>{ served++; d.classList.add('done'); fmt(); setTimeout(()=>d.remove(),300); }, leg); }
+  function loop(){ if(!running)return; spawn(); setTimeout(loop, 480*simRate()); }
+  function kill(){ if(active==='A'){ aAlive=false; naEl.classList.add('crash'); if(bAlive){ active='B'; failovers++; hb.classList.add('dead'); } }
+    else { bAlive=false; nbEl.classList.add('crash'); if(aAlive){ active='A'; failovers++; hb.classList.add('dead'); } } fmt(); }
+  function heal(){ aAlive=bAlive=true; naEl.classList.remove('crash'); nbEl.classList.remove('crash'); hb.classList.remove('dead'); active='A'; fmt(); }
+  document.getElementById('actKill').onclick=kill;
+  document.getElementById('actHeal').onclick=heal;
+  fmt(); running=true; loop();
+  return {kill,heal};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Fault tolerance</b> isn't about avoiding failure — it's about <em>surviving</em> it without users noticing.", dur:4400},
+  {cap:"Node A is <b>active</b> and serving all traffic. Node B is a <b>standby</b>, idle but ready.", dur:4200},
+  {cap:"A <b>heartbeat</b> runs between them — B constantly checks that A is still alive.", dur:4200},
+  {cap:"Now <span class='hl-bad'>kill the active node.</span> The heartbeat stops.", dur:3800, on(){SIM.kill();}},
+  {cap:"B notices instantly and <b>promotes itself to active</b> — a failover. Traffic flows again within moments.", dur:4600},
+  {cap:"The served counter barely paused, and a <b>failover</b> was recorded. Users saw a blip at most.", dur:4400},
+  {cap:"Heal the cluster and you're back to active + standby, ready for the next failure.", dur:4000, on(){SIM.heal();}},
+  {cap:"The ingredients: <b>redundancy</b> (a spare), <b>detection</b> (heartbeats/health checks), and <b>automatic failover</b>.", dur:4600},
+  {cap:"Your turn 👉 <b>💥 Kill the active node</b> and watch the standby take over. <b>♻ Heal</b> to reset.", dur:5200, on(){SIM.kill();}},
+  {cap:"Assume everything fails eventually. Fault-tolerant design makes that a non-event instead of an outage.", dur:4600, on(){SIM.heal();}}
+]});
+
+</script>
+</body></html>

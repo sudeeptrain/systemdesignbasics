@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HLD — A Town Master Plan · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.hide-c{opacity:0 !important; pointer-events:none}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">HLD — A Town Master Plan</h1>
+  <p class="subtitle">Before a single brick is laid, a town planner draws the master plan: where the main road, the town hall, and the records office go, and how people flow between them. Spot a bottleneck and you add a building — all on paper first.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Visits traced</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Buildings</div><div class="stat-v" id="statComp">4</div></div>
+  <div class="stat"><div class="stat-k">View</div><div class="stat-v good" id="statView">master plan</div></div>
+</div>
+<div class="wireline" style="left:13%;width:13%;top:50%"></div>
+<div class="wireline" style="left:32%;width:13%;top:50%"></div>
+<div class="wireline" id="w-db" style="left:58%;width:21%;top:50%"></div>
+<div class="node abs" data-show="1" style="left:11%;top:50%"><div class="box sm">🧍</div><div class="lbl"><span class="k">Resident</span></div></div>
+<div class="node abs" data-show="1" style="left:30%;top:50%"><div class="box sm">🛣️</div><div class="lbl"><span class="k">Main road</span></div></div>
+<div class="node abs" data-show="1" style="left:52%;top:50%"><div class="box sm svc">🏛️</div><div class="lbl"><span class="k">Town hall</span></div></div>
+<div class="node abs" data-show="1" style="left:80%;top:50%"><div class="box sm">🗃️</div><div class="lbl"><span class="k">Records office</span></div></div>
+<div class="node abs cache-n hide-c" data-show="1" style="left:66%;top:22%"><div class="box sm">📚</div><div class="lbl"><span class="k">Library</span></div></div>
+<div class="node abs queue-n hide-c" data-show="1" style="left:52%;top:82%"><div class="box sm">📮</div><div class="lbl"><span class="k">Post depot</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actAddCache">📚 Add a library</button>
+  <button class="act ok" id="actAddQueue">📮 Add a post depot</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let reqs=0, comp=4, hasCache=false, hasQueue=false, running=false;
+  const elR=document.getElementById('statReqs'), elC=document.getElementById('statComp');
+  const cacheN=scene.querySelector('.cache-n'), queueN=scene.querySelector('.queue-n');
+  function trace(){ if(document.hidden) return;
+    const path=[[11,50],[30,50],[52,50]]; if(hasCache) path.push([66,22]); path.push([80,50]);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='11%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=380*simRate(); let i=1;
+    (function go(){ if(i>=path.length){ d.classList.add('done'); reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),leg); return; }
+      d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=path[i][0]+'%'; d.style.top=path[i][1]+'%'; if(i>=2)d.classList.add('done'); i++; setTimeout(go,leg); })();
+    if(hasQueue){ const q=document.createElement('div'); q.className='dot done'; q.style.left='52%'; q.style.top='50%'; scene.appendChild(q);
+      requestAnimationFrame(()=>{ q.style.transition='top '+leg+'ms'; q.style.top='82%'; }); setTimeout(()=>q.remove(),leg*2); }
+  }
+  function addCache(){ if(!hasCache){ hasCache=true; cacheN.classList.remove('hide-c'); comp++; elC.textContent=comp; } }
+  function addQueue(){ if(!hasQueue){ hasQueue=true; queueN.classList.remove('hide-c'); comp++; elC.textContent=comp; } }
+  function loop(){ if(!running)return; trace(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actAddCache').onclick=addCache;
+  document.getElementById('actAddQueue').onclick=addQueue;
+  running=true; loop();
+  return {trace,addCache,addQueue};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A town planner starts with a <b>master plan</b> — the big picture of which buildings exist and how people move between them.", dur:4800},
+  {cap:"Here's the starter plan: resident → main road → town hall → records office. Four buildings, one clear flow.", dur:4600, on(){SIM.trace();}},
+  {cap:"At this zoom you don't draw door handles or wiring — just <em>which</em> buildings exist and the roads connecting them.", dur:4600},
+  {cap:"Notice everyone hits the records office for every little lookup — a bottleneck. So you <b>add a library</b> nearby for common info.", dur:4800, on(){SIM.addCache();}},
+  {cap:"Now routine questions are answered at the fast local library, not the busy records office. One building, big relief.", dur:4400, on(){SIM.trace();}},
+  {cap:"Lots of paperwork piling up? <b>Add a post depot</b> so the town hall can hand off slow tasks instead of stalling.", dur:4400, on(){SIM.addQueue();}},
+  {cap:"This is exactly High Level Design: components (buildings), connections (roads), and the flow of people (data).", dur:4400, on(){SIM.trace();}},
+  {cap:"Get the plan right on paper and you avoid expensive mistakes once the concrete is poured.", dur:4200},
+  {cap:"Your turn 👉 <b>📚 Add a library</b> and <b>📮 add a post depot</b> to evolve the town's layout.", dur:5200},
+  {cap:"HLD is the master plan of a system. Once the buildings and roads are right, you zoom into each one — that's Low Level Design.", dur:4800}
+]});
+
+</script>
+</body></html>

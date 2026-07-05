@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimistic vs Pessimistic Locking · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rowbox{position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); width:130px; text-align:center; font-family:var(--fmono); font-size:12px; padding:12px; border-radius:10px; border:2px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.rowbox.locked{border-color:var(--bad); background:#fdeceb}
+.who{position:absolute; font-family:var(--fmono); font-size:11px; z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Optimistic vs Pessimistic Locking</h1>
+  <p class="subtitle">Two ways to stop concurrent edits from clobbering each other. Pessimistic locking grabs the row up front so others must wait. Optimistic locking lets everyone proceed, then checks a version at save time and rejects the loser — who simply retries.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Successful edits</div><div class="stat-v accent" id="statEdits">0</div></div>
+  <div class="stat"><div class="stat-k">Strategy</div><div class="stat-v" id="statMode">Pessimistic</div></div>
+  <div class="stat"><div class="stat-k">Conflicts / waits</div><div class="stat-v" id="statConf">0</div></div>
+</div>
+<div class="rowbox" id="rowbox">row #42<br>qty: <span id="qty">5</span><br><span style="color:var(--faint)">v<span id="ver">1</span></span></div>
+<div class="node abs" data-show="1" style="left:20%;top:74%"><div class="box sm">🅰️</div><div class="lbl"><span class="k">Txn A</span></div></div>
+<div class="node abs" data-show="1" style="left:80%;top:74%"><div class="box sm">🅱️</div><div class="lbl"><span class="k">Txn B</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Pessimistic / Optimistic</button>
+  <button class="act ok" id="actEdit">✍️ A & B edit the same row</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const rowbox=document.getElementById('rowbox'), qtyEl=document.getElementById('qty'), verEl=document.getElementById('ver');
+  let mode='pess', edits=0, conf=0, qty=5, ver=1, busy=false, running=false;
+  const elE=document.getElementById('statEdits'), elM=document.getElementById('statMode'), elC=document.getElementById('statConf');
+  function hop(fx,fy,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .42s, top .42s'; d.style.left='50%'; d.style.top='30%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),240); }, 420*simRate()); }
+  function edit(){ if(busy) return; busy=true;
+    if(mode==='pess'){ // A locks, B waits, then B proceeds
+      rowbox.classList.add('locked'); hop(20,74,'',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits;
+        elC.textContent=(+elC.textContent.split(' ')[0]+1)+' waits'; elC.className='stat-v warn';
+        setTimeout(()=>{ rowbox.classList.remove('locked'); hop(80,74,'done',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; busy=false; }); }, 500*simRate());
+      });
+    } else { // both read v, both try to write; second fails version check → retry
+      const readVer=ver; hop(20,74,'done',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; });
+      hop(80,74,'',()=>{ if(ver!==readVer){ // B's version is stale → reject
+          conf++; elC.textContent=conf+' conflicts'; elC.className='stat-v bad'; const x=document.createElement('div'); x.className='dot fail'; x.style.left='50%'; x.style.top='30%'; scene.appendChild(x); setTimeout(()=>x.remove(),500*simRate());
+          setTimeout(()=>{ hop(80,74,'done',()=>{ qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; busy=false; }); }, 600*simRate()); // retry succeeds
+        } else { qty++; ver++; qtyEl.textContent=qty; verEl.textContent=ver; edits++; elE.textContent=edits; busy=false; } });
+    }
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='pess'?'Pessimistic':'Optimistic'; elM.className='stat-v '+(m==='pess'?'warn':'good'); elC.textContent='0'; }
+  function loop(){ if(!running)return; if(!busy) edit(); setTimeout(loop, 3000*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='pess'?'opt':'pess');
+  document.getElementById('actEdit').onclick=edit;
+  setMode('pess'); running=true; loop();
+  return {edit,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two transactions want to edit the <b>same row</b> at once. Without care, one silently overwrites the other — a lost update.", dur:4800},
+  {cap:"<b>Pessimistic locking</b> assumes conflict is likely, so it plays it safe: the first transaction <b>locks the row.</b>", dur:4600, on(){SIM.setMode('pess');}},
+  {cap:"While A holds the lock, B simply <b>waits</b> its turn. No conflict possible — but B is blocked until A is done.", dur:4800, on(){SIM.edit();}},
+  {cap:"Safe and simple, but locks hurt concurrency: if A is slow, everyone queued behind it sits idle. Deadlocks are a risk too.", dur:4600},
+  {cap:"<b>Optimistic locking</b> bets that conflicts are <em>rare</em>, so it takes no lock at all — everyone reads and works freely.", dur:4600, on(){SIM.setMode('opt');}},
+  {cap:"Each row carries a <b>version number.</b> At save time, a transaction checks: \"is the version still what I read?\"", dur:4800, on(){SIM.edit();}},
+  {cap:"A commits first and bumps the version. Now B's save finds a <span class='hl-bad'>changed version</span> — its update is rejected.", dur:4600},
+  {cap:"B isn't blocked, it just <b>retries</b> with the fresh data and succeeds. No locks held, great when conflicts are uncommon.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 Pessimistic / Optimistic</b> and <b>✍️ edit the same row</b> to compare waiting with retrying.", dur:5200, on(){SIM.setMode('pess');}},
+  {cap:"Pessimistic: lock first, others wait — best under heavy contention. Optimistic: check at commit, retry on clash — best when conflicts are rare.", dur:4800}
+]});
+
+</script>
+</body></html>

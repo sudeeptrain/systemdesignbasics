@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latency Numbers Every Engineer Should Know · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tname{position:absolute; left:6%; transform:translateY(-50%); font-family:var(--fmono); font-size:13px; color:var(--ink); font-weight:600; z-index:2}
+.tbar{position:absolute; left:26%; transform:translateY(-50%); height:18px; border-radius:6px; background:linear-gradient(90deg,#7fb0ef,#1f6fe6); transition:box-shadow .2s, filter .2s; z-index:2}
+.tbar.lit{box-shadow:0 0 0 4px rgba(43,127,255,.22); filter:brightness(1.12)}
+.ttime{position:absolute; transform:translateY(-50%); font-family:var(--fmono); font-size:12.5px; color:var(--muted); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Latency Numbers Every Engineer Should Know</h1>
+  <p class="subtitle">Storage speeds span ten orders of magnitude. Memory is nanoseconds, disk is milliseconds, a cross-world network hop is hundreds of ms. Knowing the ladder shapes every design.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Last fetch from</div><div class="stat-v accent" id="statFrom">—</div></div>
+  <div class="stat"><div class="stat-k">Took about</div><div class="stat-v" id="statTime">—</div></div>
+  <div class="stat"><div class="stat-k">Fetches</div><div class="stat-v" id="statFetches">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:9%;top:50%"><div class="box sm">⚙️</div><div class="lbl"><span class="k">CPU</span></div></div>
+<div id="tiers"></div>
+<div class="acts">
+  <button class="act" id="actNext">⤵️ Fetch next tier</button>
+  <button class="act bad" id="actFar">🌍 Fetch from network</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CPU={x:9,y:50};
+  const tiers=[
+    {n:'L1 cache', t:'~1 ns',   ns:1},
+    {n:'RAM',      t:'~100 ns', ns:100},
+    {n:'SSD read', t:'~100 µs', ns:1e5},
+    {n:'Disk seek',t:'~10 ms',  ns:1e7},
+    {n:'Network 🌍',t:'~150 ms', ns:1.5e8}
+  ];
+  const maxLog=Math.log10(1.5e8);
+  const wrap=document.getElementById('tiers');
+  let fetches=0, idx=0, running=false;
+  const elFrom=document.getElementById('statFrom'), elTime=document.getElementById('statTime'), elF=document.getElementById('statFetches');
+  tiers.forEach((tr,i)=>{ const y=18+i*16; tr.y=y; tr.w=5+Math.log10(tr.ns)/maxLog*60;
+    const nm=document.createElement('div'); nm.className='tname'; nm.textContent=tr.n; nm.style.top=y+'%'; wrap.appendChild(nm);
+    const bar=document.createElement('div'); bar.className='tbar'; bar.style.top=y+'%'; bar.style.width=tr.w+'%'; tr.bar=bar; wrap.appendChild(bar);
+    const tm=document.createElement('div'); tm.className='ttime'; tm.textContent=tr.t; tm.style.top=y+'%'; tm.style.left=(26+tr.w+1.5)+'%'; wrap.appendChild(tm); });
+  function fetch(i){
+    if(document.hidden) return;
+    const tr=tiers[i]; fetches++; elF.textContent=fetches; elFrom.textContent=tr.n; elTime.textContent=tr.t;
+    tr.bar.classList.add('lit'); setTimeout(()=>tr.bar.classList.remove('lit'),900*simRate());
+    const endX=26+tr.w;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=CPU.x+'%'; d.style.top=CPU.y+'%'; scene.appendChild(d);
+    const leg=520*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1), top '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=endX+'%'; d.style.top=tr.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left=CPU.x+'%'; d.style.top=CPU.y+'%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function next(){ idx=(idx+1)%tiers.length; fetch(idx); }
+  function loop(){ if(!running)return; fetch(idx); idx=(idx+1)%tiers.length; setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actNext').onclick=next;
+  document.getElementById('actFar').onclick=()=>fetch(4);
+  running=true; loop();
+  return {fetch,next};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Not all memory is equal. These bars are <b>log-scaled</b> — each one is roughly 100–1000× slower than the one above.", dur:4600},
+  {cap:"Reading from <b>L1 cache</b> takes about <span class='hl-good'>1 nanosecond</span> — basically instant, right next to the CPU.", dur:4200, on(){SIM.fetch(0);}},
+  {cap:"<b>Main RAM</b> is ~100 ns. Still blisteringly fast, but already 100× slower than cache.", dur:4200, on(){SIM.fetch(1);}},
+  {cap:"An <b>SSD</b> read is ~100 microseconds — about 1000× slower again. Now we're leaving the chip.", dur:4400, on(){SIM.fetch(2);}},
+  {cap:"A spinning <b>disk seek</b> is ~10 milliseconds — another huge jump. Mechanical parts are slow.", dur:4400, on(){SIM.fetch(3);}},
+  {cap:"A <b>network round-trip across the world</b> is ~150 ms — the slowest bar by far. 🌍", dur:4400, on(){SIM.fetch(4);}},
+  {cap:"Stack it up: cache to network spans <span class='hl-bad'>~8 orders of magnitude.</span> That's the whole game of performance.", dur:4600},
+  {cap:"This is <em>why</em> we cache, why we co-locate, why we avoid chatty cross-region calls on hot paths.", dur:4400},
+  {cap:"Your turn 👉 <b>⤵️ Fetch next tier</b> to walk the ladder, or <b>🌍 Fetch from network</b> to feel the worst case.", dur:5200, on(){SIM.fetch(4);}},
+  {cap:"Keep hot data close (cache/RAM) and push slow hops (disk/network) off the critical path.", dur:4400, on(){SIM.fetch(0);}}
+]});
+
+</script>
+</body></html>

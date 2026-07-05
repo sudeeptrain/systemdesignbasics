@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consistency — A Shared Doc · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.doc{position:absolute; width:150px; height:96px; border:2px solid var(--line2); border-radius:12px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; z-index:2}
+.doc .who{font-family:var(--fmono); font-size:11px; color:var(--faint)}
+.doc .val{font-size:26px; font-weight:800; font-family:var(--fmono)}
+.doc.stale{border-color:var(--warn); background:#fff7e9}
+.doc.synced{border-color:var(--good)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Consistency — A Shared Doc</h1>
+  <p class="subtitle">Two people edit the same online doc. Consistency is the promise that both see the same text. With instant sync everyone agrees; with laggy sync, one person reads stale words for a moment.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Edits made</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Sync mode</div><div class="stat-v good" id="statMode">Instant</div></div>
+  <div class="stat"><div class="stat-k">Views agree?</div><div class="stat-v good" id="statAgree">Yes</div></div>
+</div>
+<div class="doc d-a" style="left:16%;top:34%"><div class="who">✍️ Aisha sees</div><div class="val" id="va">v0</div></div>
+<div class="doc d-b" style="left:62%;top:34%"><div class="who">👀 Ben sees</div><div class="val" id="vb">v0</div></div>
+<div class="wireline" style="left:31%;width:31%;top:43%"></div>
+<div class="acts">
+  <button class="act" id="actWrite">✍️ Aisha edits the doc</button>
+  <button class="act" id="actMode">🔀 Instant / Laggy sync</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let ver=0, writes=0, mode='instant', running=false;
+  const va=document.getElementById('va'), vb=document.getElementById('vb');
+  const docA=scene.querySelector('.d-a'), docB=scene.querySelector('.d-b');
+  const elW=document.getElementById('statWrites'), elM=document.getElementById('statMode'), elAg=document.getElementById('statAgree');
+  function agree(){ const ok=va.textContent===vb.textContent; elAg.textContent=ok?'Yes':'No — stale!'; elAg.className='stat-v '+(ok?'good':'bad');
+    docB.classList.toggle('stale',!ok); docB.classList.toggle('synced',ok); docA.classList.add('synced'); }
+  function write(){
+    if(document.hidden) return;
+    ver++; writes++; elW.textContent=writes; va.textContent='v'+ver; agree();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='28%'; d.style.top='43%'; scene.appendChild(d);
+    const leg=(mode==='instant'?420:1500)*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='62%'; });
+    setTimeout(()=>{ d.classList.add('done'); vb.textContent='v'+ver; agree(); setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 2800*simRate()); }
+  function toggleMode(){ mode=mode==='instant'?'laggy':'instant'; elM.textContent=mode==='instant'?'Instant':'Laggy'; elM.className='stat-v '+(mode==='instant'?'good':'warn'); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actMode').onclick=toggleMode;
+  agree(); running=true; loop();
+  return {write,toggleMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Aisha and Ben have the <b>same document</b> open. Right now both see the same version — they <span class='hl-good'>agree.</span>", dur:4200},
+  {cap:"<b>Consistency</b> is exactly that promise: everyone looking at the data sees the same value.", dur:4200},
+  {cap:"Aisha makes an edit. With <b>instant sync</b>, the change races to Ben's screen right away.", dur:4200, on(){SIM.write();}},
+  {cap:"Ben's view updates almost immediately — both back in agreement. That's <b>strong consistency.</b>", dur:4400},
+  {cap:"Now switch to <b>laggy sync</b>, like a weak connection.", dur:3800, on(){SIM.toggleMode();}},
+  {cap:"Aisha edits again — but the update <span class='hl-warn'>crawls</span> across to Ben.", dur:4000, on(){SIM.write();}},
+  {cap:"For a moment Ben reads the <span class='hl-warn'>old version</span> — the views disagree. He's seeing <b>stale</b> data.", dur:4400},
+  {cap:"Eventually the update lands and they match again. That catch-up behaviour is <b>eventual consistency.</b>", dur:4400, on(){SIM.toggleMode();}},
+  {cap:"Your turn 👉 <b>✍️ Edit the doc</b> and flip <b>🔀 sync mode</b> to watch agreement vs stale reads.", dur:5200},
+  {cap:"Strong consistency = always agree (costs speed). Eventual = agree soon (faster). Pick per feature: bank balance vs like-count.", dur:4800}
+]});
+
+</script>
+</body></html>

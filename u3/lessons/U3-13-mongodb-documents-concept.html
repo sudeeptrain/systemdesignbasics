@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MongoDB Documents · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.coll{position:absolute; right:7%; top:18%; width:40%; z-index:2}
+.doc4{font-family:var(--fmono); font-size:10.5px; background:#fff; border:1.5px solid var(--line2); border-radius:8px; padding:7px 9px; margin-bottom:6px; white-space:pre-wrap; transition:.3s; opacity:0; transform:translateX(8px)}
+.doc4.on{opacity:1; transform:none}
+.doc4.hit{border-color:var(--good); background:#e7f7ef}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">MongoDB Documents</h1>
+  <p class="subtitle">MongoDB stores data as flexible JSON-like documents in collections. Related data that you always read together — an order and its items — is embedded inside one document, so a single read returns everything, no joins required.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Documents</div><div class="stat-v accent" id="statDocs">0</div></div>
+  <div class="stat"><div class="stat-k">Reads to load an order</div><div class="stat-v good" id="statReads">1 (embedded)</div></div>
+  <div class="stat"><div class="stat-k">Schema</div><div class="stat-v warn" id="statSchema">per-document</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">🍃</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="nlbl" style="left:77%;top:11%">📦 Collection: orders</div>
+<div class="coll" id="coll"></div>
+<div class="acts">
+  <button class="act ok" id="actInsert">📝 Insert a document</button>
+  <button class="act" id="actQuery">🔎 Query by field</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const coll=document.getElementById('coll');
+  const docs=[
+    '{ id:1, user:"Ann",\n  items:[🍎,🍞], total:12 }',
+    '{ id:2, user:"Ben",\n  items:[☕], total:4, gift:true }',
+    '{ id:3, user:"Cara",\n  items:[🍣,🍣,🍵] }',
+    '{ id:4, user:"Dev",\n  items:[🍔], coupon:"X5" }'
+  ];
+  let count=0, running=false;
+  const elD=document.getElementById('statDocs');
+  function insert(){ if(document.hidden) return; if(coll.children.length>=4) coll.innerHTML='';
+    count++; elD.textContent=count;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='60%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); const r=document.createElement('div'); r.className='doc4'; r.textContent=docs[(count-1)%4]; coll.appendChild(r); requestAnimationFrame(()=>r.classList.add('on')); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function query(){ if(document.hidden) return; const rows=[...coll.children]; if(!rows.length) return; const t=rows[Math.floor(Math.random()*rows.length)];
+    rows.forEach(r=>r.classList.remove('hit'));
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='58%'; });
+    setTimeout(()=>{ d.classList.add('done'); t.classList.add('hit'); setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function loop(){ if(!running)return; (Math.random()<0.6?insert:query)(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actInsert').onclick=insert;
+  document.getElementById('actQuery').onclick=query;
+  running=true; loop();
+  return {insert,query};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>MongoDB</b> is a document database. Instead of rows in rigid tables, it stores flexible <b>JSON-like documents.</b>", dur:4600},
+  {cap:"Documents live in <b>collections.</b> Insert one and it just… fits — no schema migration, no fixed column list.", dur:4600, on(){SIM.insert();}},
+  {cap:"Look closely: each document can have <b>different fields.</b> One has a gift flag, another a coupon. Shape varies per document.", dur:4800, on(){SIM.insert();}},
+  {cap:"The killer feature is <b>embedding.</b> An order's items live <em>inside</em> the order document — not in a separate table.", dur:4800, on(){SIM.insert();}},
+  {cap:"So loading an order with all its items is a <b>single read</b> of one document. No joins, no extra round-trips.", dur:4600, on(){SIM.query();}},
+  {cap:"That's a great fit when you usually read the whole thing together — a product page, a user profile, an order.", dur:4400},
+  {cap:"You can still <b>query by any field</b>, and index those fields, just like a relational database.", dur:4400, on(){SIM.query();}},
+  {cap:"The trade-off: embedding duplicates data, and there are no enforced cross-document joins — you model around your read patterns.", dur:4600},
+  {cap:"Your turn 👉 <b>📝 Insert documents</b> of varying shape and <b>🔎 query</b> them by field.", dur:5200},
+  {cap:"Document databases trade rigid structure and joins for flexible, self-contained records — shaped around how you read them.", dur:4800}
+]});
+
+</script>
+</body></html>

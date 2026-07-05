@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deadlock — Two Cars at a One-Lane Bridge · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.res2{position:absolute; width:46px; height:46px; border-radius:10px; border:2px solid var(--violet); background:#f1edff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:11px; font-weight:700; color:var(--violet); z-index:3; transition:.25s}
+.res2.locked{border-color:var(--bad); background:#fdeceb; color:var(--bad)}
+.arrow2{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--faint); z-index:2; transition:.3s}
+.proc2 .box{transition:.3s}
+.proc2.stuck .box{border-color:var(--bad); animation:sd-shake .5s ease-in-out 2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Deadlock — Two Cars at a One-Lane Bridge</h1>
+  <p class="subtitle">Two cars enter a one-lane bridge from opposite ends. Each has taken half, each needs the half the other is on, and neither will reverse. Both are stuck forever. A deadlock needs four conditions together — break any one (say, agree who always yields) and it can't happen.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Gridlocks</div><div class="stat-v accent" id="statDeadlocks">0</div></div>
+  <div class="stat"><div class="stat-k">State</div><div class="stat-v good" id="statState">flowing</div></div>
+  <div class="stat"><div class="stat-k">Standoff?</div><div class="stat-v good" id="statCirc">no</div></div>
+</div>
+<div class="node abs proc2 p-a" data-show="1" style="left:18%;top:32%"><div class="box sm">🚗</div><div class="lbl"><span class="k">Car A →</span></div></div>
+<div class="node abs proc2 p-b" data-show="1" style="left:18%;top:74%"><div class="box sm">🚙</div><div class="lbl"><span class="k">Car B →</span></div></div>
+<div class="res2 r-1" style="left:64%;top:30%">½W</div>
+<div class="res2 r-2" style="left:64%;top:70%">½E</div>
+<div class="arrow2" id="aw1" style="left:34%;top:30%">A on west half</div>
+<div class="arrow2" id="aw2" style="left:34%;top:74%">B on east half</div>
+<div class="arrow2" id="aw3" style="left:46%;top:50%"></div>
+<div class="acts">
+  <button class="act bad" id="actDeadlock">🔒 Both push onto the bridge</button>
+  <button class="act ok" id="actPrevent">🛡️ Agree who yields</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let deadlocks=0, running=false;
+  const elD=document.getElementById('statDeadlocks'), elS=document.getElementById('statState'), elC=document.getElementById('statCirc');
+  const r1=scene.querySelector('.r-1'), r2=scene.querySelector('.r-2'), pa=scene.querySelector('.p-a'), pb=scene.querySelector('.p-b');
+  const aw3=document.getElementById('aw3');
+  function deadlock(){ if(document.hidden) return;
+    r1.classList.add('locked'); r2.classList.add('locked');
+    aw3.innerHTML='A wants east half ↘ · B wants west half ↗ — standoff!'; aw3.style.color='var(--bad)';
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='30%'; d.style.top='32%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s, top .5s';d.style.left='60%';d.style.top='70%';}); setTimeout(()=>{d.classList.add('fail'); setTimeout(()=>d.remove(),300);},520);
+    const e=document.createElement('div'); e.className='dot fail'; e.style.left='30%'; e.style.top='74%'; scene.appendChild(e); requestAnimationFrame(()=>{e.style.transition='left .5s, top .5s';e.style.left='60%';e.style.top='30%';}); setTimeout(()=>{e.classList.add('fail'); setTimeout(()=>e.remove(),300);},520);
+    pa.classList.add('stuck'); pb.classList.add('stuck');
+    deadlocks++; elD.textContent=deadlocks; elS.textContent='GRIDLOCKED'; elS.className='stat-v bad'; elC.textContent='yes'; elC.className='stat-v bad';
+  }
+  function prevent(){ if(document.hidden) return;
+    r1.classList.remove('locked'); r2.classList.remove('locked'); pa.classList.remove('stuck'); pb.classList.remove('stuck');
+    aw3.innerHTML='one yields → bridge clears'; aw3.style.color='var(--good)';
+    elS.textContent='flowing'; elS.className='stat-v good'; elC.textContent='no'; elC.className='stat-v good';
+    const d=document.createElement('div'); d.className='dot done'; d.style.left='30%'; d.style.top='32%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .5s';d.style.left='62%';}); setTimeout(()=>d.remove(),520);
+    const e=document.createElement('div'); e.className='dot done'; e.style.left='30%'; e.style.top='74%'; scene.appendChild(e); requestAnimationFrame(()=>{e.style.transition='left .5s';e.style.left='62%';}); setTimeout(()=>e.remove(),520);
+  }
+  function loop(){ if(!running)return; if(elS.textContent==='GRIDLOCKED') prevent(); else if(Math.random()<0.5) deadlock(); else prevent(); setTimeout(loop, 2400*simRate()); }
+  document.getElementById('actDeadlock').onclick=deadlock;
+  document.getElementById('actPrevent').onclick=prevent;
+  running=true; loop();
+  return {deadlock,prevent};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>deadlock</b> is the ultimate standoff: two cars frozen on a one-lane bridge, each waiting for the other to move first — forever.", dur:4600},
+  {cap:"The bridge has two halves. <b>Car A drives onto the west half; Car B drives onto the east half.</b> So far, fine.", dur:4600},
+  {cap:"Now <b>A needs the east half</b> (where B sits), and <b>B needs the west half</b> (where A sits). Each waits for the other. Watch it lock up.", dur:4400, on(){SIM.deadlock();}},
+  {cap:"That's a <span class='hl-bad'>standoff</span> — a loop of \"you go first\" with no exit. Both cars are stuck for good. Gridlocked.", dur:4800},
+  {cap:"It took <b>four things at once:</b> one lane (mutual exclusion), each holding their half while waiting (hold-and-wait), nobody forced to reverse (no preemption), and a facing loop (circular wait).", dur:5000},
+  {cap:"That's also the cure: <b>remove any one</b> of those and the gridlock simply can't happen.", dur:4200, on(){SIM.prevent();}},
+  {cap:"The classic fix breaks the <b>facing loop</b>: agree a rule — \"the car heading east always yields.\" One waits at the entrance, so no standoff forms.", dur:4800, on(){SIM.prevent();}},
+  {cap:"Other fixes: a traffic light that makes both wait their turn, a timeout (back up after 30s), or a warden who spots the jam and waves one car back.", dur:4800},
+  {cap:"Your turn 👉 send <b>🔒 both onto the bridge</b> to gridlock them, then <b>🛡️ agree who yields</b> to keep it flowing.", dur:5200, on(){SIM.deadlock();}},
+  {cap:"Deadlock needs four conditions together — one lane, hold-and-wait, no backing up, a facing loop. Break one (a yield rule) and traffic always flows.", dur:4800}
+]});
+
+</script>
+</body></html>

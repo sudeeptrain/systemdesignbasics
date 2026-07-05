@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error Budgets — Monthly Pocket Money · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.wallet{position:absolute; left:50%; top:34%; transform:translate(-50%,-50%); width:62%; height:30px; border:1.5px solid var(--line2); border-radius:14px; background:#eef5fd; overflow:hidden; z-index:2}
+.wfill{position:absolute; left:0; top:0; bottom:0; width:100%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}
+.coinrow{position:absolute; left:50%; top:54%; transform:translateX(-50%); font-size:24px; letter-spacing:3px; z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Error Budgets — Monthly Pocket Money</h1>
+  <p class="subtitle">You get a fixed allowance to 'spend' on being late or messing up each month. While budget remains, you can take risks and ship boldly. Once it's gone, you stop and play it safe until it refills.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Budget left</div><div class="stat-v good" id="statBudget">100%</div></div>
+  <div class="stat"><div class="stat-k">Policy</div><div class="stat-v good" id="statPolicy">Ship boldly 🚀</div></div>
+  <div class="stat"><div class="stat-k">Risky ships</div><div class="stat-v accent" id="statShips">0</div></div>
+</div>
+<div class="wallet"><div class="wfill" id="wfill"></div></div>
+<div class="nlbl" style="left:50%;top:23%">this month's allowance for mistakes</div>
+<div class="coinrow" id="coins">🪙🪙🪙🪙🪙</div>
+<div class="acts">
+  <button class="act" id="actShip">🚀 Ship a risky change</button>
+  <button class="act ok" id="actHarden">🛡️ Spend a week hardening</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let budget=100, ships=0, running=false;
+  const wfill=document.getElementById('wfill'), coins=document.getElementById('coins');
+  const elB=document.getElementById('statBudget'), elP=document.getElementById('statPolicy'), elS=document.getElementById('statShips');
+  function fmt(){ budget=Math.max(0,Math.min(100,budget)); elB.textContent=Math.round(budget)+'%';
+    elB.className='stat-v '+(budget>40?'good':budget>15?'warn':'bad');
+    wfill.style.width=budget+'%'; wfill.style.background=budget>40?'linear-gradient(90deg,#3fcf8e,#0f8f5b)':budget>15?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#f08070,#d83a2e)';
+    const c=Math.max(0,Math.round(budget/20)); coins.textContent='🪙'.repeat(c)+'·'.repeat(5-c);
+    if(budget<=15){ elP.textContent='FREEZE — stabilise 🧊'; elP.className='stat-v bad'; }
+    else if(budget<40){ elP.textContent='Caution ⚠️'; elP.className='stat-v warn'; }
+    else { elP.textContent='Ship boldly 🚀'; elP.className='stat-v good'; } }
+  function ship(){ if(document.hidden) return;
+    if(budget<=15){ // frozen: refuse risky ship
+      const d=document.createElement('div'); d.className='dot fail'; d.style.left='50%'; d.style.top='34%'; scene.appendChild(d); setTimeout(()=>d.remove(),420*simRate()); return; }
+    ships++; elS.textContent=ships;
+    const bad=Math.random()<0.5;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='34%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(bad){ d.classList.add('fail'); budget-=18; } else { d.classList.add('done'); d.style.left='86%'; budget-=4; } fmt(); setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function harden(){ budget=Math.min(100,budget+22); fmt(); }
+  function loop(){ if(!running)return; budget=Math.min(100,budget+1.2); fmt(); setTimeout(loop, 1400*simRate()); } // budget slowly refills over the month
+  document.getElementById('actShip').onclick=ship;
+  document.getElementById('actHarden').onclick=harden;
+  fmt(); running=true; loop();
+  return {ship,harden,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Think of reliability like <b>monthly pocket money</b> — a fixed allowance you're allowed to 'spend' on mistakes.", dur:4600},
+  {cap:"That allowance is your <b>error budget</b>: 100% reliability is impossible, so you budget for a little failure.", dur:4600},
+  {cap:"While the wallet is full, you can <b>ship boldly</b> — try risky features, move fast.", dur:4200},
+  {cap:"Each risky change spends a little budget; a change that breaks something spends a <span class='hl-bad'>lot.</span>", dur:4400, on(){SIM.ship();}},
+  {cap:"Ship a few more risky things and watch the budget <span class='hl-warn'>drain.</span>", dur:4000, on(){SIM.ship();SIM.ship();}},
+  {cap:"When it runs low, the policy flips to <b>caution</b> — and if it hits empty, you <span class='hl-bad'>freeze</span> new features entirely.", dur:4600, on(){SIM.ship();SIM.ship();}},
+  {cap:"Frozen means risky ships are <span class='hl-bad'>refused</span> — the team spends its time hardening and fixing instead.", dur:4400, on(){SIM.ship();}},
+  {cap:"Spend a week <b>hardening</b> and the budget refills — now you've earned the right to take risks again.", dur:4400, on(){SIM.harden();}},
+  {cap:"Your turn 👉 <b>🚀 Ship risky changes</b> to drain the budget, <b>🛡️ Harden</b> to refill and unfreeze.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Error budgets turn 'devs vs ops' into one number: budget left = ship fast; budget gone = slow down and stabilise.", dur:4800}
+]});
+
+</script>
+</body></html>

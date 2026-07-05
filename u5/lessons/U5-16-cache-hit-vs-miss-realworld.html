@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Hit vs Miss — The Fridge or the Shop · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ratebar{position:absolute; left:50%; top:78%; transform:translateX(-50%); width:54%; height:14px; border-radius:8px; background:#fdeceb; overflow:hidden; z-index:2}
+.ratefill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Cache Hit vs Miss — The Fridge or the Shop</h1>
+  <p class="subtitle">Want milk? If it's in the fridge, you pour it in seconds — a hit. If not, you trek to the shop, buy it, and stock the fridge so next time it's there — a miss. What fraction of your cravings the fridge can satisfy is the whole game.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">In the fridge</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Shop trips</div><div class="stat-v" id="statMiss">0</div></div>
+  <div class="stat"><div class="stat-k">Fridge success rate</div><div class="stat-v good" id="statRate">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:44%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:44%"><div class="box cache">🧊</div><div class="lbl"><span class="k">Fridge (fast)</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:44%"><div class="box sm">🏬</div><div class="lbl"><span class="k">Shop (slow)</span></div></div>
+<div class="nlbl" style="left:50%;top:70%">fridge success rate</div>
+<div class="ratebar"><div class="ratefill" id="ratefill"></div></div>
+<div class="acts">
+  <button class="act ok" id="actHit">⚡ Want something in the fridge</button>
+  <button class="act bad" id="actMiss">🐢 Want something not stocked</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let hits=0, miss=0, running=false;
+  const elH=document.getElementById('statHits'), elM=document.getElementById('statMiss'), elR=document.getElementById('statRate'), ratefill=document.getElementById('ratefill');
+  const cache=scene.querySelector('.cache');
+  function rate(){ const t=hits+miss; const r=t?Math.round(hits/t*100):0; elR.textContent=r+'%'; ratefill.style.width=r+'%'; elR.className='stat-v '+(r>=70?'good':r>=40?'warn':'bad'); }
+  function hit(){ if(document.hidden) return; hits++; elH.textContent=hits; rate(); if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),200);}
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ d.classList.add('done'); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='14%'; }); setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function missF(){ if(document.hidden) return; miss++; elM.textContent=miss; elM.className='stat-v bad'; rate();
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='14%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ d.style.left='86%'; setTimeout(()=>{
+        const g=document.createElement('div'); g.className='dot done'; g.style.left='86%'; g.style.top='56%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .6s';g.style.left='14%';}); setTimeout(()=>g.remove(),640);
+        if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),250);} d.remove(); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; (Math.random()<0.65?hit:missF)(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actHit').onclick=hit;
+  document.getElementById('actMiss').onclick=missF;
+  rate(); running=true; loop();
+  return {hit,miss:missF};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your <b>fridge</b> keeps the food you use most close at hand. Every time you want something, it ends one of two ways: a <b>hit</b> or a <b>miss.</b>", dur:4600},
+  {cap:"A <b>hit:</b> the thing you want is already in the fridge. You grab it in seconds — no trip to the shop.", dur:4600, on(){SIM.hit();}},
+  {cap:"Hits are the whole point — fast and effortless. Every hit is a shopping trip you <em>didn't</em> have to make.", dur:4400, on(){SIM.hit();}},
+  {cap:"A <b>miss:</b> it's not in the fridge. Now you have to trek to the <span class='hl-bad'>shop</span> — the slow option.", dur:4600, on(){SIM.miss();}},
+  {cap:"On the way home you <b>stock the fridge</b> with it — so next time you crave it, it's a hit.", dur:4600, on(){SIM.miss();}},
+  {cap:"The number that matters most is your <b>fridge success rate</b> — what fraction of cravings the fridge can satisfy. Watch the bar.", dur:4600, on(){SIM.hit();SIM.hit();}},
+  {cap:"A high rate (90%+) means you rarely leave the house and barely bother the shop. A low one means the fridge is hardly helping.", dur:4800, on(){SIM.hit();}},
+  {cap:"Misses come in types: the very <b>first time</b> you want something (cold), or a fridge <b>too small</b> to hold all your staples. A bigger, smarter fridge lifts the rate.", dur:4800},
+  {cap:"Your turn 👉 mix <b>⚡ fridge hits</b> and <b>🐢 shop trips</b> and watch the success rate rise and fall.", dur:5200},
+  {cap:"Hit = in the fridge (fast); miss = trek to the shop and restock. Everything lives or dies by how often the fridge has what you want.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is System Design — Ordering Food · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.nodewrap .lbl .sub{display:block;color:var(--faint);font-size:10.5px}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">What is System Design — Ordering Food</h1>
+  <p class="subtitle">Tap 'Order' in a food app and a whole designed system springs to life: your phone, the app's traffic router, its servers, and a database — all wired together in advance. That wiring is system design.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders placed</div><div class="stat-v accent" id="statSent">0</div></div>
+  <div class="stat"><div class="stat-k">Round trip</div><div class="stat-v" id="statMs">— ms</div><div class="stat-sub">tap → kitchen → screen</div></div>
+</div>
+<div class="wireline" style="left:14%;width:23%;top:55%"></div>
+<div class="wireline" style="left:39%;width:23%;top:55%"></div>
+<div class="wireline" style="left:64%;width:23%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box nd-0">📱</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:37%;top:55%"><div class="box nd-1">⚖️</div><div class="lbl"><span class="k">Food App</span></div></div>
+<div class="node abs" data-show="1" style="left:62%;top:55%"><div class="box nd-2">🍳</div><div class="lbl"><span class="k">Kitchen service</span></div></div>
+<div class="node abs" data-show="1" style="left:87%;top:55%"><div class="box nd-3">🗄️</div><div class="lbl"><span class="k">Orders DB</span></div></div>
+<div class="acts"><button class="act" id="actSend">🍔 Place an order</button></div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const xs=[12,37,62,87], Y=55;
+  const boxes=xs.map((_,i)=>scene.querySelector('.nd-'+i));
+  let sent=0;
+  const elSent=document.getElementById('statSent'), elMs=document.getElementById('statMs');
+  function lite(i,on){ if(boxes[i]) boxes[i].classList.toggle('active',on); }
+  function send(){
+    if(document.hidden) return;
+    sent++; elSent.textContent=sent;
+    const path=[0,1,2,3,2,1,0];
+    const d=document.createElement('div'); d.className='dot'; d.style.left=xs[0]+'%'; d.style.top=Y+'%'; scene.appendChild(d);
+    const leg=560*simRate(); let i=0, ms=0;
+    (function step(){
+      const ni=path[i];
+      d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)';
+      d.style.left=xs[ni]+'%';
+      lite(ni,true); setTimeout(()=>lite(ni,false), leg*0.9);
+      if(i>=3) d.classList.add('done');
+      ms+=Math.round(26+Math.random()*22);
+      i++;
+      if(i<path.length) setTimeout(step, leg);
+      else setTimeout(()=>{ elMs.textContent=ms+' ms'; d.remove(); }, leg);
+    })();
+  }
+  function loop(){ send(); setTimeout(loop, 4200*simRate()); }
+  document.getElementById('actSend').onclick=send;
+  loop();
+  return {send};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You tap <b>Order</b> for a burger. To you it's one tap — but a whole system just woke up. 🍔", dur:4200},
+  {cap:"Your phone sends the order to the <b>Food App</b>, which acts as a traffic router to its servers.", dur:4200, on(){SIM.send();}},
+  {cap:"The app hands it to a <b>kitchen service</b> — the logic that checks the menu, price, and your address.", dur:4200},
+  {cap:"That service saves your order in the <b>Orders database</b> so the restaurant and rider can see it.", dur:4200},
+  {cap:"<span class='hl-good'>Confirmation flows back</span> through the service and the app…", dur:4000},
+  {cap:"…and your screen shows <span class='hl-good'>\"Order placed!\"</span>. Every hop was planned in advance.", dur:4200},
+  {cap:"Deciding which pieces exist (app, service, database), how they connect, and how data flows — that's <b>system design</b>.", dur:4600},
+  {cap:"Each piece can be scaled or swapped on its own: more servers on Friday nights, a faster database as you grow.", dur:4400},
+  {cap:"Your turn 👉 hit <b>🍔 Place an order</b> and watch one order make the full round trip.", dur:5000, on(){SIM.send();}},
+  {cap:"Every concept ahead — caching, scaling, failover — is just a smarter version of this one ordering journey.", dur:4600}
+]});
+
+</script>
+</body></html>

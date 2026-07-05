@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serverless — Pop-Up Shop Temp Staff · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.fn{position:absolute; width:46px; height:46px; border-radius:10px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:20px;
+  background:linear-gradient(180deg,#fff,#eaf1fa); border:1.5px solid var(--accent); z-index:3; opacity:0; transition:.3s}
+.fn.on{opacity:1}
+.fn.cold{border-color:var(--warn); box-shadow:0 0 0 4px rgba(185,115,11,.18)}
+.poolbox{position:absolute; left:46%; top:18%; width:42%; height:64%; border:1.5px dashed var(--line2); border-radius:14px; z-index:1}
+.poollbl{position:absolute; left:46%; top:12%; font-family:var(--fmono); font-size:12px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Serverless — Pop-Up Shop Temp Staff</h1>
+  <p class="subtitle">A pop-up shop keeps no permanent staff. A customer walks in, you call in a temp to serve them; a rush arrives, you call in several. When it's quiet, everyone goes home and the wage bill drops to zero. You pay only per customer served.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Customers served</div><div class="stat-v accent" id="statInvokes">0</div></div>
+  <div class="stat"><div class="stat-k">Staff on shift</div><div class="stat-v" id="statInst">0</div></div>
+  <div class="stat"><div class="stat-k">Idle wage bill</div><div class="stat-v good" id="statCost">$0 (all home)</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">🚶</div><div class="lbl"><span class="k">Customers</span></div></div>
+<div class="poollbl">temp staff (called in on demand)</div>
+<div class="poolbox"></div>
+<div id="fns"></div>
+<div class="acts">
+  <button class="act bad" id="actBurst">📈 A rush arrives</button>
+  <button class="act ok" id="actIdle">💤 Quiet — send everyone home</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const fns=document.getElementById('fns');
+  let instances=[], invokes=0, running=false, baseRate=1;
+  const elI=document.getElementById('statInvokes'), elN=document.getElementById('statInst'), elC=document.getElementById('statCost');
+  function slot(i){ const cols=4; const x=52+(i%cols)*9; const y=28+Math.floor(i/cols)*20; return {x,y}; }
+  function ensure(n){ while(instances.length<n && instances.length<8){ const i=instances.length; const s=slot(i);
+    const el=document.createElement('div'); el.className='fn cold'; el.textContent='🧑‍💼'; el.style.left=s.x+'%'; el.style.top=s.y+'%'; fns.appendChild(el);
+    requestAnimationFrame(()=>el.classList.add('on')); setTimeout(()=>el.classList.remove('cold'),700*simRate()); instances.push({el,busy:false}); }
+    elN.textContent=instances.length; }
+  function fmt(){ elN.textContent=instances.length; elC.textContent=instances.length===0?'$0 (all home)':'$ per customer'; elC.className='stat-v '+(instances.length===0?'good':'warn'); }
+  function invoke(){ if(document.hidden) return;
+    let inst=instances.find(x=>!x.busy); if(!inst){ ensure(instances.length+1); inst=instances[instances.length-1]; }
+    if(!inst) return; inst.busy=true; invokes++; elI.textContent=invokes;
+    const tgt=inst.el; const tx=parseFloat(tgt.style.left), ty=parseFloat(tgt.style.top);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); tgt.classList.add('busy'); setTimeout(()=>{ tgt.classList.remove('busy'); inst.busy=false; },300); setTimeout(()=>d.remove(),240); }, leg);
+    fmt();
+  }
+  function burst(){ for(let k=0;k<6;k++) setTimeout(invoke, k*90*simRate()); }
+  function idle(){ instances.forEach(x=>x.el.remove()); instances=[]; fmt(); }
+  function loop(){ if(!running)return; for(let k=0;k<baseRate;k++) invoke(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actBurst').onclick=burst;
+  document.getElementById('actIdle').onclick=idle;
+  fmt(); running=true; loop();
+  return {invoke,burst,idle,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>pop-up shop</b> keeps no permanent staff and no idle payroll. Service appears only when a customer does.", dur:4600},
+  {cap:"A customer walks in, so you <b>call in a temp</b> to serve them — note the brief 'just arriving' moment.", dur:4600, on(){SIM.invoke();}},
+  {cap:"That first call-in takes a second (a <b>cold start</b>); once they're on the floor, the next customer is served instantly.", dur:4600, on(){SIM.invoke();}},
+  {cap:"Now a <b>rush arrives.</b> You simply call in <em>more</em> temps — as many as the queue needs, all at once.", dur:4600, on(){SIM.burst();}},
+  {cap:"No rota planning, no guessing capacity in advance. More customers → more staff, automatically.", dur:4400, on(){SIM.burst();}},
+  {cap:"When it goes quiet, everyone <b>clocks out and goes home.</b> Staff on the floor drops back to zero.", dur:4400, on(){SIM.idle();}},
+  {cap:"And with nobody on shift, your <b>wage bill is $0.</b> You only ever paid per customer actually served.", dur:4600, on(){SIM.fmt();}},
+  {cap:"Perfect for unpredictable, spiky footfall. The trade-offs: that cold-start wait, and you're tied to the staffing agency.", dur:4600},
+  {cap:"Your turn 👉 <b>📈 Trigger a rush</b> to call in staff, then <b>💤 go quiet</b> to send everyone home.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Serverless / FaaS works exactly this way: functions spin up per request, scale with demand, and cost nothing when idle.", dur:4800}
+]});
+
+</script>
+</body></html>

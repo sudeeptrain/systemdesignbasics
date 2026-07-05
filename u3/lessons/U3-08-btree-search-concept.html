@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B-Tree Search · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bn{position:absolute; transform:translate(-50%,-50%); font-family:var(--fmono); font-size:12px; font-weight:600; padding:6px 9px; border-radius:8px; border:1.5px solid var(--line2); background:#fff; z-index:3; transition:.2s; white-space:nowrap}
+.bn.lit{border-color:var(--accent); background:#eaf2fe; box-shadow:0 0 0 4px rgba(31,111,230,.16)}
+.bn.hit{border-color:var(--good); background:#e7f7ef; box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.bedge{position:absolute; height:2px; background:var(--line2); transform-origin:left center; z-index:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">B-Tree Search</h1>
+  <p class="subtitle">Most database indexes are B-trees: shallow, wide, sorted trees. To find a key you start at the root and follow one branch at each level, halving the search space every step — so even billions of rows are only a handful of hops deep.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Searches</div><div class="stat-v accent" id="statSearches">0</div></div>
+  <div class="stat"><div class="stat-k">Hops to find (B-tree)</div><div class="stat-v good" id="statHops">—</div></div>
+  <div class="stat"><div class="stat-k">Linear would take</div><div class="stat-v" id="statLin">—</div></div>
+</div>
+<div id="tree"></div>
+<div class="acts">
+  <button class="act ok" id="actSearch">🔎 Search a key (B-tree)</button>
+  <button class="act" id="actScan">🐌 Compare: linear scan</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const tree=document.getElementById('tree');
+  // 3-level tree: root, 3 branches, 9 leaves
+  const root={x:50,y:20,label:'• 30 • 60 •'};
+  const branch=[{x:22,y:48,label:'10 · 20'},{x:50,y:48,label:'40 · 50'},{x:78,y:48,label:'70 · 80'}];
+  const leaves=[]; for(let b=0;b<3;b++){ for(let l=0;l<3;l++){ leaves.push({x:10+ (b*3+l)*11, y:80, v:(b*30)+ (l+1)*5 + b*0 }); } }
+  let searches=0, running=false;
+  const elS=document.getElementById('statSearches'), elH=document.getElementById('statHops'), elL=document.getElementById('statLin');
+  function node(o,cls){ const n=document.createElement('div'); n.className='bn'+(cls?' '+cls:''); n.style.left=o.x+'%'; n.style.top=o.y+'%'; n.textContent=o.label!==undefined?o.label:o.v; tree.appendChild(n); o.el=n; return n; }
+  function edge(a,b){ const w=scene.clientWidth||900,h=scene.clientHeight||460; const ax=a.x/100*w,ay=a.y/100*h,bx=b.x/100*w,by=b.y/100*h;
+    const e=document.createElement('div'); e.className='bedge'; e.style.left=a.x+'%'; e.style.top=a.y+'%'; e.style.width=Math.hypot(bx-ax,by-ay)+'px'; e.style.transform='rotate('+(Math.atan2(by-ay,bx-ax)*180/Math.PI)+'deg)'; tree.appendChild(e); }
+  function render(){ tree.innerHTML='';
+    branch.forEach(b=>edge(root,b)); branch.forEach((b,bi)=>{ for(let l=0;l<3;l++) edge(b,leaves[bi*3+l]); });
+    node(root); branch.forEach(b=>node(b)); leaves.forEach(lf=>node(lf)); }
+  function search(){ if(document.hidden) return; searches++; elS.textContent=searches;
+    render(); const li=Math.floor(Math.random()*9); const bi=Math.floor(li/3); const target=leaves[li];
+    const path=[root,branch[bi],target]; let i=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=root.x+'%'; d.style.top=root.y+'%'; scene.appendChild(d);
+    const leg=520*simRate();
+    const step=()=>{ const o=path[i]; if(o.el) o.el.classList.add(i===path.length-1?'hit':'lit');
+      d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=o.x+'%'; d.style.top=o.y+'%';
+      if(i>=path.length-1){ setTimeout(()=>{ d.classList.add('done'); elH.textContent='3'; elH.className='stat-v good'; elL.textContent='~'+(li+1)+' rows'; setTimeout(()=>d.remove(),300); }, leg); return; }
+      i++; setTimeout(step, leg); };
+    step();
+  }
+  function scan(){ if(document.hidden) return; render(); let i=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=leaves[0].x+'%'; d.style.top='80%'; scene.appendChild(d);
+    const step=()=>{ if(i>=9){ d.classList.add('done'); elL.textContent='9 rows 🐌'; elL.className='stat-v bad'; setTimeout(()=>d.remove(),300); return; }
+      if(leaves[i].el) leaves[i].el.classList.add('lit'); d.style.transition='left .18s'; d.style.left=leaves[i].x+'%'; i++; setTimeout(step, 200*simRate()); };
+    step();
+  }
+  function loop(){ if(!running)return; search(); setTimeout(loop, 2400*simRate()); }
+  document.getElementById('actSearch').onclick=search;
+  document.getElementById('actScan').onclick=scan;
+  render(); running=true; loop();
+  return {search,scan};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>B-tree</b> is the data structure behind most database indexes. It's a sorted tree: a root on top, branches, then leaves.", dur:4600},
+  {cap:"Each node holds a few sorted keys that act as <b>signposts</b> — \"less than 30 go left, 30–60 go middle, more go right.\"", dur:4800},
+  {cap:"To find a key, you start at the <b>root</b> and pick the one branch that could contain it. Watch it descend.", dur:4400, on(){SIM.search();}},
+  {cap:"At each level you follow a single branch and <b>ignore all the others</b> — discarding most of the data every hop.", dur:4600, on(){SIM.search();}},
+  {cap:"Three hops — root, branch, leaf — and you've found it. The tree is shallow and wide on purpose.", dur:4400},
+  {cap:"Compare a <b>linear scan</b>: checking leaves one by one until you stumble on the key. So much more work.", dur:4400, on(){SIM.scan();}},
+  {cap:"The magic is the math: each level multiplies capacity. A 4-level B-tree can index <b>hundreds of millions</b> of rows.", dur:4800},
+  {cap:"Yet any key is still just ~4 hops away. That's why B-tree lookups stay fast even as the table grows enormous.", dur:4600},
+  {cap:"Your turn 👉 <b>🔎 Search</b> via the B-tree and <b>🐌 compare</b> a linear scan to feel the difference.", dur:5200},
+  {cap:"B-trees keep data sorted and balanced so reads, range scans, and inserts all stay logarithmic — the workhorse of databases.", dur:4800}
+]});
+
+</script>
+</body></html>

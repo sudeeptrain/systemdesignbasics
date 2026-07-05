@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graceful Degradation — Escalator to Stairs · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.esc{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); font-size:64px; z-index:2; transition:.3s}
+.mode{position:absolute; left:50%; top:66%; transform:translateX(-50%); font-family:var(--fmono); font-size:14px; font-weight:700; z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Graceful Degradation — Escalator to Stairs</h1>
+  <p class="subtitle">"An escalator can never break — it can only become stairs." When the motor dies, you don't get trapped; you just walk. Graceful degradation means a failure reduces service instead of stopping it.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">People moved up</div><div class="stat-v accent" id="statPeople">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v good" id="statMode">Powered 🛗</div></div>
+  <div class="stat"><div class="stat-k">Service</div><div class="stat-v good" id="statSvc">Full speed</div></div>
+</div>
+<div class="esc" id="esc">🛗</div>
+<div class="mode" id="modeLbl">Riding up, effortless</div>
+<div class="acts">
+  <button class="act bad" id="actBreak">⚡ Motor fails</button>
+  <button class="act ok" id="actFix">🔧 Restore power</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let powered=true, people=0, running=false;
+  const esc=document.getElementById('esc'), modeLbl=document.getElementById('modeLbl');
+  const elP=document.getElementById('statPeople'), elM=document.getElementById('statMode'), elS=document.getElementById('statSvc');
+  function fmt(){ esc.textContent=powered?'🛗':'🪜';
+    elM.textContent=powered?'Powered 🛗':'Stairs 🪜'; elM.className='stat-v '+(powered?'good':'warn');
+    elS.textContent=powered?'Full speed':'Reduced (walking)'; elS.className='stat-v '+(powered?'good':'warn');
+    modeLbl.textContent=powered?'Riding up, effortless':'Still usable — just walk up'; }
+  function rider(){ if(document.hidden) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='72%'; scene.appendChild(d);
+    const leg=(powered?620:1200)*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='top '+leg+'ms'; d.style.top='20%'; });
+    setTimeout(()=>{ d.classList.add('done'); people++; elP.textContent=people; setTimeout(()=>d.remove(),260); }, leg); }
+  function loop(){ if(!running)return; rider(); setTimeout(loop, (powered?900:1500)*simRate()); }
+  function brk(){ if(powered){ powered=false; esc.classList.add('crash'); setTimeout(()=>esc.classList.remove('crash'),500);
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='50%'; d.style.top='42%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate()); fmt(); } }
+  function fix(){ powered=true; fmt(); }
+  document.getElementById('actBreak').onclick=brk;
+  document.getElementById('actFix').onclick=fix;
+  fmt(); running=true; loop();
+  return {brk,fix,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"An escalator carries people up effortlessly — full service, no effort. People keep flowing to the top.", dur:4200},
+  {cap:"Now the <span class='hl-bad'>motor fails.</span> On a badly-designed machine, this would trap everyone.", dur:4000, on(){SIM.brk();}},
+  {cap:"But an escalator <span class='hl-good'>just becomes stairs.</span> Slower, more effort — yet people still get up.", dur:4600, on(){SIM.fmt();}},
+  {cap:"That's <b>graceful degradation</b>: a failure <em>reduces</em> the service instead of stopping it dead.", dur:4400},
+  {cap:"The flow didn't hit zero — it dropped to a slower, walking pace. Partial service beats no service.", dur:4400},
+  {cap:"Software does this too: if recommendations break, show a plain list; if images fail, show text. Core still works.", dur:4600},
+  {cap:"Restore power and you're back to <span class='hl-good'>full speed.</span> Degrade under failure, recover when fixed.", dur:4400, on(){SIM.fix();}},
+  {cap:"The opposite is a brittle system that shows a blank error page the moment one feature breaks. Avoid that.", dur:4400},
+  {cap:"Your turn 👉 <b>⚡ Fail the motor</b> to drop to stairs, <b>🔧 Restore power</b> to speed back up.", dur:5000, on(){SIM.fmt();}},
+  {cap:"Design so the important path survives: when something breaks, become stairs — never a locked cage.", dur:4600}
+]});
+
+</script>
+</body></html>

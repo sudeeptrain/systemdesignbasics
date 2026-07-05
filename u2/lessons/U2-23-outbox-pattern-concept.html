@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outbox / Inbox Pattern · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tbl{position:absolute; left:46%; top:50%; transform:translate(-50%,-50%); width:120px; border:1.5px solid var(--line2); border-radius:9px; background:#fff; z-index:2}
+.tbl .h{font-family:var(--fmono); font-size:11px; font-weight:700; background:#eef4fb; padding:4px 8px; border-bottom:1px solid var(--line2)}
+.tbl .rows{min-height:46px; padding:4px 6px; display:flex; flex-direction:column; gap:3px}
+.orow{font-family:var(--fmono); font-size:11px; padding:2px 6px; border-radius:5px; background:#fff3e0; border-left:3px solid var(--warn); transition:.3s}
+.orow.sent{background:#e7f7ef; border-left-color:var(--good); opacity:.6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Outbox / Inbox Pattern</h1>
+  <p class="subtitle">Saving to your database and publishing an event are two separate systems — one can succeed while the other fails. The outbox writes the event into the same DB transaction, then a relay reliably forwards it to the broker.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Events delivered</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Outbox backlog</div><div class="stat-v good" id="statBack">0</div></div>
+  <div class="stat"><div class="stat-k">Broker</div><div class="stat-v good" id="statBroker">Up</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">Service</span></div></div>
+<div class="tbl"><div class="h">🗄️ DB · outbox</div><div class="rows" id="rows"></div></div>
+<div class="node abs" data-show="1" style="left:68%;top:50%"><div class="box sm relay">🔁</div><div class="lbl"><span class="k">Relay</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:50%"><div class="box sm brk">📡</div><div class="lbl"><span class="k">Broker</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✍️ Save order + event (1 txn)</button>
+  <button class="act bad" id="actBroker">📡 Toggle broker up/down</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const rows=document.getElementById('rows');
+  let outbox=[], delivered=0, brokerUp=true, running=false, seq=0;
+  const elE=document.getElementById('statEvents'), elB=document.getElementById('statBack'), elBr=document.getElementById('statBroker');
+  const brk=scene.querySelector('.brk');
+  function render(){ rows.innerHTML=''; outbox.slice(-4).forEach(o=>{ const r=document.createElement('div'); r.className='orow'+(o.sent?' sent':''); r.textContent='evt#'+o.id+(o.sent?' ✓':''); rows.appendChild(r); });
+    const pending=outbox.filter(o=>!o.sent).length; elB.textContent=pending; elB.className='stat-v '+(pending>2?'warn':'good'); }
+  function write(){ if(document.hidden) return; seq++; const o={id:seq,sent:false}; outbox.push(o);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='42%'; });
+    setTimeout(()=>{ d.classList.add('done'); render(); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function relay(){ if(document.hidden) return; const o=outbox.find(x=>!x.sent); if(!o) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='68%'; });
+    setTimeout(()=>{ if(!brokerUp){ d.classList.add('fail'); setTimeout(()=>d.remove(),300); return; } // stays in outbox, retried later
+      d.style.left='88%'; setTimeout(()=>{ d.classList.add('done'); o.sent=true; delivered++; elE.textContent=delivered; render(); setTimeout(()=>d.remove(),240); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; relay(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actBroker').onclick=()=>{ brokerUp=!brokerUp; elBr.textContent=brokerUp?'Up':'DOWN'; elBr.className='stat-v '+(brokerUp?'good':'bad'); if(brk)brk.classList.toggle('crash',!brokerUp); };
+  render(); running=true; loop();
+  return {write,relay,render,setBroker:(b)=>{brokerUp=b; elBr.textContent=b?'Up':'DOWN'; elBr.className='stat-v '+(b?'good':'bad'); if(brk)brk.classList.toggle('crash',!b);} };
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your service must do two things on an order: <b>save it to the database</b> and <b>publish an event.</b> Two different systems.", dur:4800},
+  {cap:"The danger: the DB write succeeds but the broker is down — so the event is <span class='hl-bad'>lost.</span> The classic dual-write problem.", dur:4800},
+  {cap:"The <b>outbox</b> fixes it. Write the event into an <b>outbox table</b> in the <em>same</em> DB transaction as the order.", dur:4800, on(){SIM.write();}},
+  {cap:"Now both the order and the event commit together, atomically. If the transaction commits, the event is <span class='hl-good'>safely stored.</span>", dur:4600, on(){SIM.write();}},
+  {cap:"A separate <b>relay</b> polls the outbox and forwards each event to the broker, marking it sent.", dur:4600},
+  {cap:"Watch what happens when the <span class='hl-bad'>broker goes down.</span>", dur:3800, on(){SIM.setBroker(false);}},
+  {cap:"The relay's attempts fail, but the events <b>stay safe in the outbox</b> — the backlog just grows. Nothing is lost.", dur:4800, on(){SIM.write();}},
+  {cap:"Bring the broker back and the relay drains the backlog — every event delivered, in order. <span class='hl-good'>At-least-once, guaranteed.</span>", dur:4800, on(){SIM.setBroker(true);}},
+  {cap:"Your turn 👉 <b>✍️ Save</b> orders and <b>📡 toggle the broker</b> to watch the outbox protect your events.", dur:5200},
+  {cap:"Outbox = atomic DB write + reliable publish. The inbox does the mirror trick on the consumer side, de-duplicating events.", dur:4800}
+]});
+
+</script>
+</body></html>

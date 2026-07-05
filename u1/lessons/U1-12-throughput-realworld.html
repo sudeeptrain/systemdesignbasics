@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Throughput — Burger Kitchen · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.qcol{position:absolute; left:13%; top:24%; width:46px; height:58%; transform:translateX(-50%); border:1.5px solid var(--line2); border-radius:10px; background:#fff3e0; overflow:hidden; z-index:1}
+.qfill{position:absolute; left:0; right:0; bottom:0; height:0%; background:linear-gradient(180deg,#f7b267,#e8872b); transition:height .3s}
+.donezone{position:absolute; left:86%; top:55%; transform:translate(-50%,-50%); font-size:40px; z-index:1}
+.dot{background:#e8872b !important; box-shadow:0 0 0 3px rgba(232,135,43,.18) !important}
+.dot.done{background:var(--good) !important; box-shadow:0 0 0 3px rgba(18,163,104,.18) !important}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Throughput — Burger Kitchen</h1>
+  <p class="subtitle">A burger kitchen makes throughput obvious: it's burgers finished per hour. More cooks on the line means more burgers out — even though each burger takes the same time to grill.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Burgers / min</div><div class="stat-v good" id="statThr">0 served</div></div>
+  <div class="stat"><div class="stat-k">Orders waiting</div><div class="stat-v warn" id="statQ">0</div></div>
+  <div class="stat"><div class="stat-k">Cooks</div><div class="stat-v accent" id="statW">1</div></div>
+</div>
+<div class="qcol"><div class="qfill" id="qbar"></div></div>
+<div class="nlbl" style="left:13%;top:84%">Order queue</div>
+<div class="nlbl" style="left:50%;top:13%">Cooks</div>
+<div class="nlbl" style="left:86%;top:84%">Served</div>
+<div class="donezone">🍔</div>
+<div id="workers"></div>
+<div class="acts">
+  <button class="act" id="actAddW">➕ Add cook</button>
+  <button class="act" id="actRemW">➖ Remove cook</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const QX=13, WX=50, DX=86;
+  let workers=[], queue=0, exits=[];
+  const wrap=document.getElementById('workers'), qbar=document.getElementById('qbar');
+  const elThr=document.getElementById('statThr'), elQ=document.getElementById('statQ'), elW=document.getElementById('statW');
+  function ys(n){const a=[],top=30,bot=80;for(let i=0;i<n;i++)a.push(n===1?55:top+(bot-top)*i/(n-1));return a;}
+  function setQ(v){ queue=Math.max(0,v); elQ.textContent=queue; qbar.style.height=Math.min(100,queue*8)+'%'; }
+  function render(){ wrap.innerHTML=''; const y=ys(workers.length);
+    workers.forEach((w,i)=>{ w.y=y[i]; const el=document.createElement('div'); el.className='wbox'+(w.busy?' busy':''); el.textContent='👨‍🍳'; el.style.left=WX+'%'; el.style.top=y[i]+'%'; wrap.appendChild(el); w.el=el; });
+    elW.textContent=workers.length; }
+  function arrive(){ if(document.hidden) return; setQ(queue+1); }
+  function pump(){ workers.forEach(w=>{ if(!w.busy && queue>0) take(w); }); }
+  function take(w){
+    setQ(queue-1); w.busy=true; if(w.el)w.el.classList.add('busy');
+    const leg=560*simRate();
+    const d=document.createElement('div'); d.className='dot'; d.style.left=QX+'%'; d.style.top=w.y+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=WX+'%'; });
+    setTimeout(()=>{
+      d.classList.add('done'); d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=DX+'%';
+      exits.push(performance.now()); setTimeout(()=>d.remove(), leg);
+      w.busy=false; if(w.el)w.el.classList.remove('busy');
+      if(queue>0) take(w);
+    }, leg + 520*simRate());
+  }
+  function thr(){ const now=performance.now(); exits=exits.filter(t=>now-t<1000); elThr.textContent=exits.length+' served'; }
+  function addWorker(){ if(workers.length<5){ workers.push({busy:false}); render(); pump(); } }
+  function removeWorker(){ if(workers.length>1){ workers.pop(); render(); } }
+  document.getElementById('actAddW').onclick=addWorker;
+  document.getElementById('actRemW').onclick=removeWorker;
+  workers=[{busy:false}]; render();
+  setInterval(arrive,640); setInterval(pump,300); setInterval(thr,250);
+  return {addWorker,removeWorker};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A burger joint at lunch rush. <b>Throughput</b> here is dead simple: burgers finished per minute.", dur:4200},
+  {cap:"Orders pile into the <b>queue</b> on the left, waiting for a cook to pick them up.", dur:4000},
+  {cap:"One <b>cook</b> grills a burger, plates it, and sends it out. Steady, but only one at a time.", dur:4200},
+  {cap:"At rush hour, orders arrive faster than one cook can grill — the <span class='hl-warn'>queue keeps growing.</span>", dur:4400},
+  {cap:"Put a second <b>cook</b> on the line. Two burgers grill at once — more served per minute, queue stops climbing.", dur:4400, on(){SIM.addWorker();}},
+  {cap:"Add a third and the <span class='hl-good'>backlog drains.</span> More hands = more output per minute.", dur:4400, on(){SIM.addWorker();}},
+  {cap:"Key point: each burger still takes the <em>same</em> time to grill — you only changed how <b>many</b> cook at once.", dur:4400},
+  {cap:"That's throughput in any system: add workers / parallelism to raise how much finishes per unit time.", dur:4200},
+  {cap:"Your turn 👉 <b>➕ Add cook</b> to clear the rush, <b>➖ Remove cook</b> to watch orders back up.", dur:5200, on(){SIM.addWorker();}},
+  {cap:"Burgers per minute = throughput. How long one burger takes the customer = latency. Two different numbers.", dur:4600}
+]});
+
+</script>
+</body></html>

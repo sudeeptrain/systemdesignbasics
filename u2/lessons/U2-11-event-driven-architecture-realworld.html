@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event-Driven — A Town Notice Board · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bus{position:absolute; left:44%; top:14%; bottom:14%; width:18px; transform:translateX(-50%); border-radius:10px; background:linear-gradient(180deg,#cfe0fb,#9cc0f3); border:1.5px solid var(--accent); z-index:1}
+.buslbl{position:absolute; left:44%; top:7%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--accent-d); font-weight:600}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Event-Driven — A Town Notice Board</h1>
+  <p class="subtitle">The town clerk doesn't phone every resident. They pin one notice to the board and walk away. Whoever cares — the baker, the school, the postman — reads it and reacts on their own. Add a new shop to town and it just starts reading the board too.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Notices posted</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Readers</div><div class="stat-v" id="statCons">3</div></div>
+  <div class="stat"><div class="stat-k">Clerk waits?</div><div class="stat-v good" id="statWait">No — pin & go</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:15%;top:50%"><div class="box">📢</div><div class="lbl"><span class="k">Town clerk</span><br><span class="k" style="font-weight:400">(publisher)</span></div></div>
+<div class="buslbl">Notice board</div>
+<div class="bus"></div>
+<div id="consumers"></div>
+<div class="acts">
+  <button class="act ok" id="actEmit">📌 Post "Market on Sunday"</button>
+  <button class="act" id="actAddConsumer">➕ A new shop opens</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const BUSX=44, PRODX=15;
+  let consumers=[{n:'Baker',e:'🥖'},{n:'School',e:'🏫'},{n:'Postman',e:'📮'}], events=0, running=false;
+  const wrap=document.getElementById('consumers');
+  const elE=document.getElementById('statEvents'), elC=document.getElementById('statCons');
+  function ys(n){const a=[],top=22,bot=86;for(let i=0;i<n;i++)a.push(n===1?54:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(consumers.length);
+    consumers.forEach((c,i)=>{ c.y=y[i]; const el=document.createElement('div'); el.className='wbox'; el.textContent=c.e; el.style.left='76%'; el.style.top=y[i]+'%'; wrap.appendChild(el);
+      const lab=document.createElement('div'); lab.className='nlbl'; lab.style.left='76%'; lab.style.top=(y[i]+11)+'%'; lab.textContent=c.n; wrap.appendChild(lab); c.el=el; });
+    elC.textContent=consumers.length; }
+  function emit(){ if(document.hidden) return; events++; elE.textContent=events;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=PRODX+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=BUSX+'%'; });
+    setTimeout(()=>{ d.remove();
+      consumers.forEach(c=>{ const f=document.createElement('div'); f.className='dot'; f.style.left=BUSX+'%'; f.style.top=c.y+'%'; scene.appendChild(f);
+        requestAnimationFrame(()=>{ f.style.transition='left '+leg+'ms'; f.style.left='76%'; });
+        setTimeout(()=>{ f.classList.add('done'); if(c.el){c.el.classList.add('busy'); setTimeout(()=>c.el.classList.remove('busy'),300);} setTimeout(()=>f.remove(),300); }, leg); });
+    }, leg);
+  }
+  function addConsumer(){ const pool=[{n:'Café',e:'☕'},{n:'Library',e:'📚'},{n:'Florist',e:'💐'}];
+    if(consumers.length<6){ consumers.push(pool[(consumers.length-3)%pool.length]); render(); } }
+  function loop(){ if(!running)return; emit(); setTimeout(loop, 2200*simRate()); }
+  document.getElementById('actEmit').onclick=emit;
+  document.getElementById('actAddConsumer').onclick=addConsumer;
+  render(); running=true; loop();
+  return {emit,addConsumer};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"How does a town clerk tell everyone about Sunday's market? Not by phoning each resident — that's slow and brittle.", dur:4600},
+  {cap:"Instead, the clerk <b>pins one notice</b> to the town board and walks away. That's publishing an event.", dur:4600, on(){SIM.emit();}},
+  {cap:"It's <span class='hl-good'>pin-and-go</span>: the clerk doesn't wait and doesn't track who reads it.", dur:4200},
+  {cap:"The board <b>broadcasts</b> to everyone who checks it — the baker, the school, the postman — each at their own time.", dur:4600, on(){SIM.emit();}},
+  {cap:"Each one reacts in their own way: the baker bakes extra, the school plans a trip, the postman reroutes. Decoupled.", dur:4600},
+  {cap:"Now a <b>new shop opens</b> in town. It just starts reading the board — the clerk does nothing different.", dur:4400, on(){SIM.addConsumer();}},
+  {cap:"That's the power: add reactions without touching the publisher. The clerk never even knows the new shop exists.", dur:4400, on(){SIM.emit();}},
+  {cap:"And if the baker is away, the notice waits on the board — read it later, no harm done. Built-in buffering.", dur:4400},
+  {cap:"Your turn 👉 <b>📌 Post a notice</b> and <b>➕ open a new shop</b> to watch the broadcast grow.", dur:5200},
+  {cap:"Event-driven systems work just like the board: announce that something happened, and let whoever cares react on their own.", dur:4800}
+]});
+
+</script>
+</body></html>

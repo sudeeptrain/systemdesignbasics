@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coupling — Wired vs Wireless Earbuds · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cable{position:absolute; height:3px; background:#cdb4a6; transform-origin:left center; z-index:1; border-radius:3px; transition:.2s}
+.cable.hide{opacity:0}
+.tugged .box{border-color:var(--bad) !important; box-shadow:0 0 0 5px rgba(216,58,46,.16) !important}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Coupling — Wired vs Wireless Earbuds</h1>
+  <p class="subtitle">Tug one wired earbud and the cable yanks the other bud and the phone too — everything is connected. Wireless buds are independent: move one and nothing else cares. That contrast is tight vs loose coupling.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Things disturbed</div><div class="stat-v bad" id="statHit">—</div></div>
+  <div class="stat"><div class="stat-k">Setup</div><div class="stat-v bad" id="statMode">Wired (tight)</div></div>
+  <div class="stat"><div class="stat-k">Tugs</div><div class="stat-v accent" id="statTugs">0</div></div>
+</div>
+<div class="cable" id="cab1"></div><div class="cable" id="cab2"></div>
+<div class="node abs n-0" data-show="1" style="left:24%;top:32%"><div class="box sm">🎧</div><div class="lbl"><span class="k">Left bud</span></div></div>
+<div class="node abs n-1" data-show="1" style="left:24%;top:72%"><div class="box sm">🎧</div><div class="lbl"><span class="k">Right bud</span></div></div>
+<div class="node abs n-2" data-show="1" style="left:70%;top:52%"><div class="box sm">📱</div><div class="lbl"><span class="k">Phone</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actTug">🤏 Tug the left bud</button>
+  <button class="act" id="actMode">🔀 Wired / Wireless</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const N=[{x:24,y:32},{x:24,y:72},{x:70,y:52}].map((p,i)=>({...p,el:scene.querySelector('.n-'+i)}));
+  let mode='wired', tugs=0, running=false;
+  const elH=document.getElementById('statHit'), elM=document.getElementById('statMode'), elT=document.getElementById('statTugs');
+  function line(el,a,b){ const w=scene.clientWidth||900,h=scene.clientHeight||460; const ax=a.x/100*w,ay=a.y/100*h,bx=b.x/100*w,by=b.y/100*h;
+    el.style.left=a.x+'%'; el.style.top=a.y+'%'; el.style.width=Math.hypot(bx-ax,by-ay)+'px'; el.style.transform='rotate('+(Math.atan2(by-ay,bx-ax)*180/Math.PI)+'deg)'; }
+  function drawCables(){ line(document.getElementById('cab1'),N[0],N[2]); line(document.getElementById('cab2'),N[1],N[2]);
+    const hide=mode!=='wired'; document.getElementById('cab1').classList.toggle('hide',hide); document.getElementById('cab2').classList.toggle('hide',hide); }
+  function ripple(from,to){ const d=document.createElement('div'); d.className='dot fail'; d.style.left=from.x+'%'; d.style.top=from.y+'%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=to.x+'%'; d.style.top=to.y+'%'; });
+    setTimeout(()=>{ to.el.classList.add('tugged'); setTimeout(()=>to.el.classList.remove('tugged'),700); d.remove(); }, leg); }
+  function tug(){ if(document.hidden) return; tugs++; elT.textContent=tugs;
+    N[0].el.classList.add('tugged'); setTimeout(()=>N[0].el.classList.remove('tugged'),700);
+    if(mode==='wired'){ ripple(N[0],N[1]); ripple(N[0],N[2]); elH.textContent='3 (all yanked!)'; elH.className='stat-v bad'; }
+    else { elH.textContent='1 (just that bud)'; elH.className='stat-v good'; }
+  }
+  function loop(){ if(!running)return; tug(); setTimeout(loop, 3000*simRate()); }
+  function toggleMode(){ mode=mode==='wired'?'wireless':'wired'; drawCables();
+    elM.textContent=mode==='wired'?'Wired (tight)':'Wireless (loose)'; elM.className='stat-v '+(mode==='wired'?'bad':'good'); }
+  document.getElementById('actTug').onclick=tug;
+  document.getElementById('actMode').onclick=toggleMode;
+  setTimeout(drawCables,60); window.addEventListener('resize',drawCables);
+  running=true; loop();
+  return {tug,toggleMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Old <b>wired earbuds</b>: two buds and a phone, all joined by one cable. Everything is physically connected.", dur:4400},
+  {cap:"<b>Tug the left bud</b> and watch what happens to the rest.", dur:3600, on(){SIM.tug();}},
+  {cap:"The cable <span class='hl-bad'>yanks the right bud and the phone too</span> — touch one thing, disturb all three.", dur:4600},
+  {cap:"That's <b>tight coupling</b>: parts so connected that a change in one drags the others along.", dur:4400},
+  {cap:"Now switch to <b>wireless buds</b> — no cable between them.", dur:3800, on(){SIM.toggleMode();}},
+  {cap:"Tug the left bud and… <span class='hl-good'>nothing else moves.</span> Each piece is independent.", dur:4200, on(){SIM.tug();}},
+  {cap:"That's <b>loose coupling</b>: parts connected only by a thin agreed interface (here, Bluetooth), free to change alone.", dur:4600},
+  {cap:"Loose coupling is why you can lose one wireless bud and replace just it — not the whole set.", dur:4400},
+  {cap:"Your turn 👉 flip <b>🔀 Wired / Wireless</b> and <b>🤏 tug a bud</b> to compare how far the disturbance spreads.", dur:5200},
+  {cap:"In software, prefer wireless-style links: small, clear interfaces so parts change independently — that's low coupling.", dur:4800}
+]});
+
+</script>
+</body></html>

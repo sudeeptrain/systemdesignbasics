@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL vs NoSQL · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.store{position:absolute; left:62%; top:18%; width:32%; z-index:2}
+.srow{font-family:var(--fmono); font-size:11px; padding:5px 8px; border-radius:6px; margin-bottom:4px; transition:.3s; opacity:0; transform:translateY(6px)}
+.srow.on{opacity:1; transform:none}
+.srow.sql{background:#eef4ff; border:1.5px solid var(--accent); color:var(--accent-d)}
+.srow.doc{background:#fff7e9; border:1.5px solid var(--warn); color:var(--warn)}
+.schemahdr{position:absolute; left:62%; top:11%; font-family:var(--fmono); font-size:12px; font-weight:700; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">SQL vs NoSQL</h1>
+  <p class="subtitle">SQL databases use rigid tables with a fixed schema and powerful joins — great for structured, related data. NoSQL stores flexible documents with no fixed shape — great for varied, rapidly-evolving data that scales out horizontally.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Records written</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Model</div><div class="stat-v" id="statMode">SQL (tables)</div></div>
+  <div class="stat"><div class="stat-k">Schema</div><div class="stat-v good" id="statSchema">fixed, strict</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">✍️</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="schemahdr" id="schemahdr">📋 Table: users (id, name, age)</div>
+<div class="store" id="store"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 SQL / NoSQL</button>
+  <button class="act ok" id="actWrite">✍️ Write a record</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const store=document.getElementById('store'), hdr=document.getElementById('schemahdr');
+  const elW=document.getElementById('statWrites'), elM=document.getElementById('statMode'), elS=document.getElementById('statSchema');
+  let mode='sql', writes=0, running=false;
+  const sqlRows=['1 · Ann · 30','2 · Ben · 25','3 · Cara · 41','4 · Dev · 28'];
+  const docs=['{name:"Ann", age:30}','{name:"Ben", city:"Delhi"}','{user:"Cara", tags:["vip"]}','{name:"Dev", age:28, pet:"cat"}'];
+  function write(){ if(document.hidden) return; if(store.children.length>=4) store.innerHTML='';
+    writes++; elW.textContent=writes;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); const i=store.children.length;
+      const r=document.createElement('div'); r.className='srow '+(mode==='sql'?'sql':'doc'); r.textContent=mode==='sql'?sqlRows[i%4]:docs[i%4]; store.appendChild(r); requestAnimationFrame(()=>r.classList.add('on'));
+      setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function setMode(m){ mode=m; store.innerHTML='';
+    elM.textContent=m==='sql'?'SQL (tables)':'NoSQL (documents)'; elM.className='stat-v '+(m==='sql'?'accent':'warn');
+    elS.textContent=m==='sql'?'fixed, strict':'flexible, any shape'; elS.className='stat-v '+(m==='sql'?'good':'warn');
+    hdr.textContent=m==='sql'?'📋 Table: users (id, name, age)':'📦 Collection: users (any fields)'; }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='sql'?'nosql':'sql');
+  document.getElementById('actWrite').onclick=write;
+  setMode('sql'); running=true; loop();
+  return {write,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two big families of databases. <b>SQL</b> (relational) and <b>NoSQL</b> — and the difference starts with the schema.", dur:4600},
+  {cap:"<b>SQL</b> stores data in <b>tables</b> with a fixed schema: every user row has exactly id, name, age. Neat and uniform.", dur:4600, on(){SIM.write();}},
+  {cap:"That structure unlocks powerful <b>joins</b> and strong consistency — perfect for related, structured data like orders and customers.", dur:4600, on(){SIM.write();}},
+  {cap:"The price is rigidity: to add a field, you change the schema for the <em>whole</em> table. Evolving the shape is work.", dur:4600},
+  {cap:"Now switch to <b>NoSQL</b> — here, a document store.", dur:3600, on(){SIM.setMode('nosql');}},
+  {cap:"Each record is a flexible <b>document</b>. One has an age, the next a city, the next a list of tags. <span class='hl-warn'>No fixed shape.</span>", dur:4800, on(){SIM.write();}},
+  {cap:"That flexibility is great for varied, fast-changing data — and many NoSQL stores <b>scale out</b> across machines easily.", dur:4600, on(){SIM.write();}},
+  {cap:"The trade-off: weaker cross-record guarantees and fewer joins — you often denormalize and handle relationships in the app.", dur:4600},
+  {cap:"Your turn 👉 flip <b>🔀 SQL / NoSQL</b> and <b>✍️ write records</b> to compare strict rows with flexible documents.", dur:5200},
+  {cap:"There's no winner: SQL for structured, related, consistent data; NoSQL for flexible, high-scale, evolving data. Pick per workload.", dur:4800}
+]});
+
+</script>
+</body></html>

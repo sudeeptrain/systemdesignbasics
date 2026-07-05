@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Isolation Levels — A Shared Note · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.lvlbar{position:absolute; left:50%; top:16%; transform:translateX(-50%); display:flex; gap:6px; z-index:3}
+.lvl{font-family:var(--fmono); font-size:11px; padding:5px 9px; border-radius:7px; border:1.5px solid var(--line2); background:#fff; color:var(--faint); transition:.2s}
+.lvl.cur{border-color:var(--accent); background:#eaf2fe; color:var(--accent-d); font-weight:700}
+.txn{position:absolute; width:160px; text-align:center; font-family:var(--fmono); font-size:11px; padding:8px; border-radius:9px; border:1.5px solid var(--line2); background:#fff; z-index:2}
+.outcome{position:absolute; left:50%; bottom:22%; transform:translateX(-50%); font-family:var(--fmono); font-size:14px; font-weight:700; z-index:3; text-align:center}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Isolation Levels — A Shared Note</h1>
+  <p class="subtitle">Two people edit a shared note. With loose rules, one sees the other's half-typed words that might be deleted a second later. With strict rules, you only ever see text the other person has actually saved. Stricter is safer but slower.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Reads</div><div class="stat-v accent" id="statRuns">0</div></div>
+  <div class="stat"><div class="stat-k">Rule</div><div class="stat-v" id="statLvl">See everything</div></div>
+  <div class="stat"><div class="stat-k">Confusing reads</div><div class="stat-v" id="statAnom">0</div></div>
+</div>
+<div class="lvlbar" id="lvlbar"></div>
+<div class="txn t-a" style="left:20%;top:46%">🅰️ Aïsha types<br>"see you at 8"<br>(not saved yet)</div>
+<div class="txn t-b" style="left:62%;top:46%">🅱️ Ben reads<br>the note</div>
+<div class="outcome" id="outcome">pick a rule, then read</div>
+<div class="acts">
+  <button class="act" id="actLevel">⬆️ Stricter rule</button>
+  <button class="act ok" id="actRun">👀 Ben reads while Aïsha types</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const levels=['See everything','See saved only','Stable snapshot','Fully serialized'];
+  const lvlbar=document.getElementById('lvlbar');
+  let lvl=0, runs=0, anom=0, running=false;
+  const elR=document.getElementById('statRuns'), elL=document.getElementById('statLvl'), elA=document.getElementById('statAnom'), outcome=document.getElementById('outcome');
+  const tb=document.querySelector('.t-b');
+  function render(){ lvlbar.innerHTML=''; levels.forEach((n,i)=>{ const e=document.createElement('div'); e.className='lvl'+(i===lvl?' cur':''); e.textContent=n; lvlbar.appendChild(e); }); elL.textContent=levels[lvl]; elL.className='stat-v '+(lvl>=2?'good':lvl>=1?'warn':'bad'); }
+  function run(){ if(document.hidden) return; runs++; elR.textContent=runs;
+    const dirty = (lvl===0);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='20%'; d.style.top='62%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='62%'; });
+    setTimeout(()=>{ if(dirty){ d.classList.add('fail'); anom++; elA.textContent=anom; elA.className='stat-v bad';
+        outcome.textContent='😕 Ben saw "see you at 8" — but Aïsha then deleted it!'; outcome.style.color='var(--bad)'; if(tb)tb.style.borderColor='var(--bad)'; setTimeout(()=>{if(tb)tb.style.borderColor='';},800); }
+      else { d.classList.add('done'); outcome.textContent='✓ Ben saw only saved text — no confusion'; outcome.style.color='var(--good)'; if(tb)tb.style.borderColor='var(--good)'; setTimeout(()=>{if(tb)tb.style.borderColor='';},800); }
+      setTimeout(()=>d.remove(),320); }, leg);
+  }
+  function raise(){ lvl=(lvl+1)%levels.length; render(); }
+  function loop(){ if(!running)return; run(); setTimeout(loop, 2600*simRate()); }
+  document.getElementById('actLevel').onclick=raise;
+  document.getElementById('actRun').onclick=run;
+  render(); running=true; loop();
+  return {run,raise,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Aïsha and Ben share a note. Aïsha is mid-sentence, typing something she hasn't <b>saved</b> yet. What should Ben see?", dur:4800},
+  {cap:"<b>Isolation levels</b> are the rules for that. The loosest — <b>\"see everything\"</b> — lets Ben read her unsaved keystrokes.", dur:4800, on(){SIM.run();}},
+  {cap:"Trouble: Ben reads \"see you at 8\" and acts on it — then Aïsha <span class='hl-bad'>deletes it.</span> He believed something that never became real.", dur:4800},
+  {cap:"That's a <b>dirty read</b> — seeing data that was never committed. Fast and loose, but dangerous.", dur:4400},
+  {cap:"Tighten the rule to <b>\"see saved only.\"</b> Now Ben can read only text Aïsha has actually committed.", dur:4400, on(){SIM.raise();}},
+  {cap:"Read again: Ben no longer sees the half-typed line. <span class='hl-good'>The confusion is gone.</span>", dur:4400, on(){SIM.run();}},
+  {cap:"Tighter still — a <b>stable snapshot</b>, then <b>fully serialized</b> — rules out more subtle surprises, as if edits happened one at a time.", dur:4800, on(){SIM.raise();}},
+  {cap:"But strictness costs speed: the stricter the rule, the more waiting and locking, and the less people can edit at once.", dur:4600, on(){SIM.raise();}},
+  {cap:"Your turn 👉 <b>⬆️ Tighten the rule</b> and <b>👀 read while she types</b> to watch confusing reads disappear.", dur:5200, on(){SIM.render();}},
+  {cap:"Isolation levels trade speed for safety: loose lets you see half-done work; strict makes edits feel one-at-a-time. Match it to the stakes.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logical vs Physical Design · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.schema{position:absolute; right:7%; top:16%; width:48%; z-index:2}
+.srow{font-family:var(--fmono); font-size:11px; padding:5px 9px; border-radius:6px; margin-bottom:5px; transition:.3s; opacity:0; transform:translateY(6px)}
+.srow.on{opacity:1; transform:none}
+.srow.log{background:#eef4ff; border:1.5px solid var(--accent); color:var(--accent-d)}
+.srow.phy{background:#fff7e9; border:1.5px solid var(--warn); color:var(--warn)}
+.shdr{position:absolute; right:7%; top:10%; font-family:var(--fmono); font-size:12px; font-weight:700; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Logical vs Physical Design</h1>
+  <p class="subtitle">Logical design says WHAT data and how it relates — tables, columns, keys — independent of any product. Physical design says HOW it's actually stored in a specific database: data types, indexes, partitions, and storage tuned for real performance.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Design checks</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Layer</div><div class="stat-v" id="statMode">Logical</div></div>
+  <div class="stat"><div class="stat-k">Concerned with</div><div class="stat-v good" id="statCare">what & how it relates</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">📐</div><div class="lbl"><span class="k">Designer</span></div></div>
+<div class="shdr" id="shdr">📋 Logical: tables &amp; keys</div>
+<div class="schema" id="schema"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Logical / Physical</button>
+  <button class="act ok" id="actQuery">🔧 Refine the design</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const schema=document.getElementById('schema'), shdr=document.getElementById('shdr');
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elC=document.getElementById('statCare');
+  let mode='log', reqs=0, running=false;
+  const log=['Customer ( id PK, name, city )','Order ( id PK, customer_id FK, total )','Order ↔ Customer: many-to-one','Product ( id PK, name, price )'];
+  const phy=['id BIGINT, name VARCHAR(80)','INDEX idx_customer_id (customer_id)','PARTITION orders BY RANGE(date)','price DECIMAL(10,2), engine=InnoDB'];
+  function render(){ schema.innerHTML=''; const set=mode==='log'?log:phy;
+    set.forEach((r,i)=>setTimeout(()=>{ const el=document.createElement('div'); el.className='srow '+(mode==='log'?'log':'phy'); el.textContent=r; schema.appendChild(el); requestAnimationFrame(()=>el.classList.add('on')); }, i*120*simRate()));
+    shdr.textContent=mode==='log'?'📋 Logical: tables & keys':'🗄️ Physical: types, indexes, storage';
+    elM.textContent=mode==='log'?'Logical':'Physical'; elM.className='stat-v '+(mode==='log'?'accent':'warn');
+    elC.textContent=mode==='log'?'what & how it relates':'how it is stored & tuned'; }
+  function refine(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='56%'; });
+    setTimeout(()=>{ d.classList.add('done'); const rows=[...schema.children]; const r=rows[Math.floor(Math.random()*rows.length)]; if(r){r.style.boxShadow='0 0 0 3px rgba(31,111,230,.18)'; setTimeout(()=>r.style.boxShadow='',300);} setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function setMode(m){ mode=m; render(); }
+  function loop(){ if(!running)return; refine(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='log'?'phy':'log');
+  document.getElementById('actQuery').onclick=refine;
+  render(); running=true; loop();
+  return {refine,setMode,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Between the idea and the running database sit two design layers: <b>logical</b> and <b>physical.</b> They answer different questions.", dur:4600},
+  {cap:"<b>Logical design</b> says <em>what</em> data exists and how it relates — tables, columns, primary and foreign keys.", dur:4600, on(){SIM.refine();}},
+  {cap:"Customer has an id and a name; an Order belongs to a Customer. Notice: <b>no mention of any specific database yet.</b>", dur:4800},
+  {cap:"It's portable — the same logical model could become PostgreSQL, MySQL, or SQL Server. Pure structure and relationships.", dur:4600, on(){SIM.refine();}},
+  {cap:"Now drop to <b>physical design</b>: how this is actually stored and tuned in a real database.", dur:4200, on(){SIM.setMode('phy');}},
+  {cap:"Here come the concrete decisions: column <b>data types</b>, <b>indexes</b> on hot columns, <b>partitioning</b>, storage engine.", dur:4800, on(){SIM.refine();}},
+  {cap:"BIGINT vs INT, an index on customer_id, partition orders by date — choices made for <b>performance</b> on real hardware.", dur:4800},
+  {cap:"Same data, two altitudes: logical is the architect's blueprint; physical is the engineer's build spec for one site.", dur:4600, on(){SIM.setMode('log');}},
+  {cap:"Your turn 👉 flip <b>🔀 Logical / Physical</b> and <b>🔧 refine</b> to see structure versus storage decisions.", dur:5200},
+  {cap:"Design logically first (what & relationships), then physically (types, indexes, layout). Mixing them too early locks you in.", dur:4800}
+]});
+
+</script>
+</body></html>

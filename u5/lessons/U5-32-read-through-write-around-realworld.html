@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Read-Through &amp; Write-Around — A Librarian Who Fetches · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache .box,.db .box{transition:.3s}
+.note{position:absolute; left:50%; top:74%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Read-Through &amp; Write-Around — A Librarian Who Fetches</h1>
+  <p class="subtitle">Read-through: you ask the librarian at the front desk; if the book isn't on the display shelf, the librarian fetches it from the stacks for you and shelves it — you never go yourself. Write-around: newly donated books go straight to the stacks, not the display, so the front shelf stays full of what people actually borrow.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Books borrowed</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Librarian fetches</div><div class="stat-v" id="statLoads">0</div></div>
+  <div class="stat"><div class="stat-k">Donations on display</div><div class="stat-v good" id="statWvc">0 (bypassed)</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:42%"><div class="box">🧑</div><div class="lbl"><span class="k">Reader</span></div></div>
+<div class="node abs cache" data-show="1" style="left:50%;top:42%"><div class="box">🧑‍🏫</div><div class="lbl"><span class="k">Front desk shelf</span></div></div>
+<div class="node abs db" data-show="1" style="left:84%;top:42%"><div class="box sm">📚</div><div class="lbl"><span class="k">The stacks</span></div></div>
+<div class="note" id="note">reader only ever asks the front desk</div>
+<div class="acts">
+  <button class="act ok" id="actRead">📖 Borrow (ask the desk)</button>
+  <button class="act bad" id="actWrite">📥 Donate (straight to stacks)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let cached=new Set(), reads=0, loads=0, running=false, busy=false, kc=0;
+  const elR=document.getElementById('statReads'), elL=document.getElementById('statLoads'), note=document.getElementById('note');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function read(){ if(busy||document.hidden) return; busy=true; reads++; elR.textContent=reads; const k = Math.random()<0.5 && cached.size? [...cached][0] : kc++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cached.has(k)){ note.textContent='on the shelf → handed over'; note.style.color='var(--good)'; if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),180);} d.classList.add('done'); d.style.left='16%'; setTimeout(()=>{d.remove(); busy=false;},leg); }
+      else { note.textContent='not on shelf → LIBRARIAN fetches from stacks'; note.style.color='var(--warn)'; d.classList.add('fail');
+        d.style.left='84%'; setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),200);} cached.add(k); loads++; elL.textContent=loads; elL.className='stat-v warn';
+          const g=document.createElement('div'); g.className='dot done'; g.style.left='84%'; g.style.top='54%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .55s';g.style.left='16%';}); setTimeout(()=>{g.remove(); busy=false;},560); }, leg); } }, leg);
+  }
+  function write(){ if(document.hidden) return; note.textContent='donation goes straight to the stacks (skips display)'; note.style.color='var(--bad)';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='30%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='84%'; });
+    setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),220);} d.classList.add('done'); setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function loop(){ if(!running)return; if(!busy){ if(Math.random()<0.7) read(); else write(); } setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actRead').onclick=read;
+  document.getElementById('actWrite').onclick=write;
+  running=true; loop();
+  return {read,write};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"With your own address book, <em>you</em> did the looking-up. <b>Read-through</b> hands that off to a <b>librarian</b> — you just ask the desk and get your book.", dur:4800},
+  {cap:"If the book's on the <b>front-desk display shelf</b> (a hit), the librarian hands it straight over. You never know whether it was nearby or not.", dur:4600, on(){SIM.read();}},
+  {cap:"If it's <b>not on display</b> (a miss), here's the difference: the <b>librarian</b> — not you — walks to the stacks, fetches it, shelves a copy, and gives it to you.", dur:4800, on(){SIM.read();}},
+  {cap:"So your job stays simple: always just ask the desk. The librarian handles all the fetching. The next reader who wants it finds it on display.", dur:4600, on(){SIM.read();}},
+  {cap:"Now donations. <b>Write-around</b> sends every <b>donated book straight to the stacks</b>, deliberately skipping the front display.", dur:4600, on(){SIM.write();}},
+  {cap:"Why skip the display? Because a freshly donated book usually <b>isn't borrowed right away</b> — putting it up front would just crowd out the popular titles.", dur:4800, on(){SIM.write();}},
+  {cap:"So the display stays full of <b>what people actually borrow.</b> A donation only reaches the front later, lazily, if someone asks for it.", dur:4800, on(){SIM.read();}},
+  {cap:"The trade-off: asking for a book right after it's donated means a guaranteed trip to the stacks (it's not on display yet). Fine when donations are rarely read soon.", dur:4600},
+  {cap:"Your turn 👉 <b>📖 Borrow</b> (the librarian fetches on a miss) and <b>📥 Donate</b> (straight to the stacks, skipping display).", dur:5200},
+  {cap:"Read-through: the librarian fetches misses for you. Write-around: new items go straight to storage to protect the popular shelf. A clean combo for read-heavy use.", dur:4800}
+]});
+
+</script>
+</body></html>

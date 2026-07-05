@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is System Design? · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.nodewrap .lbl .sub{display:block;color:var(--faint);font-size:10.5px}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">What is System Design?</h1>
+  <p class="subtitle">Everything behind a single button tap. Follow one request from the screen to the database and back — that whole planned journey is system design.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests sent</div><div class="stat-v accent" id="statSent">0</div></div>
+  <div class="stat"><div class="stat-k">Round trip</div><div class="stat-v" id="statMs">— ms</div><div class="stat-sub">client → db → client</div></div>
+</div>
+<div class="wireline" style="left:14%;width:23%;top:55%"></div>
+<div class="wireline" style="left:39%;width:23%;top:55%"></div>
+<div class="wireline" style="left:64%;width:23%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box nd-0">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:37%;top:55%"><div class="box nd-1">⚖️</div><div class="lbl"><span class="k">Load Balancer</span></div></div>
+<div class="node abs" data-show="1" style="left:62%;top:55%"><div class="box nd-2">🖥️</div><div class="lbl"><span class="k">App Server</span></div></div>
+<div class="node abs" data-show="1" style="left:87%;top:55%"><div class="box nd-3">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="acts"><button class="act" id="actSend">📨 Send request</button></div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const xs=[12,37,62,87], Y=55;
+  const boxes=xs.map((_,i)=>scene.querySelector('.nd-'+i));
+  let sent=0;
+  const elSent=document.getElementById('statSent'), elMs=document.getElementById('statMs');
+  function lite(i,on){ if(boxes[i]) boxes[i].classList.toggle('active',on); }
+  function send(){
+    if(document.hidden) return;
+    sent++; elSent.textContent=sent;
+    const path=[0,1,2,3,2,1,0];
+    const d=document.createElement('div'); d.className='dot'; d.style.left=xs[0]+'%'; d.style.top=Y+'%'; scene.appendChild(d);
+    const leg=560*simRate(); let i=0, ms=0;
+    (function step(){
+      const ni=path[i];
+      d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)';
+      d.style.left=xs[ni]+'%';
+      lite(ni,true); setTimeout(()=>lite(ni,false), leg*0.9);
+      if(i>=3) d.classList.add('done');
+      ms+=Math.round(26+Math.random()*22);
+      i++;
+      if(i<path.length) setTimeout(step, leg);
+      else setTimeout(()=>{ elMs.textContent=ms+' ms'; d.remove(); }, leg);
+    })();
+  }
+  function loop(){ send(); setTimeout(loop, 4200*simRate()); }
+  document.getElementById('actSend').onclick=send;
+  loop();
+  return {send};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A user taps <b>Buy</b>. One click — but a whole designed system springs into action behind it.", dur:4000},
+  {cap:"The request leaves the phone and reaches the <b>load balancer</b>, the traffic director that picks a free server.", dur:4200, on(){SIM.send();}},
+  {cap:"The balancer forwards it to an available <b>app server</b> — the brain that holds the business logic.", dur:4000},
+  {cap:"The server needs data, so it asks the <b>database</b> to fetch or store a record.", dur:4000},
+  {cap:"<span class='hl-good'>The record travels back</span> to the server, which assembles the response.", dur:4000},
+  {cap:"The response returns through the balancer and <span class='hl-good'>the screen updates.</span> Round-trip time is shown up top.", dur:4200},
+  {cap:"Designing <em>which</em> components exist, how they connect, and how data flows between them — that is <b>system design</b>.", dur:4400},
+  {cap:"Each box can be swapped, duplicated, or scaled independently. That flexibility is exactly what good design buys you.", dur:4200},
+  {cap:"Your turn 👉 hit <b>📨 Send request</b> and watch a request make the full round trip.", dur:5000, on(){SIM.send();}},
+  {cap:"Every feature you'll learn next — caching, scaling, failover — is just a smarter version of this one journey.", dur:4400}
+]});
+
+</script>
+</body></html>

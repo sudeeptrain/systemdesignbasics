@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rollback — A Cancelled Online Order · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stmt{position:absolute; left:50%; transform:translateX(-50%); width:54%; font-family:var(--fmono); font-size:12px; padding:8px 12px; border-radius:8px; border:1.5px solid var(--line2); background:#fff; z-index:2; transition:.3s}
+.stmt.applied{border-color:var(--good); background:#e7f7ef}
+.stmt.undone{border-color:var(--warn); background:#fff7e9; text-decoration:line-through; color:var(--muted)}
+.savepoint{position:absolute; left:50%; top:16%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Rollback — A Cancelled Online Order</h1>
+  <p class="subtitle">Checkout does several things: reserve the item, deduct stock, charge the card. If the payment fails at the last step, the shop must undo the earlier ones in reverse — release the item, restore stock — so you're left exactly where you started.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Checkouts</div><div class="stat-v accent" id="statTxns">0</div></div>
+  <div class="stat"><div class="stat-k">Steps applied</div><div class="stat-v" id="statApplied">0</div></div>
+  <div class="stat"><div class="stat-k">Last outcome</div><div class="stat-v good" id="statOut">—</div></div>
+</div>
+<div class="savepoint">🛒 START (cart saved)</div>
+<div class="stmt s-0" style="top:34%">① reserve the item</div>
+<div class="stmt s-1" style="top:52%">② deduct stock −1</div>
+<div class="stmt s-2" style="top:70%">③ charge the card</div>
+<div class="acts">
+  <button class="act ok" id="actCommit">✅ Checkout succeeds</button>
+  <button class="act bad" id="actError">💥 Payment fails on ③</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const stmts=[scene.querySelector('.s-0'),scene.querySelector('.s-1'),scene.querySelector('.s-2')];
+  const ys=[34,52,70];
+  let txns=0, busy=false, running=false;
+  const elT=document.getElementById('statTxns'), elA=document.getElementById('statApplied'), elO=document.getElementById('statOut');
+  function clear(){ stmts.forEach(s=>s.className=s.className.replace(/\b(applied|undone)\b/g,'').trim()); }
+  function dot(y,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left='18%'; d.style.top=y+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .35s'; d.style.left='25%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, 360*simRate()); }
+  function run(failAt){ busy=true; txns++; elT.textContent=txns; clear(); elO.textContent='processing…'; elO.className='stat-v';
+    let i=0;
+    (function apply(){
+      if(i>(failAt>=0?failAt-1:2)){ elA.textContent='3'; elO.textContent='ORDER PLACED ✓'; elO.className='stat-v good'; busy=false; return; }
+      if(failAt>=0 && i===failAt-1){ stmts[i].classList.add('undone'); dot(ys[i],'fail',()=>{ elO.textContent='payment failed → undoing'; elO.className='stat-v warn'; rollback(i-1); }); return; }
+      dot(ys[i], 'done', ()=>{ stmts[i].classList.add('applied'); elA.textContent=(i+1); i++; setTimeout(apply, 350*simRate()); });
+    })();
+  }
+  function rollback(from){ let j=from;
+    (function undo(){ if(j<0){ elA.textContent='0'; elO.textContent='CANCELLED ✗ (back to your cart)'; elO.className='stat-v bad'; busy=false; return; }
+      stmts[j].classList.remove('applied'); stmts[j].classList.add('undone');
+      dot(ys[j],'fail',()=>{ j--; setTimeout(undo, 360*simRate()); });
+    })();
+  }
+  function loop(){ if(!running)return; if(!busy) run(-1); setTimeout(loop, 3600*simRate()); }
+  document.getElementById('actCommit').onclick=()=>run(-1);
+  document.getElementById('actError').onclick=()=>run(3);
+  running=true; loop();
+  return {commit:()=>run(-1),error:()=>run(3)};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You click <b>Buy</b>. Behind that one click, checkout runs three steps: reserve the item, deduct stock, charge your card.", dur:4600},
+  {cap:"It begins at a clean starting point — your cart — that it can return to if anything goes wrong.", dur:4400},
+  {cap:"When all goes well, each step completes in order and the <b>order is placed.</b> Item yours, stock updated, payment taken.", dur:4600, on(){SIM.commit();}},
+  {cap:"Three steps, one clean result. Everyone's happy.", dur:3800},
+  {cap:"But now step ③ <span class='hl-bad'>fails</span> — your card is declined at the last moment.", dur:3800, on(){SIM.error();}},
+  {cap:"The shop can't keep steps ① and ②: that would reserve an item and drop stock for a sale that <em>never got paid.</em>", dur:4800},
+  {cap:"So it <b>rolls back</b> — undoing the applied steps in <span class='hl-warn'>reverse</span>: release the item, restore the stock.", dur:4800},
+  {cap:"You end up <span class='hl-good'>right back at your cart</span>, stock intact, nothing charged. As if checkout never happened.", dur:4600},
+  {cap:"Your turn 👉 <b>✅ Complete a checkout</b>, then trigger a <b>💥 payment failure</b> to watch the clean rollback.", dur:5200},
+  {cap:"Rollback is the safety net that makes 'all-or-nothing' real: a failed step never leaves a half-finished mess behind.", dur:4800}
+]});
+
+</script>
+</body></html>

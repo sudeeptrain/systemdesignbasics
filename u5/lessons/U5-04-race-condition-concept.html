@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Race Condition · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.shared{position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:84px; text-align:center; font-family:var(--fmono); font-size:13px; font-weight:700; padding:14px 6px; border-radius:10px; border:2px solid var(--accent); background:#eaf2fe; color:var(--accent-d); z-index:3}
+.note{position:absolute; left:50%; top:76%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Race Condition</h1>
+  <p class="subtitle">When two threads read-modify-write the same shared variable without coordination, their steps can interleave badly: both read the old value, both add one, both write back — and one update is lost. The result depends on timing, which is why these bugs are so nasty.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Increments asked</div><div class="stat-v" id="statExp">0</div></div>
+  <div class="stat"><div class="stat-k">Counter value</div><div class="stat-v accent" id="statActual">0</div></div>
+  <div class="stat"><div class="stat-k">Lost updates</div><div class="stat-v good" id="statLost">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:26%"><div class="box sm">🧵</div><div class="lbl"><span class="k">Thread A</span></div></div>
+<div class="node abs" data-show="1" style="left:16%;top:68%"><div class="box sm">🧵</div><div class="lbl"><span class="k">Thread B</span></div></div>
+<div class="shared" id="shared">count<br>= 0</div>
+<div class="note" id="note">no coordination yet</div>
+<div class="acts">
+  <button class="act ok" id="actSafe">✅ One thread at a time</button>
+  <button class="act bad" id="actRace">⚡ Both at once (race)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let count=0, exp=0, lost=0, running=false;
+  const elExp=document.getElementById('statExp'), elA=document.getElementById('statActual'), elL=document.getElementById('statLost'), shared=document.getElementById('shared'), note=document.getElementById('note');
+  function setCount(){ shared.innerHTML='count<br>= '+count; elA.textContent=count; }
+  function fly(fromY,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left='16%'; d.style.top=fromY+'%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='46%'; }); setTimeout(()=>{ if(then)then(d); }, leg); }
+  function safe(){ if(document.hidden) return; exp++; elExp.textContent=exp; note.textContent='A reads, adds, writes — then B'; note.style.color='var(--good)';
+    fly(26,'done',(d)=>{ count++; setCount(); shared.style.boxShadow='0 0 0 4px rgba(18,163,104,.2)'; setTimeout(()=>shared.style.boxShadow='',250); d.classList.add('done'); setTimeout(()=>d.remove(),240); }); }
+  function race(){ if(document.hidden) return; exp+=2; elExp.textContent=exp; note.textContent='both read 0, both write 1 — one lost!'; note.style.color='var(--bad)';
+    // two increments asked, but interleave → only +1
+    fly(26,'',(d)=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),300); });
+    fly(68,'',(d)=>{ count++; setCount(); shared.style.boxShadow='0 0 0 4px rgba(216,58,46,.22)'; setTimeout(()=>shared.style.boxShadow='',300); d.classList.add('fail'); lost++; elL.textContent=lost; elL.className='stat-v bad'; setTimeout(()=>d.remove(),300); });
+  }
+  function loop(){ if(!running)return; (Math.random()<0.5?safe:race)(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actSafe').onclick=safe;
+  document.getElementById('actRace').onclick=race;
+  setCount(); running=true; loop();
+  return {safe,race};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two threads share one variable — a <b>counter</b> — and both want to increment it. What could go wrong? Quite a lot.", dur:4600},
+  {cap:"Incrementing isn't one step. It's three: <b>read</b> the value, <b>add</b> one, <b>write</b> it back. That gap is where trouble hides.", dur:4800},
+  {cap:"Done <b>one at a time</b>, it's fine: A reads 0, writes 1; then B reads 1, writes 2. Two increments, value = 2. ✓", dur:4800, on(){SIM.safe();}},
+  {cap:"Each orderly increment lands correctly. The counter keeps perfect pace with the requests.", dur:4400, on(){SIM.safe();}},
+  {cap:"Now let both threads run <b>at the same time</b> with no coordination.", dur:3600, on(){SIM.race();}},
+  {cap:"Both read the <em>same</em> old value (say 5), both compute 6, both write 6. Two increments asked — but the counter only went up by <b>one.</b>", dur:5000},
+  {cap:"That's a <b>lost update.</b> One thread's work was silently overwritten by the other. The 'count value' now lags behind 'increments asked'.", dur:4800, on(){SIM.race();}},
+  {cap:"Worst of all, it's <b>timing-dependent</b> — it might work a thousand times, then corrupt data once. Race conditions are maddening to reproduce.", dur:4800},
+  {cap:"Your turn 👉 run increments <b>✅ one at a time</b> (correct) and <b>⚡ both at once</b> (lost updates) to watch the counter drift.", dur:5200},
+  {cap:"A race condition: unsynchronized threads interleave on shared data and lose updates. The fix is to make the read-modify-write atomic — with a lock.", dur:4800}
+]});
+
+</script>
+</body></html>

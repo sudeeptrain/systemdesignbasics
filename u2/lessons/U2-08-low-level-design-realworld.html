@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLD — A Room's Detailed Blueprint · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.umlbox{position:absolute; width:152px; border:1.5px solid var(--line2); border-radius:9px; background:#fff; z-index:2; overflow:hidden; transition:.3s; opacity:0; transform:translateY(8px)}
+.umlbox.on{opacity:1; transform:none}
+.umlbox .hd{font-family:var(--fmono); font-size:12px; font-weight:700; background:#eef4fb; padding:5px 8px; border-bottom:1px solid var(--line2)}
+.umlbox .mb{font-family:var(--fmono); font-size:10.5px; color:var(--muted); padding:5px 8px; line-height:1.7}
+.zoomlbl{position:absolute; left:50%; top:12%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--accent-d); font-weight:600; z-index:5}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">LLD — A Room's Detailed Blueprint</h1>
+  <p class="subtitle">The master plan said "kitchen here." Low level design zooms inside that one room: exact cabinet sizes, the plumbing interface every sink must meet, the appliance circuit, the drain. The precise spec a builder can follow.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Fittings checked</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Components</div><div class="stat-v" id="statCls">3</div></div>
+  <div class="stat"><div class="stat-k">View</div><div class="stat-v good" id="statView">inside the kitchen</div></div>
+</div>
+<div class="zoomlbl" id="zoomlbl">🔬 Inside: the Kitchen</div>
+<div class="umlbox u-0" style="left:7%;top:30%"><div class="hd">Cabinets</div><div class="mb">600mm × 720mm<br>soft-close hinges</div></div>
+<div class="umlbox u-1" style="left:39%;top:30%"><div class="hd">«spec»<br>Sink fitting</div><div class="mb">32mm waste<br>hot+cold feed</div></div>
+<div class="umlbox u-2" style="left:71%;top:30%"><div class="hd">Basin unit</div><div class="mb">meets<br>Sink fitting</div></div>
+<div class="umlbox u-3" style="left:39%;top:66%"><div class="hd">Appliance circuit</div><div class="mb">32A ring main<br>2× sockets</div></div>
+<div class="acts">
+  <button class="act" id="actZoom">🔭 Toggle plan / blueprint</button>
+  <button class="act ok" id="actAddClass">➕ Add a fitting</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const boxes=[0,1,2,3].map(i=>scene.querySelector('.u-'+i));
+  let calls=0, shown=3, zoom=true, running=false;
+  const elCalls=document.getElementById('statCalls'), elCls=document.getElementById('statCls'), elView=document.getElementById('statView'), zlbl=document.getElementById('zoomlbl');
+  const pts=[[15,38],[47,38],[79,38],[47,74]];
+  function render(){ boxes.forEach((b,i)=>b.classList.toggle('on', zoom && i<shown)); elCls.textContent=shown;
+    elView.textContent=zoom?'inside the kitchen':'master plan (HLD)'; zlbl.style.opacity=zoom?'1':'0'; }
+  function callSeq(){ if(document.hidden||!zoom) return;
+    const order=[0,1,2,1,3]; let i=0;
+    (function go(){ if(i>=order.length-1){ calls++; elCalls.textContent=calls; return; }
+      const a=pts[order[i]], b=pts[order[i+1]];
+      const d=document.createElement('div'); d.className='dot'; d.style.left=a[0]+'%'; d.style.top=a[1]+'%'; scene.appendChild(d);
+      const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=b[0]+'%'; d.style.top=b[1]+'%'; });
+      setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),200); i++; go(); }, leg);
+    })();
+  }
+  function toggleZoom(){ zoom=!zoom; render(); }
+  function addClass(){ if(shown<4){ shown++; render(); } }
+  function loop(){ if(!running)return; callSeq(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actZoom').onclick=toggleZoom;
+  document.getElementById('actAddClass').onclick=addClass;
+  render(); running=true; loop();
+  return {callSeq,toggleZoom,addClass,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The master plan just said \"kitchen goes here.\" <b>Low Level Design</b> zooms <em>inside</em> that room to spec every detail.", dur:4800},
+  {cap:"Here are the parts: <b>cabinets</b>, a <b>sink-fitting spec</b>, the <b>basin unit</b>, and the <b>appliance circuit.</b>", dur:4600},
+  {cap:"LLD nails exact <b>dimensions and interfaces</b> — 600mm cabinets, a 32mm waste, a 32A ring main. Precise enough to build from.", dur:4800},
+  {cap:"Trace how they fit: the basin connects to the <b>sink-fitting spec</b>, not to one particular brand of basin.", dur:4600, on(){SIM.callSeq();}},
+  {cap:"That spec is a deliberate choice — swap in any basin that meets it, and the plumbing still works. Standard interface.", dur:4800, on(){SIM.addClass();}},
+  {cap:"The appliance circuit is specified separately, keeping electrics cleanly apart from plumbing. Separation of concerns, in miniature.", dur:4600, on(){SIM.callSeq();}},
+  {cap:"This is where the craftsmanship lives: exact fittings, clean interfaces, parts that snap together reliably.", dur:4400},
+  {cap:"<b>Zoom out</b> and it's just \"the kitchen\" on the master plan again. HLD and LLD are the same building, two zoom levels.", dur:4600, on(){SIM.toggleZoom();}},
+  {cap:"Your turn 👉 <b>🔭 toggle the view</b> and <b>➕ add a fitting</b> to flesh out the room's detailed spec.", dur:5200, on(){SIM.render();}},
+  {cap:"LLD = the precise blueprint inside a component: parts, interfaces, exact specs. HLD picks the rooms; LLD builds each one right.", dur:4800}
+]});
+
+</script>
+</body></html>

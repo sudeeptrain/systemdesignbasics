@@ -1,0 +1,1062 @@
+[
+  {
+    "file": "U1-01-what-is-system-design-concept.html",
+    "id": "U1-01-what-is-system-design-concept",
+    "title": "What is System Design?",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSent"
+    ],
+    "buttons": [
+      "actSend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-01-what-is-system-design-realworld.html",
+    "id": "U1-01-what-is-system-design-realworld",
+    "title": "What is System Design — Ordering Food",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSent"
+    ],
+    "buttons": [
+      "actSend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-02-growth-of-an-application-concept.html",
+    "id": "U1-02-growth-of-an-application-concept",
+    "title": "Growth of an Application",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statUsers"
+    ],
+    "buttons": [
+      "actGrow",
+      "actEvolve"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-02-growth-of-an-application-realworld.html",
+    "id": "U1-02-growth-of-an-application-realworld",
+    "title": "Growth of an Application — Tea Stall to Chain",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statUsers"
+    ],
+    "buttons": [
+      "actGrow",
+      "actEvolve"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-03-availability-concept.html",
+    "id": "U1-03-availability-concept",
+    "title": "Availability",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "crash"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actKill",
+      "actRevive"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U1-03-availability-realworld.html",
+    "id": "U1-03-availability-realworld",
+    "title": "Availability — Hospital Power",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "crash"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actCut",
+      "actRestore"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-04-reliability-concept.html",
+    "id": "U1-04-reliability-concept",
+    "title": "Reliability",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTx"
+    ],
+    "buttons": [
+      "actFault",
+      "actTxn"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-04-reliability-realworld.html",
+    "id": "U1-04-reliability-realworld",
+    "title": "Reliability — ATM Cash Withdrawal",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTx"
+    ],
+    "buttons": [
+      "actFault",
+      "actTxn"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-05-scalability-concept.html",
+    "id": "U1-05-scalability-concept",
+    "title": "Scalability",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQps"
+    ],
+    "buttons": [
+      "actAddSrv",
+      "actAddLoad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-05-scalability-realworld.html",
+    "id": "U1-05-scalability-realworld",
+    "title": "Scalability — Supermarket Checkouts",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQ"
+    ],
+    "buttons": [
+      "actOpen",
+      "actClose"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-06-vertical-scaling-concept.html",
+    "id": "U1-06-vertical-scaling-concept",
+    "title": "Vertical Scaling (Scale Up)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actUpgrade",
+      "actAddLoad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-06-vertical-scaling-realworld.html",
+    "id": "U1-06-vertical-scaling-realworld",
+    "title": "Vertical Scaling — Upgrading Your PC",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLoad"
+    ],
+    "buttons": [
+      "actUpgrade",
+      "actLoad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-07-horizontal-scaling-concept.html",
+    "id": "U1-07-horizontal-scaling-concept",
+    "title": "Horizontal Scaling (Scale Out)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCapacity"
+    ],
+    "buttons": [
+      "actAddNode",
+      "actKillNode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-07-horizontal-scaling-realworld.html",
+    "id": "U1-07-horizontal-scaling-realworld",
+    "title": "Horizontal Scaling — Toll Booths",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCars"
+    ],
+    "buttons": [
+      "actAddBooth",
+      "actRemoveBooth"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-08-maintainability-concept.html",
+    "id": "U1-08-maintainability-concept",
+    "title": "Maintainability",
+    "variant": "concept",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statChanges"
+    ],
+    "buttons": [
+      "actChange",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-08-maintainability-realworld.html",
+    "id": "U1-08-maintainability-realworld",
+    "title": "Maintainability — Fixing One Room",
+    "variant": "real",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statFixes"
+    ],
+    "buttons": [
+      "actFix",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-09-consistency-concept.html",
+    "id": "U1-09-consistency-concept",
+    "title": "Consistency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-09-consistency-realworld.html",
+    "id": "U1-09-consistency-realworld",
+    "title": "Consistency — A Shared Doc",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-10-fault-tolerance-concept.html",
+    "id": "U1-10-fault-tolerance-concept",
+    "title": "Fault Tolerance",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actKill",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-10-fault-tolerance-realworld.html",
+    "id": "U1-10-fault-tolerance-realworld",
+    "title": "Fault Tolerance — Twin-Engine Plane",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statMiles"
+    ],
+    "buttons": [
+      "actFail",
+      "actRepair"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-11-latency-concept.html",
+    "id": "U1-11-latency-concept",
+    "title": "Latency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statN"
+    ],
+    "buttons": [
+      "actSend",
+      "actDist"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-11-latency-realworld.html",
+    "id": "U1-11-latency-realworld",
+    "title": "Latency — Texting a Friend",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statN"
+    ],
+    "buttons": [
+      "actSend",
+      "actDist"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-12-throughput-concept.html",
+    "id": "U1-12-throughput-concept",
+    "title": "Throughput",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQ"
+    ],
+    "buttons": [
+      "actAddW",
+      "actRemW"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-12-throughput-realworld.html",
+    "id": "U1-12-throughput-realworld",
+    "title": "Throughput — Burger Kitchen",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQ"
+    ],
+    "buttons": [
+      "actAddW",
+      "actRemW"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-13-performance-vs-scalability-concept.html",
+    "id": "U1-13-performance-vs-scalability-concept",
+    "title": "Performance vs Scalability",
+    "variant": "concept",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statUsers"
+    ],
+    "buttons": [
+      "actRamp",
+      "actAuto"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-13-performance-vs-scalability-realworld.html",
+    "id": "U1-13-performance-vs-scalability-realworld",
+    "title": "Performance vs Scalability — Chef vs Restaurant",
+    "variant": "real",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statUsers"
+    ],
+    "buttons": [
+      "actRamp",
+      "actAuto"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-14-latency-vs-throughput-concept.html",
+    "id": "U1-14-latency-vs-throughput-concept",
+    "title": "Latency vs Throughput",
+    "variant": "concept",
+    "legend": [
+      "item",
+      "tag1",
+      "out"
+    ],
+    "counters": [
+      "statThr"
+    ],
+    "buttons": [
+      "actAdd",
+      "actRemove",
+      "actPath"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-14-latency-vs-throughput-realworld.html",
+    "id": "U1-14-latency-vs-throughput-realworld",
+    "title": "Latency vs Throughput — Highway",
+    "variant": "real",
+    "legend": [
+      "item",
+      "tag1",
+      "out"
+    ],
+    "counters": [
+      "statThr"
+    ],
+    "buttons": [
+      "actAdd",
+      "actRemove",
+      "actPath"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-15-availability-vs-consistency-concept.html",
+    "id": "U1-15-availability-vs-consistency-concept",
+    "title": "Availability vs Consistency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAvail"
+    ],
+    "buttons": [
+      "actPartition",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-15-availability-vs-consistency-realworld.html",
+    "id": "U1-15-availability-vs-consistency-realworld",
+    "title": "Availability vs Consistency — Two Tills",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSales"
+    ],
+    "buttons": [
+      "actCut",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-16-modular-design-concept.html",
+    "id": "U1-16-modular-design-concept",
+    "title": "Modular Design",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDeploys"
+    ],
+    "buttons": [
+      "actDeploy",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-16-modular-design-realworld.html",
+    "id": "U1-16-modular-design-realworld",
+    "title": "Modular Design — LEGO vs Glue",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSwaps"
+    ],
+    "buttons": [
+      "actSwap",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-17-clean-code-concept.html",
+    "id": "U1-17-clean-code-concept",
+    "title": "Clean Code Principles",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statComplexity"
+    ],
+    "buttons": [
+      "actAddFeature",
+      "actRefactor"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-17-clean-code-realworld.html",
+    "id": "U1-17-clean-code-realworld",
+    "title": "Clean Code — A Tidy Kitchen",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statMess"
+    ],
+    "buttons": [
+      "actCook",
+      "actClean"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-18-ci-cd-pipeline-concept.html",
+    "id": "U1-18-ci-cd-pipeline-concept",
+    "title": "CI/CD Pipeline",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCommits"
+    ],
+    "buttons": [
+      "actPush",
+      "actBreak"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-18-ci-cd-pipeline-realworld.html",
+    "id": "U1-18-ci-cd-pipeline-realworld",
+    "title": "CI/CD — A Car Assembly Line",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statShipped"
+    ],
+    "buttons": [
+      "actCommit",
+      "actBad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-19-back-of-envelope-estimation-concept.html",
+    "id": "U1-19-back-of-envelope-estimation-concept",
+    "title": "Back-of-the-Envelope Estimation",
+    "variant": "concept",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statQPS"
+    ],
+    "buttons": [
+      "actUsers",
+      "actPayload"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-19-back-of-envelope-estimation-realworld.html",
+    "id": "U1-19-back-of-envelope-estimation-realworld",
+    "title": "Estimation — Catering a Wedding",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actMore",
+      "actFewer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-20-single-point-of-failure-concept.html",
+    "id": "U1-20-single-point-of-failure-concept",
+    "title": "Single Point of Failure",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail",
+      "crash"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actKill",
+      "actBackup"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-20-single-point-of-failure-realworld.html",
+    "id": "U1-20-single-point-of-failure-realworld",
+    "title": "Single Point of Failure — One Bridge",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTrips"
+    ],
+    "buttons": [
+      "actBreak",
+      "actAddBridge"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-21-redundancy-replication-concept.html",
+    "id": "U1-21-redundancy-replication-concept",
+    "title": "Redundancy & Replication",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actAddReplica",
+      "actKillCopy"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-21-redundancy-replication-realworld.html",
+    "id": "U1-21-redundancy-replication-realworld",
+    "title": "Redundancy — The Spare Tyre",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "crash"
+    ],
+    "counters": [
+      "statKm"
+    ],
+    "buttons": [
+      "actBlow",
+      "actAddSpare"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-22-coupling-vs-cohesion-concept.html",
+    "id": "U1-22-coupling-vs-cohesion-concept",
+    "title": "Coupling vs Cohesion",
+    "variant": "concept",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statChanges"
+    ],
+    "buttons": [
+      "actChange",
+      "actCohesion"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-22-coupling-vs-cohesion-realworld.html",
+    "id": "U1-22-coupling-vs-cohesion-realworld",
+    "title": "Coupling — Wired vs Wireless Earbuds",
+    "variant": "real",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statTugs"
+    ],
+    "buttons": [
+      "actTug",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-23-sla-slo-sli-concept.html",
+    "id": "U1-23-sla-slo-sli-concept",
+    "title": "SLA vs SLO vs SLI",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSLI"
+    ],
+    "buttons": [
+      "actDown",
+      "actUp"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-23-sla-slo-sli-realworld.html",
+    "id": "U1-23-sla-slo-sli-realworld",
+    "title": "SLA / SLO / SLI — Pizza in 30 Minutes",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDeliveries"
+    ],
+    "buttons": [
+      "actRush",
+      "actCalm"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-24-error-budgets-concept.html",
+    "id": "U1-24-error-budgets-concept",
+    "title": "Error Budgets",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReleases"
+    ],
+    "buttons": [
+      "actShip",
+      "actRisky"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-24-error-budgets-realworld.html",
+    "id": "U1-24-error-budgets-realworld",
+    "title": "Error Budgets — Monthly Pocket Money",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statBudget"
+    ],
+    "buttons": [
+      "actShip",
+      "actHarden"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-25-disaster-recovery-concept.html",
+    "id": "U1-25-disaster-recovery-concept",
+    "title": "Disaster Recovery (RTO / RPO)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSince"
+    ],
+    "buttons": [
+      "actBackup",
+      "actDisaster"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-25-disaster-recovery-realworld.html",
+    "id": "U1-25-disaster-recovery-realworld",
+    "title": "Disaster Recovery — Phone Photo Backup",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSince"
+    ],
+    "buttons": [
+      "actBackup",
+      "actLose"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-26-cost-efficiency-concept.html",
+    "id": "U1-26-cost-efficiency-concept",
+    "title": "Cost / Cost-Efficiency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statUtil"
+    ],
+    "buttons": [
+      "actAdd",
+      "actRemove",
+      "actAuto"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-26-cost-efficiency-realworld.html",
+    "id": "U1-26-cost-efficiency-realworld",
+    "title": "Cost Efficiency — Renting the Right Car",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTrips"
+    ],
+    "buttons": [
+      "actUpsize",
+      "actDownsize"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-27-resilience-degradation-concept.html",
+    "id": "U1-27-resilience-degradation-concept",
+    "title": "Resilience & Graceful Degradation",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actKillRec",
+      "actKillCore",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-27-resilience-degradation-realworld.html",
+    "id": "U1-27-resilience-degradation-realworld",
+    "title": "Graceful Degradation — Escalator to Stairs",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statPeople"
+    ],
+    "buttons": [
+      "actBreak",
+      "actFix"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-28-idempotency-concept.html",
+    "id": "U1-28-idempotency-concept",
+    "title": "Idempotency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statRequests"
+    ],
+    "buttons": [
+      "actRetry",
+      "actKey"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-28-idempotency-realworld.html",
+    "id": "U1-28-idempotency-realworld",
+    "title": "Idempotency — The Elevator Button",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statPresses"
+    ],
+    "buttons": [
+      "actMash",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-29-latency-numbers-concept.html",
+    "id": "U1-29-latency-numbers-concept",
+    "title": "Latency Numbers Every Engineer Should Know",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statFetches"
+    ],
+    "buttons": [
+      "actNext",
+      "actFar"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U1-29-latency-numbers-realworld.html",
+    "id": "U1-29-latency-numbers-realworld",
+    "title": "Latency Numbers — Recall vs the Post",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLookups"
+    ],
+    "buttons": [
+      "actNear",
+      "actFar"
+    ],
+    "steps": 10
+  }
+]

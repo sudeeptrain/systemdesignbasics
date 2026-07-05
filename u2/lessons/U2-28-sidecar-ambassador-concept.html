@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sidecar &amp; Ambassador Patterns · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.helper{position:absolute; width:36px; height:36px; border-radius:9px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:16px;
+  background:#eaf2fe; border:1.5px solid var(--accent); z-index:3; transition:.3s}
+.helper.armed{background:#e7f7ef; border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.tagsm{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--good); z-index:4; opacity:0; transition:.3s}
+.tagsm.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Sidecar &amp; Ambassador Patterns</h1>
+  <p class="subtitle">A sidecar is a helper deployed right beside your app to handle cross-cutting concerns — logging, TLS, metrics — without touching app code. An ambassador is a sidecar that proxies the app's outbound connections.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Calls handled</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Sidecar</div><div class="stat-v" id="statSide">plain</div></div>
+  <div class="stat"><div class="stat-k">Ambassador</div><div class="stat-v" id="statAmb">direct</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:50%"><div class="box sm">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="helper side" style="left:34%;top:36%">🔲</div>
+<div class="tagsm" id="sideTag" style="left:34%;top:24%">+ TLS · logs</div>
+<div class="node abs" data-show="1" style="left:42%;top:50%"><div class="box">📦</div><div class="lbl"><span class="k">Your app</span></div></div>
+<div class="helper amb" style="left:64%;top:36%">🔲</div>
+<div class="tagsm" id="ambTag" style="left:64%;top:24%">+ retry · route</div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Remote DB</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actSidecar">🛡️ Arm sidecar (TLS + logs)</button>
+  <button class="act ok" id="actAmbassador">🧭 Arm ambassador (retry)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let calls=0, sidecar=false, amb=false, running=false;
+  const elC=document.getElementById('statCalls'), elS=document.getElementById('statSide'), elA=document.getElementById('statAmb');
+  const sideEl=scene.querySelector('.side'), ambEl=scene.querySelector('.amb'), sideTag=document.getElementById('sideTag'), ambTag=document.getElementById('ambTag');
+  function hop(fx,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=ty+'%'; scene.appendChild(d);
+    const leg=320*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; }); setTimeout(()=>{ if(then)then(d); else setTimeout(()=>d.remove(),200); }, leg); }
+  function call(){ if(document.hidden) return;
+    // client → sidecar(36) → app(42) → ambassador(64) → db(86) → back
+    const stops=[12,34,42,64,86]; const tops=[50,36,50,36,50]; let i=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=stops[0]+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=320*simRate();
+    (function go(){ i++; if(i>=stops.length){ d.classList.add('done'); d.style.left='42%'; d.style.top='50%'; calls++; elC.textContent=calls; setTimeout(()=>d.remove(),leg); return; }
+      d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=stops[i]+'%'; d.style.top=tops[i]+'%';
+      if(i===1 && sidecar && sideEl){ sideEl.classList.add('armed'); }
+      if(i===3 && amb && ambEl){ ambEl.classList.add('armed'); d.classList.add('done'); }
+      setTimeout(go,leg);
+    })();
+  }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actSidecar').onclick=()=>{ sidecar=true; if(sideEl){sideEl.classList.add('armed'); sideEl.textContent='🔒';} sideTag.classList.add('on'); elS.textContent='TLS + logs'; elS.className='stat-v good'; };
+  document.getElementById('actAmbassador').onclick=()=>{ amb=true; if(ambEl){ambEl.classList.add('armed'); ambEl.textContent='🧭';} ambTag.classList.add('on'); elA.textContent='retry + route'; elA.className='stat-v good'; };
+  running=true; loop();
+  return {call};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your app shouldn't be cluttered with TLS, logging, retries, and metrics code. The <b>sidecar</b> pattern moves that out.", dur:4800},
+  {cap:"A <b>sidecar</b> is a helper deployed right next to your app — same pod, shared lifecycle — that intercepts its traffic.", dur:4800, on(){SIM.call();}},
+  {cap:"<b>Arm the sidecar</b> and it transparently adds <b>TLS encryption and logging</b> to inbound calls — zero app changes.", dur:4800, on(){SIM.call();}},
+  {cap:"Your app code stays focused on business logic; the sidecar handles the cross-cutting plumbing beside it.", dur:4400},
+  {cap:"An <b>ambassador</b> is a special sidecar for <em>outbound</em> connections — it proxies the app's calls to remote services.", dur:4800},
+  {cap:"<b>Arm the ambassador</b> and the app's calls to the remote DB go through it, gaining <b>retries and smart routing.</b>", dur:4800, on(){SIM.call();}},
+  {cap:"The app just connects to localhost; the ambassador deals with the messy network — failover, sharding, connection pooling.", dur:4600},
+  {cap:"Both keep concerns out of your code and let you reuse the same helper across many services, in any language.", dur:4400},
+  {cap:"Your turn 👉 <b>🛡️ Arm the sidecar</b> and <b>🧭 arm the ambassador</b> to layer in TLS, logging, and retries.", dur:5200},
+  {cap:"Sidecar = helper beside your app; ambassador = its outbound proxy. The building blocks a service mesh is made of.", dur:4800}
+]});
+
+</script>
+</body></html>

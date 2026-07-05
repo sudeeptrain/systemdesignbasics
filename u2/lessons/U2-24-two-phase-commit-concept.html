@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-Phase Commit (2PC) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.phaselbl{position:absolute; left:50%; top:9%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; color:var(--accent-d); z-index:5}
+.part .box{transition:.3s}
+.part.yes .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.part.no .box{border-color:var(--bad); box-shadow:0 0 0 4px rgba(216,58,46,.2)}
+.part.committed .box{border-color:var(--good); background:linear-gradient(180deg,#eafaf2,#d8f3e6)}
+.part.aborted .box{border-color:var(--bad); background:linear-gradient(180deg,#fdeceb,#f7d6d3)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Two-Phase Commit (2PC)</h1>
+  <p class="subtitle">To commit a transaction across several databases atomically, a coordinator runs two phases: first it asks everyone to PREPARE and vote; only if all vote yes does it tell everyone to COMMIT. One 'no' aborts the lot.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Transactions</div><div class="stat-v accent" id="statTxns">0</div></div>
+  <div class="stat"><div class="stat-k">Phase</div><div class="stat-v" id="statPhase">idle</div></div>
+  <div class="stat"><div class="stat-k">Outcome</div><div class="stat-v good" id="statOut">—</div></div>
+</div>
+<div class="phaselbl" id="phaselbl"></div>
+<div class="node abs" data-show="1" style="left:50%;top:30%"><div class="box coord">🧭</div><div class="lbl"><span class="k">Coordinator</span></div></div>
+<div class="node abs part p-0" data-show="1" style="left:20%;top:74%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">DB A</span></div></div>
+<div class="node abs part p-1" data-show="1" style="left:50%;top:74%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">DB B</span></div></div>
+<div class="node abs part p-2" data-show="1" style="left:80%;top:74%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">DB C</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actCommit">✅ Run (all vote yes)</button>
+  <button class="act bad" id="actAbort">🚫 Run (DB B votes no)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CO={x:50,y:30}, P=[{x:20,y:74},{x:50,y:74},{x:80,y:74}];
+  const parts=[0,1,2].map(i=>scene.querySelector('.p-'+i));
+  let txns=0, busy=false, running=false;
+  const elT=document.getElementById('statTxns'), elPh=document.getElementById('statPhase'), elOut=document.getElementById('statOut'), lbl=document.getElementById('phaselbl');
+  function clear(){ parts.forEach(p=>p.className=p.className.replace(/\b(yes|no|committed|aborted)\b/g,'').trim()); }
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .42s, top .42s'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, 420*simRate()); }
+  function run(noVoter){ busy=true; txns++; elT.textContent=txns; clear(); elOut.textContent='…'; elOut.className='stat-v';
+    elPh.textContent='1 · PREPARE'; elPh.className='stat-v warn'; lbl.textContent='Phase 1 — asking everyone to prepare & vote';
+    let votes=0, anyNo=false;
+    P.forEach((p,i)=>{ hop(CO.x,CO.y,p.x,p.y,'',()=>{ const no = (i===noVoter);
+      parts[i].classList.add(no?'no':'yes'); if(no)anyNo=true;
+      // vote back
+      hop(p.x,p.y,CO.x,CO.y, no?'fail':'done', ()=>{ votes++; if(votes===3){ phase2(anyNo); } });
+    }); });
+  }
+  function phase2(anyNo){
+    const commit=!anyNo;
+    elPh.textContent='2 · '+(commit?'COMMIT':'ABORT'); elPh.className='stat-v '+(commit?'good':'bad');
+    lbl.textContent='Phase 2 — '+(commit?'all voted yes → COMMIT':'a vote was no → ABORT everyone');
+    P.forEach((p,i)=>hop(CO.x,CO.y,p.x,p.y, commit?'done':'fail', ()=>{ parts[i].classList.add(commit?'committed':'aborted'); }));
+    setTimeout(()=>{ elOut.textContent=commit?'COMMITTED ✓':'ABORTED ✗'; elOut.className='stat-v '+(commit?'good':'bad'); busy=false; }, 500*simRate());
+  }
+  function loop(){ if(!running)return; if(!busy) run(-1); setTimeout(loop, 4000*simRate()); }
+  document.getElementById('actCommit').onclick=()=>{ if(!busy)run(-1); };
+  document.getElementById('actAbort').onclick=()=>{ if(!busy)run(1); };
+  running=true; loop();
+  return {commit:()=>run(-1),abort:()=>run(1)};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A transaction needs to update <b>three databases</b> atomically — all change, or none do. Enter <b>two-phase commit.</b>", dur:4600},
+  {cap:"A <b>coordinator</b> drives it. <b>Phase 1 — PREPARE:</b> it asks every database, \"can you commit this?\"", dur:4600, on(){SIM.commit();}},
+  {cap:"Each participant does the work tentatively, locks what it needs, and <b>votes</b> yes or no.", dur:4400},
+  {cap:"All three voted <span class='hl-good'>yes</span> — so the coordinator moves to <b>Phase 2 — COMMIT</b> and tells everyone to finalize.", dur:4600},
+  {cap:"Every database commits together. The transaction is atomic across all three. ✓", dur:4200},
+  {cap:"Now the unhappy path: run it again, but <b>DB B votes no.</b>", dur:3800, on(){SIM.abort();}},
+  {cap:"A single 'no' is enough — the coordinator orders <span class='hl-bad'>ABORT</span>, and <em>everyone</em> rolls back. All or nothing.", dur:4800},
+  {cap:"The catch: participants hold <b>locks</b> while waiting for phase 2. If the coordinator crashes, they can block — stuck.", dur:4800},
+  {cap:"Your turn 👉 <b>✅ Run</b> a clean commit, then <b>🚫 Run</b> with a no-vote to watch the whole thing abort.", dur:5200},
+  {cap:"2PC gives strong atomicity across systems, but it's blocking and slow — which is exactly why sagas often replace it.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,203 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Design — Unit 2 Animations</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css">
+<style>.hero{max-width:1000px;margin:0 auto 18px;text-align:center}.grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);box-shadow:0 10px 24px -18px rgba(40,70,120,.5);transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}.card .t{font-family:var(--fdisp);font-weight:600;font-size:16px}
+.card .badge{font-family:var(--fmono);font-size:10.5px;color:var(--faint)}.card.real{border-left:4px solid var(--pink)}.card.concept{border-left:4px solid var(--accent)}
+body{display:block;padding:26px 26px 48px}</style>
+<style>.mnav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;align-items:center;padding:9px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 15px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:6px 14px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a class="cur">▶ Animated Lessons</a><a href="study.html">📊 Study Slides</a></div><div style="width:100%"><div class="hero"><h1 class="title" style="font-size:30px">System Design · Unit 2 — Concepts &amp; Architectural Patterns</h1>
+<p class="subtitle" style="margin:0 auto">64 interactive, projector-ready lessons. Each plays in any browser — press ▶ and use the in-scene buttons.</p></div>
+<div class="grid"><a class="card concept" href="lessons/U2-01-cap-theorem-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CAP Theorem</span></a>
+<a class="card real" href="lessons/U2-01-cap-theorem-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CAP Theorem — A Shared Shopping List</span></a>
+<a class="card concept" href="lessons/U2-02-weak-consistency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Weak Consistency</span></a>
+<a class="card real" href="lessons/U2-02-weak-consistency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Weak Consistency — A Live Score Ticker</span></a>
+<a class="card concept" href="lessons/U2-03-eventual-consistency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Eventual Consistency</span></a>
+<a class="card real" href="lessons/U2-03-eventual-consistency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Eventual Consistency — Group Chat</span></a>
+<a class="card concept" href="lessons/U2-04-strong-consistency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Strong Consistency</span></a>
+<a class="card real" href="lessons/U2-04-strong-consistency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Strong Consistency — Bank Teller</span></a>
+<a class="card concept" href="lessons/U2-05-functional-requirements-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Functional Requirements</span></a>
+<a class="card real" href="lessons/U2-05-functional-requirements-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Functional Requirements — A Restaurant Menu</span></a>
+<a class="card concept" href="lessons/U2-06-non-functional-requirements-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Non-Functional Requirements</span></a>
+<a class="card real" href="lessons/U2-06-non-functional-requirements-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Non-Functional Requirements — Restaurant Quality</span></a>
+<a class="card concept" href="lessons/U2-07-high-level-design-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">High Level Design (HLD)</span></a>
+<a class="card real" href="lessons/U2-07-high-level-design-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">HLD — A Town Master Plan</span></a>
+<a class="card concept" href="lessons/U2-08-low-level-design-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Low Level Design (LLD)</span></a>
+<a class="card real" href="lessons/U2-08-low-level-design-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">LLD — A Room's Detailed Blueprint</span></a>
+<a class="card concept" href="lessons/U2-09-monolithic-architecture-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Monolithic Architecture</span></a>
+<a class="card real" href="lessons/U2-09-monolithic-architecture-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Monolith — A Swiss Army Knife</span></a>
+<a class="card concept" href="lessons/U2-10-microservices-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Microservices</span></a>
+<a class="card real" href="lessons/U2-10-microservices-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Microservices — A Food Court</span></a>
+<a class="card concept" href="lessons/U2-11-event-driven-architecture-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Event-Driven Architecture</span></a>
+<a class="card real" href="lessons/U2-11-event-driven-architecture-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Event-Driven — A Town Notice Board</span></a>
+<a class="card concept" href="lessons/U2-12-monolith-microservices-serverless-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Monolith vs Microservices vs Serverless</span></a>
+<a class="card real" href="lessons/U2-12-monolith-microservices-serverless-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Mono vs Micro vs Serverless — Three Kitchens</span></a>
+<a class="card concept" href="lessons/U2-13-service-mesh-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Service Mesh</span></a>
+<a class="card real" href="lessons/U2-13-service-mesh-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Service Mesh — Couriers' Dispatch Clerks</span></a>
+<a class="card concept" href="lessons/U2-14-backend-for-frontend-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Backend for Frontend (BFF)</span></a>
+<a class="card real" href="lessons/U2-14-backend-for-frontend-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">BFF — A Translator per Guest</span></a>
+<a class="card concept" href="lessons/U2-15-api-composition-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">API Composition</span></a>
+<a class="card real" href="lessons/U2-15-api-composition-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">API Composition — A Travel Agent</span></a>
+<a class="card concept" href="lessons/U2-16-pacelc-theorem-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">PACELC Theorem</span></a>
+<a class="card real" href="lessons/U2-16-pacelc-theorem-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">PACELC — GPS Navigation</span></a>
+<a class="card concept" href="lessons/U2-17-quorum-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Quorum (R + W &gt; N)</span></a>
+<a class="card real" href="lessons/U2-17-quorum-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Quorum — A Panel of Judges</span></a>
+<a class="card concept" href="lessons/U2-18-layered-n-tier-architecture-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Layered / N-Tier Architecture</span></a>
+<a class="card real" href="lessons/U2-18-layered-n-tier-architecture-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">N-Tier — Waiter, Kitchen, Pantry</span></a>
+<a class="card concept" href="lessons/U2-19-hexagonal-architecture-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Hexagonal (Ports &amp; Adapters)</span></a>
+<a class="card real" href="lessons/U2-19-hexagonal-architecture-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Hexagonal — A Universal Power Socket</span></a>
+<a class="card concept" href="lessons/U2-20-cqrs-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CQRS (Command Query Responsibility Segregation)</span></a>
+<a class="card real" href="lessons/U2-20-cqrs-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CQRS — A Library</span></a>
+<a class="card concept" href="lessons/U2-21-event-sourcing-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Event Sourcing</span></a>
+<a class="card real" href="lessons/U2-21-event-sourcing-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Event Sourcing — A Bank Passbook</span></a>
+<a class="card concept" href="lessons/U2-22-saga-pattern-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Saga Pattern</span></a>
+<a class="card real" href="lessons/U2-22-saga-pattern-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Saga — Booking a Trip</span></a>
+<a class="card concept" href="lessons/U2-23-outbox-pattern-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Outbox / Inbox Pattern</span></a>
+<a class="card real" href="lessons/U2-23-outbox-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Outbox — The Outbox Tray</span></a>
+<a class="card concept" href="lessons/U2-24-two-phase-commit-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Two-Phase Commit (2PC)</span></a>
+<a class="card real" href="lessons/U2-24-two-phase-commit-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Two-Phase Commit — Wedding Vows</span></a>
+<a class="card concept" href="lessons/U2-25-circuit-breaker-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Circuit Breaker Pattern</span></a>
+<a class="card real" href="lessons/U2-25-circuit-breaker-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Circuit Breaker — Home Fuse Box</span></a>
+<a class="card concept" href="lessons/U2-26-bulkhead-pattern-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Bulkhead Pattern</span></a>
+<a class="card real" href="lessons/U2-26-bulkhead-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Bulkhead — Watertight Ship Compartments</span></a>
+<a class="card concept" href="lessons/U2-27-retry-backoff-jitter-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Retry with Exponential Backoff &amp; Jitter</span></a>
+<a class="card real" href="lessons/U2-27-retry-backoff-jitter-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Retry &amp; Backoff — Knocking on a Door</span></a>
+<a class="card concept" href="lessons/U2-28-sidecar-ambassador-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Sidecar &amp; Ambassador Patterns</span></a>
+<a class="card real" href="lessons/U2-28-sidecar-ambassador-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Sidecar &amp; Ambassador — A Motorcycle Sidecar</span></a>
+<a class="card concept" href="lessons/U2-29-strangler-fig-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Strangler Fig (Migration Pattern)</span></a>
+<a class="card real" href="lessons/U2-29-strangler-fig-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Strangler Fig — Renovating Room by Room</span></a>
+<a class="card concept" href="lessons/U2-30-serverless-faas-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Serverless / FaaS</span></a>
+<a class="card real" href="lessons/U2-30-serverless-faas-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Serverless — Pop-Up Shop Temp Staff</span></a>
+<a class="card concept" href="lessons/U2-31-pubsub-vs-event-streaming-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Pub/Sub vs Event Streaming</span></a>
+<a class="card real" href="lessons/U2-31-pubsub-vs-event-streaming-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Pub/Sub vs Streaming — Live TV vs DVR</span></a>
+<a class="card concept" href="lessons/U2-32-crdts-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CRDTs (Conflict-Free Replicated Data Types)</span></a>
+<a class="card real" href="lessons/U2-32-crdts-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CRDTs — A Shared Shopping List Offline</span></a></div></div></body></html>

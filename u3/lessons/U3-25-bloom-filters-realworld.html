@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bloom Filters — The Bouncer's Memory · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bits{position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); display:flex; gap:6px; z-index:2}
+.bit{width:34px; height:40px; border-radius:6px; border:1.5px solid var(--line2); background:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--fmono); font-size:15px; font-weight:700; color:var(--faint); transition:.2s}
+.bit.set{background:#eaf2fe; border-color:var(--accent); color:var(--accent-d)}
+.bit.probe{box-shadow:0 0 0 4px rgba(31,111,230,.18)}
+.bit.miss{box-shadow:0 0 0 4px rgba(216,58,46,.2); border-color:var(--bad)}
+.verdict{position:absolute; left:50%; top:66%; transform:translateX(-50%); font-family:var(--fmono); font-size:14px; font-weight:700; z-index:3; text-align:center}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Bloom Filters — The Bouncer's Memory</h1>
+  <p class="subtitle">A bouncer can't memorise every guest, but he remembers a few quick traits of those on the list. If you match none of them, you're definitely not invited — turn around. If you match all of them, maybe you're on it — so he checks the full list inside.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">People checked</div><div class="stat-v accent" id="statChecks">0</div></div>
+  <div class="stat"><div class="stat-k">List checks skipped</div><div class="stat-v good" id="statSaved">0</div></div>
+  <div class="stat"><div class="stat-k">Wrongly turned away</div><div class="stat-v good" id="statFN">0 (never)</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:18%">bouncer's quick traits (set by each guest)</div>
+<div class="bits" id="bits"></div>
+<div class="verdict" id="verdict">add guests, then check someone</div>
+<div class="acts">
+  <button class="act ok" id="actAdd">➕ Add a guest to the list</button>
+  <button class="act" id="actCheck">🧍 Check a person at the door</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const M=8; let bits=new Array(M).fill(0), added=new Set(), checks=0, saved=0, running=false, seq=0;
+  const bitsEl=document.getElementById('bits'), verdict=document.getElementById('verdict');
+  const elC=document.getElementById('statChecks'), elS=document.getElementById('statSaved');
+  function hashes(key){ let h1=0,h2=0; for(const c of key){ h1=(h1*31+c.charCodeAt(0))%M; h2=(h2*17+7+c.charCodeAt(0))%M; } return [h1,(h2+1)%M]; }
+  function render(){ bitsEl.innerHTML=''; bits.forEach((b,i)=>{ const el=document.createElement('div'); el.className='bit'+(b?' set':''); el.textContent=b; el.dataset.i=i; bitsEl.appendChild(el); }); }
+  function bitEls(){ return [...bitsEl.children]; }
+  function add(){ if(document.hidden) return; seq++; const key='guest'+seq; added.add(key); const hs=hashes(key);
+    hs.forEach((h,k)=>setTimeout(()=>{ bits[h]=1; render(); const e=bitEls()[h]; if(e){e.classList.add('probe'); setTimeout(()=>e.classList.remove('probe'),300);} }, k*220*simRate()));
+    verdict.textContent='added '+key+' → remembers traits '+hs.join(' & '); verdict.style.color='var(--accent-d)';
+  }
+  function check(){ if(document.hidden) return; checks++; elC.textContent=checks;
+    const present = Math.random()<0.5 && added.size>0;
+    const key = present ? [...added][Math.floor(Math.random()*added.size)] : ('stranger'+(seq+ Math.floor(Math.random()*50)+1));
+    const hs=hashes(key); const allSet = hs.every(h=>bits[h]===1);
+    render(); hs.forEach((h,k)=>setTimeout(()=>{ const e=bitEls()[h]; if(e) e.classList.add(bits[h]?'probe':'miss'); }, k*260*simRate()));
+    setTimeout(()=>{ if(!allSet){ verdict.textContent='✗ misses a trait → DEFINITELY not invited, turn away'; verdict.style.color='var(--good)'; saved++; elS.textContent=saved;
+        const d=document.createElement('div'); d.className='dot fail'; d.style.left='50%'; d.style.top='42%'; scene.appendChild(d); setTimeout(()=>d.remove(),360); }
+      else { verdict.textContent='~ matches all traits → MAYBE invited, check the full list'; verdict.style.color='var(--warn)';
+        const d=document.createElement('div'); d.className='dot done'; d.style.left='50%'; d.style.top='42%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .4s';d.style.left='90%';}); setTimeout(()=>d.remove(),460); } }, 620*simRate());
+  }
+  function loop(){ if(!running)return; (Math.random()<0.5?add:check)(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actAdd').onclick=add;
+  document.getElementById('actCheck').onclick=check;
+  render(); running=true; loop();
+  return {add,check,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A club bouncer can't memorise 2,000 names. But he <em>can</em> remember a few quick <b>traits</b> of the people on the list.", dur:4800},
+  {cap:"As each guest is added, the bouncer notes a couple of their features — a fingerprint of who's allowed in.", dur:4600, on(){SIM.add();}},
+  {cap:"Add more guests and he remembers more traits. Different people can share a trait — that's fine, and it's the trick.", dur:4400, on(){SIM.add();}},
+  {cap:"Now someone shows up who was <em>never</em> on the list. The bouncer checks them against his remembered traits.", dur:4400, on(){SIM.check();}},
+  {cap:"They <b>miss a trait</b> nobody on the list has → they're <span class='hl-good'>definitely not invited.</span> Turned away instantly, no list needed.", dur:4800},
+  {cap:"That instant rejection is the whole win: he skips digging through the full guest list for obvious non-guests.", dur:4600, on(){SIM.check();}},
+  {cap:"But if someone <b>matches all the traits</b>, it's only a <span class='hl-warn'>'maybe'</span> — could be a real guest, could be a coincidence. So he checks the full list.", dur:4800},
+  {cap:"Crucially, he <b>never wrongly turns away a real guest</b> — a true guest always matches. False 'maybes', yes; false 'no's, never.", dur:4800},
+  {cap:"Your turn 👉 <b>➕ Add guests</b> to set traits, then <b>🧍 check people</b> — strangers get rejected on the spot.", dur:5200, on(){SIM.render();}},
+  {cap:"A Bloom filter is that bouncer's memory: tiny, fast, and able to skip most pointless lookups — used in Cassandra and friends.", dur:4800}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Growth of an Application — Tea Stall to Chain · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.chips{position:absolute; left:50%; bottom:24%; transform:translateX(-50%); display:flex; gap:8px; z-index:2}
+.chip{font-family:var(--fmono); font-size:12px; padding:6px 11px; border-radius:999px; border:1.5px solid var(--line2); background:#fff; color:var(--ink); opacity:0; transform:translateY(8px); transition:.4s}
+.chip.on{opacity:1; transform:none; border-color:var(--good); color:var(--good)}
+.strain{position:absolute; left:50%; bottom:11%; transform:translateX(-50%); width:60%; height:16px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.sfill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Growth of an Application — Tea Stall to Chain</h1>
+  <p class="subtitle">A single roadside tea stall can't become a city-wide chain overnight. It grows in stages — hire staff, open a second outlet, build a central kitchen — each step added when the last one starts to strain.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Customers / day</div><div class="stat-v accent" id="statUsers">—</div></div>
+  <div class="stat"><div class="stat-k">Business stage</div><div class="stat-v" id="statStage">Single stall</div></div>
+  <div class="stat"><div class="stat-k">Kitchen strain</div><div class="stat-v good" id="statStrain">—%</div></div>
+</div>
+<div class="wireline" style="left:16%;width:24%;top:42%"></div>
+<div class="node abs" data-show="1" style="left:14%;top:42%"><div class="box">🧍</div><div class="lbl"><span class="k">Customers</span></div></div>
+<div class="node abs" data-show="1" style="left:44%;top:42%"><div class="box sys">🍵</div><div class="lbl"><span class="k">Tea business</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:42%"><div class="box">😋</div><div class="lbl"><span class="k">Served</span></div></div>
+<div class="chips" id="chips">
+  <div class="chip" data-c="0">+ Extra staff</div>
+  <div class="chip" data-c="1">+ 2nd outlet</div>
+  <div class="chip" data-c="2">+ Central kitchen</div>
+  <div class="chip" data-c="3">+ Delivery app</div>
+</div>
+<div class="strain"><div class="sfill" id="sfill"></div></div>
+<div class="acts">
+  <button class="act" id="actGrow">📣 Word spreads (3× demand)</button>
+  <button class="act ok" id="actEvolve">⬆️ Grow the business</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const stages=['Single stall','+ Extra staff','+ Second outlet','+ Central kitchen','City-wide chain'];
+  let users=120, tier=0, running=false;
+  const elU=document.getElementById('statUsers'), elStage=document.getElementById('statStage'), elStr=document.getElementById('statStrain');
+  const sfill=document.getElementById('sfill'), sysEl=scene.querySelector('.sys'), chips=[...document.querySelectorAll('.chip')];
+  function hum(n){ const u=['','K','M']; let i=0; while(n>=1000&&i<2){n/=1000;i++;} return n.toFixed(n<10&&i>0?1:0)+u[i]; }
+  function cap(){ return 360*Math.pow(3.2,tier); }
+  function fmt(){ elU.textContent=hum(users); elStage.textContent=stages[tier];
+    const strain=Math.min(140,users/cap()*100); elStr.textContent=Math.round(strain)+'%';
+    elStr.className='stat-v '+(strain>100?'bad':strain>70?'warn':'good');
+    sfill.style.width=Math.min(100,strain)+'%'; sfill.style.background=strain>100?'linear-gradient(90deg,#f08070,#d83a2e)':strain>70?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#3fcf8e,#0f8f5b)';
+    if(sysEl) sysEl.classList.toggle('busy',strain>100);
+    chips.forEach((c,i)=>c.classList.toggle('on',i<tier)); }
+  function flow(){ if(document.hidden) return; const over=users>cap(); const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='42%'; scene.appendChild(d);
+    const leg=(over?760:460)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='74%'; setTimeout(()=>d.remove(),leg); }, leg); }
+  function loop(){ if(!running)return; users=Math.round(users*1.06); fmt(); flow(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actGrow').onclick=()=>{ users*=3; fmt(); };
+  document.getElementById('actEvolve').onclick=()=>{ if(tier<stages.length-1){ tier++; if(sysEl){sysEl.classList.add('healthy'); setTimeout(()=>sysEl.classList.remove('healthy'),600);} fmt(); } };
+  fmt(); running=true; loop();
+  return {fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Day one: a single <b>roadside tea stall</b>, one kettle, a handful of regulars. It's perfect for the demand.", dur:4400},
+  {cap:"Word spreads and <b>more customers</b> show up each day. Watch the count rise and the kitchen strain climb.", dur:4200},
+  {cap:"Soon one stall can't keep up — strain hits the red, queues form. Time to <b>grow.</b>", dur:4200},
+  {cap:"<b>Step 1:</b> hire extra staff so more cups get made in parallel. Strain eases.", dur:4200, on(){SIM.fmt();}},
+  {cap:"Demand keeps rising, so <b>open a second outlet</b>, then a <b>central kitchen</b> to supply both.", dur:4400},
+  {cap:"Finally add a <b>delivery app</b> to reach customers who never walk past. Now you're a city-wide chain.", dur:4400},
+  {cap:"Notice the pattern: you didn't build the chain on day one — you <b>grew it stage by stage</b> as each part strained.", dur:4600},
+  {cap:"Each upgrade bought headroom for the next wave of customers. Expanding too early would've just burned cash.", dur:4400},
+  {cap:"Your turn 👉 <b>📣 grow demand</b> to stress the kitchen, then <b>⬆️ grow the business</b> to relieve it.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Applications grow exactly like this: meet today's load, then evolve to the next stage when the strain appears.", dur:4600}
+]});
+
+</script>
+</body></html>

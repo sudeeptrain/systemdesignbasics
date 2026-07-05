@@ -1,0 +1,221 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Design — Unit 3 Animations</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css">
+<style>.hero{max-width:1000px;margin:0 auto 18px;text-align:center}.grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);box-shadow:0 10px 24px -18px rgba(40,70,120,.5);transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}.card .t{font-family:var(--fdisp);font-weight:600;font-size:16px}
+.card .badge{font-family:var(--fmono);font-size:10.5px;color:var(--faint)}.card.real{border-left:4px solid var(--pink)}.card.concept{border-left:4px solid var(--accent)}
+body{display:block;padding:26px 26px 48px}</style>
+<style>.mnav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;align-items:center;padding:9px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 15px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:6px 14px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a class="cur">▶ Animated Lessons</a><a href="study.html">📊 Study Slides</a></div><div style="width:100%"><div class="hero"><h1 class="title" style="font-size:30px">System Design · Unit 3 — Database Design</h1>
+<p class="subtitle" style="margin:0 auto">70 interactive, projector-ready lessons. Each plays in any browser — press ▶ and use the in-scene buttons.</p></div>
+<div class="grid"><a class="card concept" href="lessons/U3-01-database-design-lifecycle-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Database Design Lifecycle</span></a>
+<a class="card real" href="lessons/U3-01-database-design-lifecycle-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Design Lifecycle — Building a House</span></a>
+<a class="card concept" href="lessons/U3-02-requirement-analysis-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Requirement Analysis</span></a>
+<a class="card real" href="lessons/U3-02-requirement-analysis-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Requirement Analysis — The Architect's Interview</span></a>
+<a class="card concept" href="lessons/U3-03-logical-vs-physical-design-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Logical vs Physical Design</span></a>
+<a class="card real" href="lessons/U3-03-logical-vs-physical-design-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Logical vs Physical — Recipe vs Kitchen Prep</span></a>
+<a class="card concept" href="lessons/U3-04-normalization-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Normalization (1NF → BCNF)</span></a>
+<a class="card real" href="lessons/U3-04-normalization-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Normalization — A Contacts Book</span></a>
+<a class="card concept" href="lessons/U3-05-acid-transactions-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">ACID Transactions</span></a>
+<a class="card real" href="lessons/U3-05-acid-transactions-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">ACID — Booking a Concert Ticket</span></a>
+<a class="card concept" href="lessons/U3-06-rollback-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Rollback</span></a>
+<a class="card real" href="lessons/U3-06-rollback-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Rollback — A Cancelled Online Order</span></a>
+<a class="card concept" href="lessons/U3-07-indexing-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Indexing</span></a>
+<a class="card real" href="lessons/U3-07-indexing-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Indexing — A Book's Index</span></a>
+<a class="card concept" href="lessons/U3-08-btree-search-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">B-Tree Search</span></a>
+<a class="card real" href="lessons/U3-08-btree-search-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">B-Tree Search — A Dictionary</span></a>
+<a class="card concept" href="lessons/U3-09-sharding-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Sharding</span></a>
+<a class="card real" href="lessons/U3-09-sharding-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Sharding — A Class Register by Surname</span></a>
+<a class="card concept" href="lessons/U3-10-replication-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Replication</span></a>
+<a class="card real" href="lessons/U3-10-replication-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Replication — Photocopies in Branch Offices</span></a>
+<a class="card concept" href="lessons/U3-11-backup-recovery-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Backup &amp; Recovery</span></a>
+<a class="card real" href="lessons/U3-11-backup-recovery-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Backup &amp; Recovery — Video-Game Saves</span></a>
+<a class="card concept" href="lessons/U3-12-sql-vs-nosql-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">SQL vs NoSQL</span></a>
+<a class="card real" href="lessons/U3-12-sql-vs-nosql-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">SQL vs NoSQL — Forms vs Sticky Notes</span></a>
+<a class="card concept" href="lessons/U3-13-mongodb-documents-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">MongoDB Documents</span></a>
+<a class="card real" href="lessons/U3-13-mongodb-documents-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">MongoDB — A Scrapbook per Person</span></a>
+<a class="card concept" href="lessons/U3-14-redis-cache-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Redis Cache</span></a>
+<a class="card real" href="lessons/U3-14-redis-cache-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Redis Cache — Snacks on Your Desk</span></a>
+<a class="card concept" href="lessons/U3-15-cassandra-ring-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cassandra Ring</span></a>
+<a class="card real" href="lessons/U3-15-cassandra-ring-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cassandra Ring — Cashiers in a Circle</span></a>
+<a class="card concept" href="lessons/U3-16-neo4j-graph-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Neo4j Graph Database</span></a>
+<a class="card real" href="lessons/U3-16-neo4j-graph-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Neo4j — A Family Tree</span></a>
+<a class="card concept" href="lessons/U3-17-time-series-database-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Time-Series Database</span></a>
+<a class="card real" href="lessons/U3-17-time-series-database-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Time-Series — A Fitness Tracker</span></a>
+<a class="card concept" href="lessons/U3-18-vector-database-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Vector Database</span></a>
+<a class="card real" href="lessons/U3-18-vector-database-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Vector Database — Find Similar Songs</span></a>
+<a class="card concept" href="lessons/U3-19-denormalization-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Denormalization</span></a>
+<a class="card real" href="lessons/U3-19-denormalization-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Denormalization — A Meal Kit</span></a>
+<a class="card concept" href="lessons/U3-20-partitioning-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Partitioning (Horizontal vs Vertical)</span></a>
+<a class="card real" href="lessons/U3-20-partitioning-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Partitioning — A Split Phone Book</span></a>
+<a class="card concept" href="lessons/U3-21-leader-follower-multi-leader-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Leader–Follower vs Multi-Leader</span></a>
+<a class="card real" href="lessons/U3-21-leader-follower-multi-leader-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Leader–Follower vs Multi-Leader — Head Chefs</span></a>
+<a class="card concept" href="lessons/U3-22-read-replicas-connection-pooling-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Read Replicas &amp; Connection Pooling</span></a>
+<a class="card real" href="lessons/U3-22-read-replicas-connection-pooling-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Connection Pooling — A Taxi Rank</span></a>
+<a class="card concept" href="lessons/U3-23-write-ahead-log-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Write-Ahead Log (WAL)</span></a>
+<a class="card real" href="lessons/U3-23-write-ahead-log-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">WAL — A Kitchen Order Ticket</span></a>
+<a class="card concept" href="lessons/U3-24-lsm-vs-btree-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">LSM-Tree vs B-Tree Storage</span></a>
+<a class="card real" href="lessons/U3-24-lsm-vs-btree-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">LSM vs B-Tree — File Now or Sort Later</span></a>
+<a class="card concept" href="lessons/U3-25-bloom-filters-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Bloom Filters</span></a>
+<a class="card real" href="lessons/U3-25-bloom-filters-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Bloom Filters — The Bouncer's Memory</span></a>
+<a class="card concept" href="lessons/U3-26-materialized-views-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Materialized Views</span></a>
+<a class="card real" href="lessons/U3-26-materialized-views-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Materialized Views — Meal Prep</span></a>
+<a class="card concept" href="lessons/U3-27-oltp-vs-olap-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">OLTP vs OLAP</span></a>
+<a class="card real" href="lessons/U3-27-oltp-vs-olap-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">OLTP vs OLAP — Till vs Accountant</span></a>
+<a class="card concept" href="lessons/U3-28-change-data-capture-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Change Data Capture (CDC)</span></a>
+<a class="card real" href="lessons/U3-28-change-data-capture-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CDC — The School Announcement</span></a>
+<a class="card concept" href="lessons/U3-29-object-blob-storage-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Object / Blob Storage (S3-style)</span></a>
+<a class="card real" href="lessons/U3-29-object-blob-storage-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Blob Storage — A Self-Storage Warehouse</span></a>
+<a class="card concept" href="lessons/U3-30-warehouse-lake-lakehouse-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Warehouse vs Lake vs Lakehouse</span></a>
+<a class="card real" href="lessons/U3-30-warehouse-lake-lakehouse-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Warehouse / Lake / Lakehouse — Pantry vs Garage</span></a>
+<a class="card concept" href="lessons/U3-31-columnar-databases-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Columnar Databases</span></a>
+<a class="card real" href="lessons/U3-31-columnar-databases-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Columnar — Totalling a Ledger Column</span></a>
+<a class="card concept" href="lessons/U3-32-inverted-index-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Inverted Index &amp; Search Engines</span></a>
+<a class="card real" href="lessons/U3-32-inverted-index-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Inverted Index — Recipes by Ingredient</span></a>
+<a class="card concept" href="lessons/U3-33-isolation-levels-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Database Isolation Levels</span></a>
+<a class="card real" href="lessons/U3-33-isolation-levels-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Isolation Levels — A Shared Note</span></a>
+<a class="card concept" href="lessons/U3-34-optimistic-vs-pessimistic-locking-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Optimistic vs Pessimistic Locking</span></a>
+<a class="card real" href="lessons/U3-34-optimistic-vs-pessimistic-locking-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Locking — Library Hold vs Wiki Edit</span></a>
+<a class="card concept" href="lessons/U3-35-vector-search-ann-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Vector Search &amp; ANN (HNSW)</span></a>
+<a class="card real" href="lessons/U3-35-vector-search-ann-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Vector Search / ANN — Find a Friend in a Crowd</span></a></div></div></body></html>

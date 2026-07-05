@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cache Hit vs Cache Miss · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ratebar{position:absolute; left:50%; top:78%; transform:translateX(-50%); width:54%; height:14px; border-radius:8px; background:#fdeceb; overflow:hidden; z-index:2}
+.ratefill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cache Hit vs Cache Miss</h1>
+  <p class="subtitle">A cache holds copies of recently-used data close at hand. If the data you want is there, it's a hit — fast. If not, it's a miss — you go to the slow backing store, then usually copy the result into the cache so next time hits. Hit rate is what makes or breaks performance.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Hits</div><div class="stat-v accent" id="statHits">0</div></div>
+  <div class="stat"><div class="stat-k">Misses</div><div class="stat-v" id="statMiss">0</div></div>
+  <div class="stat"><div class="stat-k">Hit rate</div><div class="stat-v good" id="statRate">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:44%"><div class="box">📱</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:44%"><div class="box cache">⚡</div><div class="lbl"><span class="k">Cache (fast)</span></div></div>
+<div class="node abs" data-show="1" style="left:86%;top:44%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database (slow)</span></div></div>
+<div class="nlbl" style="left:50%;top:70%">hit rate</div>
+<div class="ratebar"><div class="ratefill" id="ratefill"></div></div>
+<div class="acts">
+  <button class="act ok" id="actHit">⚡ Request cached data (hit)</button>
+  <button class="act bad" id="actMiss">🐢 Request uncached data (miss)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let hits=0, miss=0, running=false;
+  const elH=document.getElementById('statHits'), elM=document.getElementById('statMiss'), elR=document.getElementById('statRate'), ratefill=document.getElementById('ratefill');
+  const cache=scene.querySelector('.cache');
+  function rate(){ const t=hits+miss; const r=t?Math.round(hits/t*100):0; elR.textContent=r+'%'; ratefill.style.width=r+'%'; elR.className='stat-v '+(r>=70?'good':r>=40?'warn':'bad'); }
+  function hit(){ if(document.hidden) return; hits++; elH.textContent=hits; rate(); if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),200);}
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ d.classList.add('done'); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='14%'; }); setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function missF(){ if(document.hidden) return; miss++; elM.textContent=miss; elM.className='stat-v bad'; rate();
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='14%'; d.style.top='44%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ // miss at cache → go to DB
+      d.style.left='86%'; setTimeout(()=>{ // fetch back, populate cache, return
+        const g=document.createElement('div'); g.className='dot done'; g.style.left='86%'; g.style.top='56%'; scene.appendChild(g); requestAnimationFrame(()=>{g.style.transition='left .6s';g.style.left='14%';}); setTimeout(()=>g.remove(),640);
+        if(cache){cache.classList.add('active'); setTimeout(()=>cache.classList.remove('active'),250);} d.remove(); }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; (Math.random()<0.65?hit:missF)(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actHit').onclick=hit;
+  document.getElementById('actMiss').onclick=missF;
+  rate(); running=true; loop();
+  return {hit,miss:missF};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>cache</b> keeps copies of hot data somewhere fast and close. Every lookup ends one of two ways: a <b>hit</b> or a <b>miss.</b>", dur:4600},
+  {cap:"A <b>cache hit:</b> the data you asked for is already in the cache. It's returned immediately — no trip to the slow store.", dur:4600, on(){SIM.hit();}},
+  {cap:"Hits are the whole point — fast and cheap. Every hit you get is a database query you <em>didn't</em> have to make.", dur:4400, on(){SIM.hit();}},
+  {cap:"A <b>cache miss:</b> the data isn't there. Now you must go to the <span class='hl-bad'>slow backing store</span> — the database.", dur:4600, on(){SIM.miss();}},
+  {cap:"After fetching it, you usually <b>copy it into the cache</b> on the way back — so the next request for it will be a hit.", dur:4600, on(){SIM.miss();}},
+  {cap:"The single most important number is the <b>hit rate</b> — the fraction of requests served from cache. Watch the bar.", dur:4600, on(){SIM.hit();SIM.hit();}},
+  {cap:"A high hit rate (say 90%+) means most requests are fast and the database is barely touched. A low one means the cache is barely helping.", dur:4800, on(){SIM.hit();}},
+  {cap:"Misses come in flavors: <b>cold</b> (first ever access), <b>capacity</b> (cache too small), and <b>conflict</b>. Tuning size and policy lifts the hit rate.", dur:4800},
+  {cap:"Your turn 👉 mix <b>⚡ hits</b> and <b>🐢 misses</b> and watch the hit rate climb or fall.", dur:5200},
+  {cap:"Hit = found in cache (fast); miss = fetch from the slow store and cache it. Performance lives and dies by the hit rate.", dur:4800}
+]});
+
+</script>
+</body></html>

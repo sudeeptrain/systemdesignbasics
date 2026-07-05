@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Write-Back — Sticky Notes Now, Calendar Later · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cache .box,.db .box{transition:.3s}
+.dirty{position:absolute; left:50%; top:26%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--warn); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Write-Back — Sticky Notes Now, Calendar Later</h1>
+  <p class="subtitle">In a hurry, you scribble each new plan on a sticky note and carry on — instant. Later you copy a whole batch of stickies into the master calendar at once. Lightning fast, and batching saves effort — but if the stickies get lost before you transfer them, those plans vanish.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Stickies written</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Not yet transferred</div><div class="stat-v" id="statDirty">0</div></div>
+  <div class="stat"><div class="stat-k">Calendar</div><div class="stat-v" id="statDb">may be behind</div></div>
+</div>
+<div class="dirty" id="dirty"></div>
+<div class="node abs" data-show="1" style="left:16%;top:46%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs cache" data-show="1" style="left:50%;top:46%"><div class="box">🟨</div><div class="lbl"><span class="k">Sticky notes</span></div></div>
+<div class="node abs db" data-show="1" style="left:84%;top:46%"><div class="box sm">📅</div><div class="lbl"><span class="k">Master calendar</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✏️ Scribble a sticky</button>
+  <button class="act" id="actFlush">💾 Transfer batch to calendar</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let writes=0, dirty=0, running=false;
+  const elW=document.getElementById('statWrites'), elD=document.getElementById('statDirty'), elDb=document.getElementById('statDb'), dirtyEl=document.getElementById('dirty');
+  const cache=scene.querySelector('.cache'), db=scene.querySelector('.db');
+  function setDirty(){ elD.textContent=dirty; elD.className='stat-v '+(dirty>0?'warn':''); dirtyEl.textContent=dirty>0?('🟠 '+dirty+' stickies — not in calendar yet'):''; elDb.textContent=dirty>0?'behind':'up to date'; elDb.className='stat-v '+(dirty>0?'bad':'good'); }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes; dirty++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; });
+    setTimeout(()=>{ if(cache){cache.classList.add('busy'); setTimeout(()=>cache.classList.remove('busy'),200);} d.classList.add('done'); d.style.left='16%'; setTimeout(()=>d.remove(),leg); setDirty(); }, leg);
+  }
+  function flush(){ if(document.hidden) return; if(dirty<=0){ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),200);} return; }
+    const n=dirty; for(let k=0;k<n;k++){ setTimeout(()=>{ const d=document.createElement('div'); d.className='dot done'; d.style.left='50%'; d.style.top='46%'; scene.appendChild(d); requestAnimationFrame(()=>{d.style.transition='left .45s';d.style.left='84%';}); setTimeout(()=>{ if(db){db.classList.add('busy'); setTimeout(()=>db.classList.remove('busy'),200);} d.remove(); },460); }, k*180*simRate()); }
+    dirty=0; setTimeout(setDirty, n*180*simRate()+200);
+  }
+  function loop(){ if(!running)return; if(Math.random()<0.7) write(); else flush(); setTimeout(loop, 1200*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actFlush').onclick=flush;
+  setDirty(); running=true; loop();
+  return {write,flush,setDirty};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Write-through copies every plan into the calendar on the spot — safe but slow. <b>Write-back</b> chases speed: scribble a sticky note and carry on.", dur:4800},
+  {cap:"You jot the plan on a <b>sticky note</b> and move on instantly. No stopping to update the big calendar — blazing fast.", dur:4600, on(){SIM.write();}},
+  {cap:"That sticky is <b>not yet transferred:</b> you have the latest plan, but the master calendar doesn't know about it yet.", dur:4600, on(){SIM.write();}},
+  {cap:"Keep scribbling and the stickies pile up on your monitor. The master calendar is now <span class='hl-bad'>behind</span> reality.", dur:4600, on(){SIM.write();}},
+  {cap:"Later — end of day, or when the stickies get out of hand — you <b>transfer the whole batch</b> into the calendar at once.", dur:4600, on(){SIM.flush();}},
+  {cap:"Batching is a real win: if you rescheduled the same meeting three times, only the final version needs copying over. Less total work.", dur:4600, on(){SIM.write();SIM.write();}},
+  {cap:"But here's the danger: if the <b>stickies fall off and get lost before you transfer them</b>, those plans are <span class='hl-bad'>gone.</span> Speed risks losing data.", dur:4800},
+  {cap:"So write-back suits situations with <em>lots</em> of quick changes that can tolerate a tiny loss window — ideally with a backup of the stickies.", dur:4600, on(){SIM.flush();}},
+  {cap:"Your turn 👉 <b>✏️ Scribble stickies</b> (the pile grows) then <b>💾 transfer the batch</b> to the calendar.", dur:5200},
+  {cap:"Write-back jots instantly and transfers in batches — fast and efficient, but a loss before transfer means lost plans. Speed vs safety.", dur:4800}
+]});
+
+</script>
+</body></html>

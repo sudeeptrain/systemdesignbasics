@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PACELC Theorem · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.quad{position:absolute; left:50%; top:13%; transform:translateX(-50%); font-family:var(--fmono); font-size:14px; font-weight:700; z-index:5; background:#fff; border:1.5px solid var(--line2); border-radius:999px; padding:6px 16px}
+.branch{position:absolute; font-family:var(--fmono); font-size:12px; z-index:3; transition:.3s; opacity:.4}
+.branch.on{opacity:1; font-weight:700}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">PACELC Theorem</h1>
+  <p class="subtitle">PACELC extends CAP. If there's a Partition (P), choose Availability or Consistency (A/C). Else (E) — the normal, healthy case — you still trade Latency vs Consistency (L/C). Even with no failures, there's a choice.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Condition</div><div class="stat-v good" id="statCond">Else (healthy)</div></div>
+  <div class="stat"><div class="stat-k">Preference</div><div class="stat-v" id="statPref">Latency</div></div>
+</div>
+<div class="quad" id="quad">E → L : fast</div>
+<div class="branch b-pa" style="left:14%;top:34%">P → A · stay available</div>
+<div class="branch b-pc" style="left:14%;top:50%">P → C · refuse, stay correct</div>
+<div class="branch b-el" style="left:60%;top:34%">E → L · answer fast (maybe stale)</div>
+<div class="branch b-ec" style="left:60%;top:50%">E → C · verify first (slower)</div>
+<div class="node abs" data-show="1" style="left:30%;top:78%"><div class="box sm">📱</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:70%;top:78%"><div class="box sm db">🗄️</div><div class="lbl"><span class="k">Store</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actPartition">✂️ Toggle partition (P / E)</button>
+  <button class="act" id="actPrefer">🔀 Prefer fast / consistent</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let partition=false, pref='fast', reqs=0, running=false;
+  const elR=document.getElementById('statReqs'), elC=document.getElementById('statCond'), elP=document.getElementById('statPref'), quad=document.getElementById('quad');
+  const branches={pa:scene.querySelector('.b-pa'),pc:scene.querySelector('.b-pc'),el:scene.querySelector('.b-el'),ec:scene.querySelector('.b-ec')};
+  function fmt(){ elC.textContent=partition?'Partition!':'Else (healthy)'; elC.className='stat-v '+(partition?'bad':'good');
+    elP.textContent= partition? (pref==='fast'?'Availability':'Consistency') : (pref==='fast'?'Latency':'Consistency');
+    Object.values(branches).forEach(b=>b.classList.remove('on'));
+    let key;
+    if(partition){ key=pref==='fast'?'pa':'pc'; quad.textContent=pref==='fast'?'P → A : available':'P → C : refuse'; quad.style.color=pref==='fast'?'var(--accent-d)':'var(--warn)'; }
+    else { key=pref==='fast'?'el':'ec'; quad.textContent=pref==='fast'?'E → L : fast':'E → C : consistent'; quad.style.color=pref==='fast'?'var(--good)':'var(--accent-d)'; }
+    branches[key].classList.add('on'); }
+  function req(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const refuse = partition && pref==='cons';
+    const slow = (!partition && pref==='cons');
+    const d=document.createElement('div'); d.className='dot'; d.style.left='30%'; d.style.top='78%'; scene.appendChild(d);
+    const leg=(slow?760:420)*simRate();
+    if(refuse){ requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='50%'; }); setTimeout(()=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),300); }, leg*0.6); return; }
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='70%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.transition='left '+leg+'ms'; d.style.left='30%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actPartition').onclick=()=>{ partition=!partition; fmt(); };
+  document.getElementById('actPrefer').onclick=()=>{ pref=pref==='fast'?'cons':'fast'; fmt(); };
+  fmt(); running=true; loop();
+  return {fmt,setPartition:(b)=>{partition=b;fmt();},setPref:(p)=>{pref=p;fmt();}};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"CAP only talks about partitions. <b>PACELC</b> adds the rest of the story — including when nothing is broken.", dur:4600},
+  {cap:"Read it as: <b>P</b>artition? choose <b>A</b> or <b>C</b>. <b>E</b>lse, choose <b>L</b>atency or <b>C</b>onsistency.", dur:4800},
+  {cap:"Start healthy (the <b>E</b> branch). Even now you face a choice: answer <b>fast</b>, or verify first to be <b>consistent.</b>", dur:4800, on(){SIM.setPref('fast');}},
+  {cap:"Prefer <b>Latency (E→L)</b>: the store replies quickly, possibly from a slightly stale replica. Snappy.", dur:4400},
+  {cap:"Prefer <b>Consistency (E→C)</b>: it checks for the latest value first — correct, but <span class='hl-warn'>slower.</span>", dur:4600, on(){SIM.setPref('cons');}},
+  {cap:"Now a <span class='hl-bad'>partition</span> hits — we're on the <b>P</b> branch, exactly like CAP.", dur:4000, on(){SIM.setPartition(true);}},
+  {cap:"<b>P→A:</b> keep serving (available, maybe stale). <b>P→C:</b> <span class='hl-bad'>refuse</span> to stay correct. Same old CAP choice.", dur:4800, on(){SIM.setPref('fast');}},
+  {cap:"The insight: most of the time there's <em>no</em> partition — yet you're still trading latency for consistency every request.", dur:4800, on(){SIM.setPartition(false);}},
+  {cap:"Your turn 👉 <b>✂️ toggle partition</b> and <b>🔀 prefer fast / consistent</b> to walk all four PACELC quadrants.", dur:5200, on(){SIM.fmt();}},
+  {cap:"PACELC: if Partition → A or C; Else → L or C. A fuller map of the trade-offs every distributed store makes.", dur:4800}
+]});
+
+</script>
+</body></html>

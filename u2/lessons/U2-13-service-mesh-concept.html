@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service Mesh · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.side{position:absolute; width:30px; height:30px; border-radius:8px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:14px;
+  background:#eaf2fe; border:1.5px solid var(--accent); z-index:3; transition:.3s}
+.side.armed{background:#e7f7ef; border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.cp{position:absolute; left:50%; top:13%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:4}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Service Mesh</h1>
+  <p class="subtitle">In a mesh, every service gets a sidecar proxy. All service-to-service traffic flows proxy-to-proxy, so retries, mTLS encryption, and metrics happen in the mesh — not in your app code. A control plane configures them all at once.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Calls made</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Mesh policy</div><div class="stat-v" id="statPol">off</div></div>
+  <div class="stat"><div class="stat-k">Recovered by mesh</div><div class="stat-v good" id="statRec">0</div></div>
+</div>
+<div class="cp">🛰️ Control plane → configures every sidecar</div>
+<div class="node abs" data-show="1" style="left:18%;top:55%"><div class="box sm">🅰️</div><div class="lbl"><span class="k">Service A</span></div></div>
+<div class="side s-0" style="left:27%;top:48%">🔲</div>
+<div class="node abs" data-show="1" style="left:50%;top:55%"><div class="box sm">🅱️</div><div class="lbl"><span class="k">Service B</span></div></div>
+<div class="side s-1" style="left:59%;top:48%">🔲</div>
+<div class="node abs" data-show="1" style="left:82%;top:55%"><div class="box sm">🆎</div><div class="lbl"><span class="k">Service C</span></div></div>
+<div class="side s-2" style="left:91%;top:48%">🔲</div>
+<div class="acts">
+  <button class="act ok" id="actPolicy">🛡️ Push policy (mTLS + retry)</button>
+  <button class="act bad" id="actFault">🔥 Inject a transient fault</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const sides=[0,1,2].map(i=>scene.querySelector('.s-'+i));
+  const SX=[27,59,91], SVC=[18,50,82];
+  let calls=0, armed=false, recovered=0, faultNext=false, running=false;
+  const elC=document.getElementById('statCalls'), elP=document.getElementById('statPol'), elR=document.getElementById('statRec');
+  function call(){ if(document.hidden) return; calls++; elC.textContent=calls;
+    // A's sidecar → B's sidecar
+    const d=document.createElement('div'); d.className='dot'; d.style.left=SX[0]+'%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=SX[1]+'%'; });
+    setTimeout(()=>{ const fault=faultNext; faultNext=false;
+      if(fault && !armed){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      if(fault && armed){ // sidecar retries transparently → success
+        d.classList.add('fail'); if(sides[0])sides[0].classList.add('armed');
+        setTimeout(()=>{ const r=document.createElement('div'); r.className='dot'; r.style.left=SX[0]+'%'; r.style.top='48%'; scene.appendChild(r);
+          requestAnimationFrame(()=>{ r.style.transition='left '+leg+'ms'; r.style.left=SX[1]+'%'; });
+          setTimeout(()=>{ r.classList.add('done'); recovered++; elR.textContent=recovered; setTimeout(()=>r.remove(),260); }, leg); d.remove(); }, 360*simRate());
+        return; }
+      d.classList.add('done'); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function pushPolicy(){ armed=true; elP.textContent='mTLS + retry ✓'; elP.className='stat-v good'; sides.forEach((s,i)=>setTimeout(()=>{ s.classList.add('armed'); s.textContent='🔒'; }, i*150)); }
+  function injectFault(){ faultNext=true; call(); }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actPolicy').onclick=pushPolicy;
+  document.getElementById('actFault').onclick=injectFault;
+  running=true; loop();
+  return {call,pushPolicy,injectFault};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In a microservices system, services constantly call each other. Who handles retries, encryption, and metrics for all that traffic?", dur:4800},
+  {cap:"A <b>service mesh</b> answers: give every service a <b>sidecar proxy</b> that sits beside it and intercepts its network traffic.", dur:4800},
+  {cap:"Now calls go <b>sidecar → sidecar</b>, not app → app. The proxies handle the cross-cutting concerns.", dur:4600, on(){SIM.call();}},
+  {cap:"A <b>control plane</b> configures every sidecar at once — no redeploying services to change networking behavior.", dur:4600},
+  {cap:"Push a policy: <b>mTLS encryption + automatic retries</b>, applied mesh-wide in one move.", dur:4400, on(){SIM.pushPolicy();}},
+  {cap:"Now inject a <span class='hl-bad'>transient fault</span> on a call.", dur:3600, on(){SIM.injectFault();}},
+  {cap:"The sidecar catches the failure and <span class='hl-good'>retries transparently</span> — the app never even knew. Recovered by the mesh.", dur:4800},
+  {cap:"Encryption, retries, timeouts, traffic-splitting, tracing — all moved <b>out of your code</b> and into the mesh.", dur:4600},
+  {cap:"Your turn 👉 <b>🛡️ Push the policy</b>, then <b>🔥 Inject a fault</b> to watch the sidecar quietly recover the call.", dur:5200},
+  {cap:"A service mesh standardizes service-to-service networking — powerful at scale, though it adds real operational complexity.", dur:4800}
+]});
+
+</script>
+</body></html>

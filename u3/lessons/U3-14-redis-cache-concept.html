@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redis Cache · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cachebox{position:absolute; left:50%; top:20%; width:30%; transform:translateX(-50%); z-index:2}
+.ckey{display:inline-block; font-family:var(--fmono); font-size:11px; padding:4px 8px; border-radius:6px; background:#eaf2fe; border:1.5px solid var(--accent); color:var(--accent-d); margin:3px; transition:.2s}
+.ckey.hot{box-shadow:0 0 0 4px rgba(31,111,230,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Redis Cache</h1>
+  <p class="subtitle">Redis keeps hot data in memory as simple key-value pairs. Check the cache first: a hit returns in microseconds from RAM; a miss falls through to the slow database, then stores the result so next time is fast. It's the speed layer in front of your DB.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Cache hit rate</div><div class="stat-v good" id="statHit">—</div></div>
+  <div class="stat"><div class="stat-k">Cached keys</div><div class="stat-v" id="statKeys">0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box sm">📱</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="nlbl" style="left:50%;top:13%">⚡ Redis (in-memory)</div>
+<div class="cachebox" id="cachebox" style="text-align:center;border:1.5px dashed var(--accent);border-radius:10px;padding:8px;min-height:60px"></div>
+<div class="node abs" data-show="1" style="left:86%;top:55%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="acts">
+  <button class="act" id="actRequest">📨 Make a request</button>
+  <button class="act bad" id="actClear">🧹 Flush the cache</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const cachebox=document.getElementById('cachebox');
+  let reqs=0, hits=0, cache=new Set(), running=false;
+  const elR=document.getElementById('statReqs'), elH=document.getElementById('statHit'), elK=document.getElementById('statKeys');
+  function render(){ cachebox.innerHTML=''; [...cache].forEach(k=>{ const e=document.createElement('span'); e.className='ckey'; e.textContent=k; e.dataset.k=k; cachebox.appendChild(e); }); elK.textContent=cache.size; if(!cache.size) cachebox.innerHTML='<span style="color:var(--faint);font-family:var(--fmono);font-size:11px">empty</span>'; }
+  function request(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    const key='k'+(1+Math.floor(Math.random()*5)); const hit=cache.has(key);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='55%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='30%'; });
+    setTimeout(()=>{ if(hit){ hits++; d.classList.add('done'); const e=cachebox.querySelector('[data-k="'+key+'"]'); if(e){e.classList.add('hot'); setTimeout(()=>e.classList.remove('hot'),300);}
+        d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='12%'; d.style.top='55%'; setTimeout(()=>d.remove(),leg);
+      } else { // miss → go to DB (slow), then populate cache
+        d.classList.add('fail'); d.style.transition='left '+leg*1.6+'ms, top '+leg*1.6+'ms'; d.style.left='86%'; d.style.top='55%';
+        setTimeout(()=>{ cache.add(key); render(); d.classList.remove('fail'); d.classList.add('done'); d.style.left='12%'; d.style.top='55%'; setTimeout(()=>d.remove(),leg); }, leg*1.6);
+      }
+      const rate=Math.round(hits/reqs*100); elH.textContent=rate+'%'; elH.className='stat-v '+(rate>60?'good':rate>30?'warn':'bad');
+    }, leg);
+  }
+  function clear(){ cache.clear(); render(); }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 800*simRate()); }
+  document.getElementById('actRequest').onclick=request;
+  document.getElementById('actClear').onclick=clear;
+  render(); running=true; loop();
+  return {request,clear,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Your database is reliable but disk-bound. <b>Redis</b> puts a lightning-fast layer in front of it, holding hot data in <b>memory.</b>", dur:4800},
+  {cap:"It's a simple <b>key-value store.</b> Every request checks Redis first, before ever touching the database.", dur:4600},
+  {cap:"The first time a key is asked for, it's <b>not cached</b> — a <span class='hl-bad'>cache miss.</span>", dur:4200, on(){SIM.request();}},
+  {cap:"A miss falls through to the slow database, fetches the value… and <b>stores it in Redis</b> on the way back.", dur:4600, on(){SIM.request();}},
+  {cap:"Now ask for that same key again — it's a <span class='hl-good'>cache hit</span>, served straight from memory in microseconds.", dur:4600, on(){SIM.request();}},
+  {cap:"As popular keys get cached, the <b>hit rate climbs</b> and the database load drops dramatically. That's the whole win.", dur:4600, on(){SIM.request();}},
+  {cap:"Redis does more than caching — sessions, counters, queues, leaderboards — but the cache pattern is its bread and butter.", dur:4400},
+  {cap:"The catch: cached data can go <b>stale</b>, so you set expiry times and invalidate keys when the source changes.", dur:4400, on(){SIM.clear();}},
+  {cap:"Your turn 👉 <b>📨 Make requests</b> to warm the cache, then <b>🧹 flush it</b> to watch the hit rate reset.", dur:5200, on(){SIM.render();}},
+  {cap:"A cache trades a little staleness and memory for enormous speed — the first thing you add when reads get slow.", dur:4800}
+]});
+
+</script>
+</body></html>

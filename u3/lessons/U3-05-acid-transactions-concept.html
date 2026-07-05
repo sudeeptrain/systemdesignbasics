@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACID Transactions · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.op{position:absolute; transform:translate(-50%,-50%); width:96px; text-align:center; font-family:var(--fmono); font-size:11px; padding:7px; border-radius:8px; border:1.5px solid var(--line2); background:#fff; z-index:3; transition:.3s}
+.op.ok{border-color:var(--good); background:#e7f7ef}
+.op.bad{border-color:var(--bad); background:#fdeceb}
+.disk{position:absolute; left:50%; bottom:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">ACID Transactions</h1>
+  <p class="subtitle">A transaction groups several operations into one unit with four guarantees: Atomic (all or nothing), Consistent (rules never broken), Isolated (concurrent transactions don't trample), Durable (once committed, it survives a crash).</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Transactions</div><div class="stat-v accent" id="statTxns">0</div></div>
+  <div class="stat"><div class="stat-k">Committed</div><div class="stat-v good" id="statOk">0</div></div>
+  <div class="stat"><div class="stat-k">Rolled back</div><div class="stat-v" id="statRb">0</div></div>
+</div>
+<div class="nlbl" style="left:50%;top:12%">One transfer = 2 steps, all-or-nothing</div>
+<div class="op o-0" style="left:30%;top:42%">➖ debit<br>Alice −$50</div>
+<div class="op o-1" style="left:70%;top:42%">➕ credit<br>Bob +$50</div>
+<div class="disk" id="disk">💾 committed to disk: nothing yet</div>
+<div class="acts">
+  <button class="act ok" id="actCommit">✅ Commit transfer</button>
+  <button class="act bad" id="actCrash">💥 Crash mid-transfer</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const ops=[scene.querySelector('.o-0'),scene.querySelector('.o-1')];
+  let txns=0, ok=0, rb=0, busy=false, running=false;
+  const elT=document.getElementById('statTxns'), elOk=document.getElementById('statOk'), elRb=document.getElementById('statRb'), disk=document.getElementById('disk');
+  function clear(){ ops.forEach(o=>o.className=o.className.replace(/\b(ok|bad)\b/g,'').trim()); }
+  function run(crash){ busy=true; txns++; elT.textContent=txns; clear(); disk.textContent='💾 committed to disk: nothing yet';
+    // step 1: debit
+    setTimeout(()=>{ ops[0].classList.add('ok');
+      if(crash){ // crash after step 1, before step 2
+        setTimeout(()=>{ ops[0].classList.remove('ok'); ops[0].classList.add('bad'); ops[1].classList.add('bad');
+          disk.textContent='💥 crash → atomic ROLLBACK → balances unchanged'; disk.style.color='var(--bad)';
+          const d=document.createElement('div'); d.className='dot fail'; d.style.left='50%'; d.style.top='42%'; scene.appendChild(d); setTimeout(()=>d.remove(),520*simRate());
+          rb++; elRb.textContent=rb; elRb.className='stat-v warn'; setTimeout(()=>{disk.style.color='';busy=false;},600); }, 700*simRate());
+      } else {
+        setTimeout(()=>{ ops[1].classList.add('ok');
+          setTimeout(()=>{ disk.textContent='💾 committed to disk: BOTH steps — durable ✓'; disk.style.color='var(--good)';
+            const d=document.createElement('div'); d.className='dot done'; d.style.left='30%'; d.style.top='42%'; scene.appendChild(d);
+            requestAnimationFrame(()=>{ d.style.transition='left .5s, top .5s'; d.style.left='50%'; d.style.top='80%'; }); setTimeout(()=>d.remove(),600);
+            ok++; elOk.textContent=ok; setTimeout(()=>{disk.style.color='';busy=false;},700); }, 500*simRate());
+        }, 600*simRate());
+      }
+    }, 500*simRate());
+  }
+  function loop(){ if(!running)return; if(!busy) run(false); setTimeout(loop, 3400*simRate()); }
+  document.getElementById('actCommit').onclick=()=>run(false);
+  document.getElementById('actCrash').onclick=()=>run(true);
+  running=true; loop();
+  return {commit:()=>run(false),crash:()=>run(true)};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Transfer $50 from Alice to Bob. That's <em>two</em> steps: debit Alice, credit Bob. They must <b>both</b> happen, or neither.", dur:4800},
+  {cap:"A <b>transaction</b> wraps them into one unit with four guarantees — <b>ACID.</b> Let's see each in action.", dur:4400},
+  {cap:"<b>Atomicity:</b> commit the transfer and both steps complete together as one indivisible action.", dur:4400, on(){SIM.commit();}},
+  {cap:"<b>Consistency:</b> the rule \"money is never created or destroyed\" holds — $50 left Alice, $50 reached Bob. Books balance.", dur:4600},
+  {cap:"<b>Durability:</b> once committed, it's written to disk. Even if the server dies a second later, the transfer stays done.", dur:4600},
+  {cap:"Now the scary case — <span class='hl-bad'>crash mid-transfer</span>, after the debit but before the credit.", dur:4000, on(){SIM.crash();}},
+  {cap:"Atomicity saves you: the database <b>rolls back</b> the half-done work. Alice's money reappears — no $50 vanishes.", dur:4800},
+  {cap:"<b>Isolation</b> (the I) handles the fourth case: concurrent transactions can't see each other's half-finished state.", dur:4600},
+  {cap:"Your turn 👉 <b>✅ Commit</b> a clean transfer, then <b>💥 Crash mid-transfer</b> to watch the atomic rollback.", dur:5200},
+  {cap:"ACID is the promise that makes databases trustworthy for money and critical data: all-or-nothing, correct, isolated, permanent.", dur:4800}
+]});
+
+</script>
+</body></html>

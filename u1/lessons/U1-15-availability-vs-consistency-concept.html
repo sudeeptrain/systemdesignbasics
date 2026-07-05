@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Availability vs Consistency · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.link{position:absolute; left:50%; top:36%; width:4px; height:32%; transform:translateX(-50%); background:var(--good); border-radius:4px; z-index:1; transition:.3s}
+.link.cut{background:repeating-linear-gradient(180deg,var(--bad) 0 6px,transparent 6px 12px); opacity:.8}
+.scissor{position:absolute; left:54%; top:52%; font-size:22px; opacity:0; transition:.3s; z-index:3}
+.scissor.show{opacity:1}
+.dot.stale{background:var(--warn); box-shadow:0 0 0 3px rgba(207,132,18,.2)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Availability vs Consistency</h1>
+  <p class="subtitle">When the network splits, a distributed system must choose: keep answering with maybe-stale data (AP), or refuse to answer to stay correct (CP). You can't have both during a partition.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Availability</div><div class="stat-v good" id="statAvail">100%</div></div>
+  <div class="stat"><div class="stat-k">Stale answers</div><div class="stat-v warn" id="statStale">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v warn" id="statMode">AP</div></div>
+</div>
+<div class="wireline" style="left:14%;width:22%;top:42%;transform:rotate(-13deg);transform-origin:left center"></div>
+<div class="wireline" style="left:14%;width:22%;top:68%;transform:rotate(13deg);transform-origin:left center"></div>
+<div class="node abs" data-show="1" style="left:12%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">Reader</span></div></div>
+<div class="link" id="link"></div>
+<div class="scissor" id="scissor">✂️</div>
+<div class="node abs" data-show="1" style="left:50%;top:30%"><div class="box n1">🗄️</div><div class="lbl"><span class="k">Node 1</span></div></div>
+<div class="node abs" data-show="1" style="left:50%;top:80%"><div class="box n2">🗄️</div><div class="lbl"><span class="k">Node 2</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actPartition">✂️ Split network</button>
+  <button class="act" id="actMode">🔀 AP / CP</button>
+</div>
+<div class="legend">
+  <div><span class="sw" style="background:var(--good)"></span>fresh answer</div>
+  <div><span class="sw" style="background:var(--warn)"></span>stale answer (AP)</div>
+  <div><span class="sw" style="background:var(--bad)"></span>refused (CP)</div>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const C={x:12,y:55}, N=[{x:50,y:30},{x:50,y:80}];
+  let v=0, n2v=0, partitioned=false, mode='AP', served=0, refused=0, stale=0, running=false;
+  const elAvail=document.getElementById('statAvail'), elStale=document.getElementById('statStale'), elMode=document.getElementById('statMode');
+  const link=document.getElementById('link'), scissor=document.getElementById('scissor');
+  function fmt(){ const tot=served+refused, av=tot?served/tot:1; elAvail.textContent=Math.round(av*100)+'%'; elAvail.className='stat-v '+(av>=0.99?'good':av>=0.5?'warn':'bad'); elStale.textContent=stale; elMode.textContent=mode; elMode.className='stat-v '+(mode==='AP'?'warn':'good'); }
+  function write(){ v++; if(!partitioned) n2v=v; }
+  function read(){ if(document.hidden) return;
+    const ti=Math.floor(Math.random()*2), target=N[ti];
+    const d=document.createElement('div'); d.className='dot'; d.style.left=C.x+'%'; d.style.top=C.y+'%'; scene.appendChild(d);
+    const leg=560*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1), top '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=target.x+'%'; d.style.top=target.y+'%'; });
+    setTimeout(()=>{
+      if(partitioned && mode==='CP'){ d.classList.add('fail'); refused++; fmt(); setTimeout(()=>d.remove(),520); return; }
+      const nodeVal = ti===0? v : n2v; const isStale = nodeVal!==v;
+      served++; if(isStale){ stale++; d.classList.add('stale'); } else { d.classList.add('done'); }
+      fmt(); setTimeout(()=>d.remove(),440);
+    }, leg);
+  }
+  function loop(){ if(!running)return; write(); read(); read(); setTimeout(loop, 2000*simRate()); }
+  function togglePartition(){ partitioned=!partitioned; link.classList.toggle('cut',partitioned); scissor.classList.toggle('show',partitioned); if(!partitioned) n2v=v; if(partitioned){ write(); } read(); }
+  function setMode(m){ mode=m; fmt(); read(); }
+  function toggleMode(){ setMode(mode==='AP'?'CP':'AP'); }
+  document.getElementById('actPartition').onclick=togglePartition;
+  document.getElementById('actMode').onclick=toggleMode;
+  fmt(); running=true; loop();
+  return {togglePartition,toggleMode,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two database nodes stay in sync over the network, so a read from either returns the same <b>fresh</b> value.", dur:4200},
+  {cap:"Reads flow in and both nodes answer correctly — availability is 100% and every answer is current.", dur:4000},
+  {cap:"Now the network <span class='hl-bad'>splits</span> — Node 1 and Node 2 can no longer talk to each other.", dur:4000, on(){SIM.togglePartition();}},
+  {cap:"A write hits Node 1, but it can't reach Node 2. The two copies have <b>diverged</b>.", dur:4200},
+  {cap:"<b>Choice A — stay Available (AP):</b> answer every read anyway. Node 2 hands back a <span class='hl-warn'>stale value</span>, but nobody is turned away.", dur:4600, on(){SIM.setMode('AP');}},
+  {cap:"Availability stays high, yet the stale-answers counter climbs. You traded correctness for uptime.", dur:4400},
+  {cap:"<b>Choice B — stay Consistent (CP):</b> refuse to answer rather than risk stale data.", dur:4400, on(){SIM.setMode('CP');}},
+  {cap:"Now reads are <span class='hl-bad'>refused</span> and availability drops — but no one ever sees a wrong value.", dur:4400},
+  {cap:"Your turn 👉 <b>✂️ Split network</b>, then flip <b>🔀 AP / CP</b> to feel the trade-off during a partition.", dur:5400, on(){SIM.setMode('AP');}},
+  {cap:"That's the CAP theorem: during a partition you pick <span class='hl-warn'>A</span> or <span class='hl-good'>C</span>. Heal the network and you can have both again.", dur:4800, on(){SIM.togglePartition();}}
+]});
+
+</script>
+</body></html>

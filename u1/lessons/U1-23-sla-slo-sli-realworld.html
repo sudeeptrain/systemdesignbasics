@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SLA / SLO / SLI — Pizza in 30 Minutes · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gauge{position:absolute; left:50%; bottom:12%; transform:translateX(-50%); width:62%; height:18px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.gfill{position:absolute; left:0; top:0; bottom:0; width:100%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s, background .3s}
+.slo{position:absolute; top:0; bottom:0; width:2.5px; background:var(--ink); left:95%; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">SLA / SLO / SLI — Pizza in 30 Minutes</h1>
+  <p class="subtitle">"Delivered in 30 minutes or it's free" is an SLA — a promise with a penalty. The 95%-on-time internal target is the SLO. The actual measured delivery times are the SLIs the whole thing rests on.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">On-time % (SLI)</div><div class="stat-v good" id="statSLI">100%</div></div>
+  <div class="stat"><div class="stat-k">Target (SLO)</div><div class="stat-v" id="statSLO">95%</div></div>
+  <div class="stat"><div class="stat-k">Deliveries</div><div class="stat-v accent" id="statDeliveries">0</div></div>
+</div>
+<div class="wireline" style="left:16%;width:58%;top:40%"></div>
+<div class="node abs" data-show="1" style="left:14%;top:40%"><div class="box">🍕</div><div class="lbl"><span class="k">Pizzeria</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:40%"><div class="box">🏠</div><div class="lbl"><span class="k">Customer</span></div></div>
+<div class="nlbl" style="left:50%;bottom:23%">on-time rate vs 95% SLO target</div>
+<div class="gauge"><div class="gfill" id="gfill"></div><div class="slo"></div></div>
+<div class="acts">
+  <button class="act ok" id="actRush">🛵 Add a driver</button>
+  <button class="act bad" id="actCalm">🌧️ Traffic / storm</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let lateRate=0.04, recent=[], deliveries=0, running=false;
+  const elSLI=document.getElementById('statSLI'), elD=document.getElementById('statDeliveries'), gfill=document.getElementById('gfill');
+  function deliver(){ if(document.hidden) return;
+    const late=Math.random()<lateRate; recent.push(late?0:1); if(recent.length>25) recent.shift();
+    deliveries++; elD.textContent=deliveries;
+    const onTime=Math.round(recent.reduce((a,b)=>a+b,0)/recent.length*100);
+    elSLI.textContent=onTime+'%'; elSLI.className='stat-v '+(onTime>=95?'good':onTime>=90?'warn':'bad');
+    gfill.style.width=onTime+'%'; gfill.style.background=onTime>=95?'linear-gradient(90deg,#3fcf8e,#0f8f5b)':onTime>=90?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#f08070,#d83a2e)';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=(late?900:560)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='78%'; });
+    setTimeout(()=>{ d.classList.add(late?'fail':'done'); setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function loop(){ if(!running)return; deliver(); setTimeout(loop, 760*simRate()); }
+  function addDriver(){ lateRate=Math.max(0.02,lateRate-0.06); }
+  function storm(){ lateRate=Math.min(0.5,lateRate+0.12); }
+  document.getElementById('actRush').onclick=addDriver;
+  document.getElementById('actCalm').onclick=storm;
+  for(let i=0;i<10;i++) recent.push(1);
+  running=true; loop();
+  return {deliver,addDriver,storm};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A pizzeria promises: <b>\"30 minutes or it's free.\"</b> That public promise — with a penalty — is the <b>SLA.</b>", dur:4600},
+  {cap:"To keep it, the manager sets an internal goal: <b>95% of deliveries</b> under 30 minutes. That target is the <b>SLO.</b>", dur:4600},
+  {cap:"Every single delivery's actual time is measured. Those measurements are the <b>SLIs</b> — the raw indicators.", dur:4600},
+  {cap:"Watch deliveries fly out. The gauge shows the live <b>on-time %</b> (SLI) against the 95% SLO marker.", dur:4400},
+  {cap:"On a calm day almost everything beats 30 minutes — the gauge sits comfortably <span class='hl-good'>past the SLO line.</span>", dur:4400},
+  {cap:"Then a <span class='hl-bad'>storm hits</span> — traffic everywhere, late pizzas pile up.", dur:4000, on(){SIM.storm();SIM.storm();}},
+  {cap:"On-time % <span class='hl-bad'>drops below the SLO.</span> Keep this up and you breach the SLA — refunds start flowing.", dur:4600},
+  {cap:"So you <b>add drivers</b> to recover. The SLI climbs back above target and the promise is safe again.", dur:4400, on(){SIM.addDriver();SIM.addDriver();}},
+  {cap:"Your turn 👉 <b>🌧️ Storm</b> to push SLI down, <b>🛵 Add a driver</b> to pull it back above the SLO.", dur:5200},
+  {cap:"SLI = what you measure, SLO = your target, SLA = the promise you pay for breaking. Three layers, one chain.", dur:4800}
+]});
+
+</script>
+</body></html>

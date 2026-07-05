@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layered / N-Tier Architecture · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tier{position:absolute; left:50%; transform:translateX(-50%); width:54%; height:62px; border:2px solid var(--line2); border-radius:12px; background:linear-gradient(180deg,#fff,#eef4fb);
+  display:flex; align-items:center; justify-content:center; gap:10px; font-family:var(--fmono); font-size:14px; font-weight:600; z-index:2; transition:.3s}
+.tier .ic{font-size:22px}
+.tier.hit{border-color:var(--accent); box-shadow:0 0 0 4px rgba(31,111,230,.16)}
+.tier.swap{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.scaled{position:absolute; right:14%; font-family:var(--fmono); font-size:11px; color:var(--good); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Layered / N-Tier Architecture</h1>
+  <p class="subtitle">Stack the system in layers — Presentation, Business, Data — where each layer only talks to the one directly below. The strict boundaries let you swap or scale a tier without disturbing the others above it.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Data tier</div><div class="stat-v" id="statDB">SQL</div></div>
+  <div class="stat"><div class="stat-k">Business tier</div><div class="stat-v" id="statBiz">×1</div></div>
+</div>
+<div class="tier t-0" style="top:20%"><span class="ic">🖼️</span> Presentation (UI)</div>
+<div class="tier t-1" style="top:46%"><span class="ic">⚙️</span> Business logic</div>
+<div class="tier t-2" style="top:72%"><span class="ic">🗄️</span> Data (<span id="dblbl">SQL</span>)</div>
+<div class="acts">
+  <button class="act ok" id="actSwapDB">🔄 Swap the data tier</button>
+  <button class="act" id="actScaleBiz">➕ Scale business tier</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const tiers=[0,1,2].map(i=>scene.querySelector('.t-'+i)); const ys=[24,50,76];
+  let reqs=0, db='SQL', biz=1, running=false;
+  const elR=document.getElementById('statReqs'), elDB=document.getElementById('statDB'), elBiz=document.getElementById('statBiz'), dblbl=document.getElementById('dblbl');
+  function flow(){ if(document.hidden) return;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='50%'; d.style.top='10%'; scene.appendChild(d);
+    const leg=420*simRate(); let step=0; const path=[24,50,76,50,24];
+    (function go(){ tiers[Math.min(step,2)] && tiers[step<3?step:4-step] && null;
+      const idx = step<=2? step : 4-step; if(tiers[idx]){ tiers[idx].classList.add('hit'); setTimeout(()=>tiers[idx].classList.remove('hit'),leg*0.8); }
+      d.style.transition='top '+leg+'ms'; d.style.top=path[step]+'%'; if(step>=2) d.classList.add('done');
+      step++; if(step<path.length) setTimeout(go,leg); else { reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),leg); }
+    })();
+  }
+  function swapDB(){ db = db==='SQL'?'NoSQL':'SQL'; elDB.textContent=db; dblbl.textContent=db; tiers[2].classList.add('swap'); setTimeout(()=>tiers[2].classList.remove('swap'),1000*simRate()); }
+  function scaleBiz(){ biz=Math.min(4,biz+1); elBiz.textContent='×'+biz; tiers[1].classList.add('swap'); setTimeout(()=>tiers[1].classList.remove('swap'),900*simRate()); }
+  function loop(){ if(!running)return; flow(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actSwapDB').onclick=swapDB;
+  document.getElementById('actScaleBiz').onclick=scaleBiz;
+  running=true; loop();
+  return {flow,swapDB,scaleBiz};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Layered (N-tier)</b> architecture stacks the system into horizontal layers: Presentation, Business logic, and Data.", dur:4600},
+  {cap:"A request enters at the top and flows <b>downward</b> — UI to logic to data — then the result flows back up.", dur:4600, on(){SIM.flow();}},
+  {cap:"The golden rule: each layer only talks to the one <b>directly below</b> it. No skipping, no reaching sideways.", dur:4600},
+  {cap:"Those strict boundaries are the payoff. The UI doesn't know <em>how</em> data is stored — only the data tier does.", dur:4600},
+  {cap:"So you can <b>swap the data tier</b> from SQL to NoSQL, and the presentation layer never even notices.", dur:4600, on(){SIM.swapDB();}},
+  {cap:"Likewise, scale just the <b>business tier</b> when logic is the bottleneck — independent of UI and data.", dur:4400, on(){SIM.scaleBiz();}},
+  {cap:"Each layer is testable and replaceable on its own. This clean separation is why N-tier is everywhere.", dur:4400, on(){SIM.flow();}},
+  {cap:"The trade-off: every request traverses all the layers, adding a little latency and ceremony for simple operations.", dur:4400},
+  {cap:"Your turn 👉 <b>🔄 Swap the data tier</b> and <b>➕ scale business</b> — the layers above keep working untouched.", dur:5200},
+  {cap:"Layered architecture = separation by responsibility, top to bottom. Simple, testable, and the default for many apps.", dur:4600}
+]});
+
+</script>
+</body></html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estimation — Catering a Wedding · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.calc{position:absolute; left:8%; top:24%; width:40%; font-family:var(--fmono); font-size:13px; line-height:2.0; z-index:2}
+.calc .row{display:flex; justify-content:space-between; border-bottom:1px dashed var(--line2); padding:1px 0}
+.calc .row b{color:var(--accent)}
+.calc .tot{font-weight:800; font-size:15px; border-bottom:none; margin-top:4px}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Estimation — Catering a Wedding</h1>
+  <p class="subtitle">Before booking anything, a caterer does quick mental math: guests × plates × cost, plus enough staff and tables. Back-of-the-envelope estimation gets you a usable number in seconds — no spreadsheet needed.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Guests</div><div class="stat-v accent" id="statGuests">120</div></div>
+  <div class="stat"><div class="stat-k">Plates served</div><div class="stat-v" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Est. budget</div><div class="stat-v good" id="statBudget">—</div></div>
+</div>
+<div class="calc" id="calc"></div>
+<div class="node abs" data-show="1" style="left:64%;top:40%"><div class="box">👨‍🍳</div><div class="lbl"><span class="k">Kitchen</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:40%"><div class="box">🍽️</div><div class="lbl"><span class="k">Guests</span></div></div>
+<div class="acts">
+  <button class="act" id="actMore">➕ 50 more guests</button>
+  <button class="act" id="actFewer">➖ 50 fewer guests</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let guests=120, served=0, running=false;
+  const calc=document.getElementById('calc');
+  const elG=document.getElementById('statGuests'), elS=document.getElementById('statServed'), elB=document.getElementById('statBudget');
+  function money(n){ if(n>=1000) return '$'+(n/1000).toFixed(1)+'k'; return '$'+n; }
+  function fmt(){ const plates=guests*3, food=plates*8, staff=Math.ceil(guests/25), tables=Math.ceil(guests/10), total=food+staff*120+tables*15;
+    elG.textContent=guests;
+    calc.innerHTML =
+      '<div class="row">Guests <b>'+guests+'</b></div>'+
+      '<div class="row">× 3 plates each <b>'+plates+'</b></div>'+
+      '<div class="row">× $8 / plate → food <b>'+money(food)+'</b></div>'+
+      '<div class="row">Staff (1 / 25) <b>'+staff+'</b></div>'+
+      '<div class="row">Tables (1 / 10) <b>'+tables+'</b></div>'+
+      '<div class="row tot">≈ total <b>'+money(total)+'</b></div>';
+    elB.textContent=money(total); }
+  function serve(){ if(document.hidden) return; const d=document.createElement('div'); d.className='dot'; d.style.left='64%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='88%'; });
+    setTimeout(()=>{ d.classList.add('done'); served+=3; elS.textContent=served; setTimeout(()=>d.remove(),260); }, leg); }
+  function loop(){ if(!running)return; serve(); setTimeout(loop, 900*simRate()); }
+  document.getElementById('actMore').onclick=()=>{ guests+=50; fmt(); };
+  document.getElementById('actFewer').onclick=()=>{ guests=Math.max(20,guests-50); fmt(); };
+  fmt(); running=true; loop();
+  return {fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You're catering a wedding for <b>120 guests</b>. Before booking anything, you need a rough budget — fast.", dur:4400},
+  {cap:"<b>Back-of-the-envelope estimation:</b> start with the one number that drives everything — the guest count.", dur:4400},
+  {cap:"Each guest eats about <b>3 plates</b>. So 120 × 3 ≈ <b>360 plates.</b> Watch the kitchen start serving them.", dur:4400},
+  {cap:"At ~$8 a plate, that's roughly <b>$2.9k of food.</b> One multiplication gets you in the right ballpark.", dur:4400},
+  {cap:"Add support: about <b>1 server per 25 guests</b>, <b>1 table per 10.</b> Quick division, quick numbers.", dur:4400},
+  {cap:"Sum it up and you've got a usable total <span class='hl-good'>in seconds</span> — no detailed spreadsheet required.", dur:4400},
+  {cap:"Now the bride invites <b>50 more guests.</b> Watch every number scale together.", dur:4000, on(){SIM.fmt();}},
+  {cap:"The point isn't exactness — it's the right <b>order of magnitude</b>: is this a $3k job or a $30k job?", dur:4600},
+  {cap:"Your turn 👉 <b>➕ / ➖ guests</b> and watch plates, staff, tables, and budget all recompute instantly.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Engineers do this for servers, storage, and bandwidth: a few multiplications to size a system before building it.", dur:4800}
+]});
+
+</script>
+</body></html>

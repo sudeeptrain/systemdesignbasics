@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit Breaker Pattern · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.cb{position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); font-family:var(--fmono); font-weight:700; font-size:15px; padding:8px 16px; border-radius:999px; border:2px solid var(--good); color:var(--good); background:#eafaf2; z-index:5; transition:.3s}
+.cb.open{border-color:var(--bad); color:var(--bad); background:#fdeceb}
+.cb.half{border-color:var(--warn); color:var(--warn); background:#fff5e6}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Circuit Breaker Pattern</h1>
+  <p class="subtitle">When a downstream service starts failing, hammering it makes everything worse. A circuit breaker trips OPEN after too many failures — failing fast — then later tests the waters before closing again.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Calls made</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Recent failures</div><div class="stat-v good" id="statFails">0</div></div>
+  <div class="stat"><div class="stat-k">Downstream</div><div class="stat-v good" id="statDown">Healthy</div></div>
+</div>
+<div class="cb" id="cb">● CLOSED</div>
+<div class="wireline" style="left:18%;width:20%;top:58%"></div>
+<div class="wireline" style="left:48%;width:20%;top:58%"></div>
+<div class="node abs" data-show="1" style="left:16%;top:58%"><div class="box">🖥️</div><div class="lbl"><span class="k">Caller</span></div></div>
+<div class="node abs" data-show="1" style="left:46%;top:58%"><div class="box">🔌</div><div class="lbl"><span class="k">Breaker</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:58%"><div class="box down">🗄️</div><div class="lbl"><span class="k">Downstream</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actFlake">🔥 Break downstream</button>
+  <button class="act ok" id="actHeal">🔧 Heal downstream</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const C={x:16}, B={x:46}, D={x:78};
+  let state='closed', fails=0, calls=0, healthy=true, running=false, openUntil=0;
+  const elC=document.getElementById('statCalls'), elF=document.getElementById('statFails'), elD=document.getElementById('statDown'), cb=document.getElementById('cb');
+  const downEl=scene.querySelector('.down');
+  function setState(s){ state=s; cb.className='cb'+(s==='open'?' open':s==='half'?' half':'');
+    cb.textContent=s==='open'?'✕ OPEN':s==='half'?'◐ HALF-OPEN':'● CLOSED'; }
+  function fmt(){ elF.textContent=fails; elF.className='stat-v '+(fails>=3?'bad':fails?'warn':'good');
+    elD.textContent=healthy?'Healthy':'Failing'; elD.className='stat-v '+(healthy?'good':'bad'); }
+  function dot(toX,toY,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=C.x+'%'; d.style.top='58%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; });
+    setTimeout(()=>{ if(then)then(d); else { setTimeout(()=>d.remove(),260); } }, leg); }
+  function call(){ if(document.hidden) return; calls++; elC.textContent=calls;
+    if(state==='open'){ if(performance.now()>openUntil){ setState('half'); } else { // fail fast at the breaker
+      dot(B.x,58,'fail',(d)=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),300); }); return; } }
+    // call passes through to downstream
+    dot(B.x,58,'',(d)=>{ d.style.transition='left '+380*simRate()+'ms'; d.style.left=D.x+'%';
+      setTimeout(()=>{ if(healthy){ d.classList.add('done'); fails=0; if(state==='half'){ setState('closed'); } }
+        else { d.classList.add('fail'); fails++; if(fails>=3){ setState('open'); openUntil=performance.now()+3000*simRate(); } if(state==='half'){ setState('open'); openUntil=performance.now()+3000*simRate(); } }
+        fmt(); setTimeout(()=>d.remove(),300); }, 380*simRate());
+    });
+  }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 700*simRate()); }
+  function flake(){ healthy=false; if(downEl)downEl.classList.add('crash'); fmt(); }
+  function heal(){ healthy=true; if(downEl)downEl.classList.remove('crash'); fails=0; fmt(); }
+  document.getElementById('actFlake').onclick=flake;
+  document.getElementById('actHeal').onclick=heal;
+  setState('closed'); fmt(); running=true; loop();
+  return {flake,heal,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A caller depends on a downstream service. While it's healthy, every call sails through — the breaker is <b>CLOSED.</b>", dur:4600},
+  {cap:"Now the downstream starts <span class='hl-bad'>failing.</span>", dur:3400, on(){SIM.flake();}},
+  {cap:"The first few calls fail and the breaker counts them. Retrying blindly would just pile on more load.", dur:4400},
+  {cap:"After too many failures, the breaker <b>trips OPEN</b> — and now calls <span class='hl-warn'>fail fast</span> at the breaker itself.", dur:4800},
+  {cap:"Failing fast protects everyone: the caller isn't left hanging, and the sick downstream gets room to recover.", dur:4600},
+  {cap:"After a cooldown, the breaker goes <b>HALF-OPEN</b> and lets <em>one trial call</em> through to test the waters.", dur:4600},
+  {cap:"Heal the downstream, and that trial call <span class='hl-good'>succeeds</span> — so the breaker snaps back to CLOSED.", dur:4400, on(){SIM.heal();}},
+  {cap:"Three states: CLOSED (normal), OPEN (fail fast), HALF-OPEN (testing). A simple, powerful safety valve.", dur:4400},
+  {cap:"Your turn 👉 <b>🔥 Break</b> the downstream to trip the breaker, then <b>🔧 Heal</b> it to watch it close.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Circuit breakers stop one failing dependency from cascading into a full outage. Fail fast, recover gracefully.", dur:4600}
+]});
+
+</script>
+</body></html>

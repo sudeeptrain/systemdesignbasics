@@ -1,0 +1,1267 @@
+[
+  {
+    "file": "U3-01-database-design-lifecycle-concept.html",
+    "id": "U3-01-database-design-lifecycle-concept",
+    "title": "Database Design Lifecycle",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statPasses"
+    ],
+    "buttons": [
+      "actAdvance",
+      "actRevise"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-01-database-design-lifecycle-realworld.html",
+    "id": "U3-01-database-design-lifecycle-realworld",
+    "title": "Design Lifecycle — Building a House",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statPasses"
+    ],
+    "buttons": [
+      "actAdvance",
+      "actRevise"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-02-requirement-analysis-concept.html",
+    "id": "U3-02-requirement-analysis-concept",
+    "title": "Requirement Analysis",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCaptured"
+    ],
+    "buttons": [
+      "actGather",
+      "actAdd"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-02-requirement-analysis-realworld.html",
+    "id": "U3-02-requirement-analysis-realworld",
+    "title": "Requirement Analysis — The Architect's Interview",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCaptured"
+    ],
+    "buttons": [
+      "actGather",
+      "actAdd"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-03-logical-vs-physical-design-concept.html",
+    "id": "U3-03-logical-vs-physical-design-concept",
+    "title": "Logical vs Physical Design",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-03-logical-vs-physical-design-realworld.html",
+    "id": "U3-03-logical-vs-physical-design-realworld",
+    "title": "Logical vs Physical — Recipe vs Kitchen Prep",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-04-normalization-concept.html",
+    "id": "U3-04-normalization-concept",
+    "title": "Normalization (1NF → BCNF)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statRows"
+    ],
+    "buttons": [
+      "actNormalize",
+      "actAddRow"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-04-normalization-realworld.html",
+    "id": "U3-04-normalization-realworld",
+    "title": "Normalization — A Contacts Book",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statRows"
+    ],
+    "buttons": [
+      "actNormalize",
+      "actAddRow"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-05-acid-transactions-concept.html",
+    "id": "U3-05-acid-transactions-concept",
+    "title": "ACID Transactions",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTxns"
+    ],
+    "buttons": [
+      "actCommit",
+      "actCrash"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-05-acid-transactions-realworld.html",
+    "id": "U3-05-acid-transactions-realworld",
+    "title": "ACID — Booking a Concert Ticket",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTxns"
+    ],
+    "buttons": [
+      "actCommit",
+      "actCrash"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-06-rollback-concept.html",
+    "id": "U3-06-rollback-concept",
+    "title": "Rollback",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTxns"
+    ],
+    "buttons": [
+      "actCommit",
+      "actError"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-06-rollback-realworld.html",
+    "id": "U3-06-rollback-realworld",
+    "title": "Rollback — A Cancelled Online Order",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTxns"
+    ],
+    "buttons": [
+      "actCommit",
+      "actError"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-07-indexing-concept.html",
+    "id": "U3-07-indexing-concept",
+    "title": "Indexing",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actIndex",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-07-indexing-realworld.html",
+    "id": "U3-07-indexing-realworld",
+    "title": "Indexing — A Book's Index",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actIndex",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-08-btree-search-concept.html",
+    "id": "U3-08-btree-search-concept",
+    "title": "B-Tree Search",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSearches"
+    ],
+    "buttons": [
+      "actSearch",
+      "actScan"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-08-btree-search-realworld.html",
+    "id": "U3-08-btree-search-realworld",
+    "title": "B-Tree Search — A Dictionary",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSearches"
+    ],
+    "buttons": [
+      "actSearch",
+      "actScan"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-09-sharding-concept.html",
+    "id": "U3-09-sharding-concept",
+    "title": "Sharding",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actAddShard",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-09-sharding-realworld.html",
+    "id": "U3-09-sharding-realworld",
+    "title": "Sharding — A Class Register by Surname",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actAddShard",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-10-replication-concept.html",
+    "id": "U3-10-replication-concept",
+    "title": "Replication",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actAddReplica",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-10-replication-realworld.html",
+    "id": "U3-10-replication-realworld",
+    "title": "Replication — Photocopies in Branch Offices",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actAddReplica",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-11-backup-recovery-concept.html",
+    "id": "U3-11-backup-recovery-concept",
+    "title": "Backup & Recovery",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actBackup",
+      "actRestore"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-11-backup-recovery-realworld.html",
+    "id": "U3-11-backup-recovery-realworld",
+    "title": "Backup & Recovery — Video-Game Saves",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actBackup",
+      "actRestore"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-12-sql-vs-nosql-concept.html",
+    "id": "U3-12-sql-vs-nosql-concept",
+    "title": "SQL vs NoSQL",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actMode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-12-sql-vs-nosql-realworld.html",
+    "id": "U3-12-sql-vs-nosql-realworld",
+    "title": "SQL vs NoSQL — Forms vs Sticky Notes",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actMode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-13-mongodb-documents-concept.html",
+    "id": "U3-13-mongodb-documents-concept",
+    "title": "MongoDB Documents",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDocs"
+    ],
+    "buttons": [
+      "actInsert",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-13-mongodb-documents-realworld.html",
+    "id": "U3-13-mongodb-documents-realworld",
+    "title": "MongoDB — A Scrapbook per Person",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDocs"
+    ],
+    "buttons": [
+      "actInsert",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-14-redis-cache-concept.html",
+    "id": "U3-14-redis-cache-concept",
+    "title": "Redis Cache",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actClear"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-14-redis-cache-realworld.html",
+    "id": "U3-14-redis-cache-realworld",
+    "title": "Redis Cache — Snacks on Your Desk",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actClear"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-15-cassandra-ring-concept.html",
+    "id": "U3-15-cassandra-ring-concept",
+    "title": "Cassandra Ring",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actAddNode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-15-cassandra-ring-realworld.html",
+    "id": "U3-15-cassandra-ring-realworld",
+    "title": "Cassandra Ring — Cashiers in a Circle",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actAddNode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-16-neo4j-graph-concept.html",
+    "id": "U3-16-neo4j-graph-concept",
+    "title": "Neo4j Graph Database",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statHops"
+    ],
+    "buttons": [
+      "actTraverse",
+      "actAddEdge"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-16-neo4j-graph-realworld.html",
+    "id": "U3-16-neo4j-graph-realworld",
+    "title": "Neo4j — A Family Tree",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statHops"
+    ],
+    "buttons": [
+      "actTraverse",
+      "actAddEdge"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-17-time-series-database-concept.html",
+    "id": "U3-17-time-series-database-concept",
+    "title": "Time-Series Database",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statPoints"
+    ],
+    "buttons": [
+      "actRange",
+      "actDownsample"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-17-time-series-database-realworld.html",
+    "id": "U3-17-time-series-database-realworld",
+    "title": "Time-Series — A Fitness Tracker",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statPoints"
+    ],
+    "buttons": [
+      "actRange",
+      "actDownsample"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-18-vector-database-concept.html",
+    "id": "U3-18-vector-database-concept",
+    "title": "Vector Database",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actAddVec",
+      "actSearch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-18-vector-database-realworld.html",
+    "id": "U3-18-vector-database-realworld",
+    "title": "Vector Database — Find Similar Songs",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actAddVec",
+      "actSearch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-19-denormalization-concept.html",
+    "id": "U3-19-denormalization-concept",
+    "title": "Denormalization",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actMode",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-19-denormalization-realworld.html",
+    "id": "U3-19-denormalization-realworld",
+    "title": "Denormalization — A Meal Kit",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actMode",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-20-partitioning-concept.html",
+    "id": "U3-20-partitioning-concept",
+    "title": "Partitioning (Horizontal vs Vertical)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actMode",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-20-partitioning-realworld.html",
+    "id": "U3-20-partitioning-realworld",
+    "title": "Partitioning — A Split Phone Book",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actMode",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-21-leader-follower-multi-leader-concept.html",
+    "id": "U3-21-leader-follower-multi-leader-concept",
+    "title": "Leader–Follower vs Multi-Leader",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actMode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-21-leader-follower-multi-leader-realworld.html",
+    "id": "U3-21-leader-follower-multi-leader-realworld",
+    "title": "Leader–Follower vs Multi-Leader — Head Chefs",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actMode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-22-read-replicas-connection-pooling-concept.html",
+    "id": "U3-22-read-replicas-connection-pooling-concept",
+    "title": "Read Replicas & Connection Pooling",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actPool",
+      "actBurst"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-22-read-replicas-connection-pooling-realworld.html",
+    "id": "U3-22-read-replicas-connection-pooling-realworld",
+    "title": "Connection Pooling — A Taxi Rank",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actPool",
+      "actBurst"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-23-write-ahead-log-concept.html",
+    "id": "U3-23-write-ahead-log-concept",
+    "title": "Write-Ahead Log (WAL)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actCrash"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-23-write-ahead-log-realworld.html",
+    "id": "U3-23-write-ahead-log-realworld",
+    "title": "WAL — A Kitchen Order Ticket",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actCrash"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-24-lsm-vs-btree-concept.html",
+    "id": "U3-24-lsm-vs-btree-concept",
+    "title": "LSM-Tree vs B-Tree Storage",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actMode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-24-lsm-vs-btree-realworld.html",
+    "id": "U3-24-lsm-vs-btree-realworld",
+    "title": "LSM vs B-Tree — File Now or Sort Later",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actMode",
+      "actWrite"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-25-bloom-filters-concept.html",
+    "id": "U3-25-bloom-filters-concept",
+    "title": "Bloom Filters",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statChecks"
+    ],
+    "buttons": [
+      "actAdd",
+      "actCheck"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-25-bloom-filters-realworld.html",
+    "id": "U3-25-bloom-filters-realworld",
+    "title": "Bloom Filters — The Bouncer's Memory",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statChecks"
+    ],
+    "buttons": [
+      "actAdd",
+      "actCheck"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-26-materialized-views-concept.html",
+    "id": "U3-26-materialized-views-concept",
+    "title": "Materialized Views",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actMode",
+      "actRefresh"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-26-materialized-views-realworld.html",
+    "id": "U3-26-materialized-views-realworld",
+    "title": "Materialized Views — Meal Prep",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReads"
+    ],
+    "buttons": [
+      "actMode",
+      "actRefresh"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-27-oltp-vs-olap-concept.html",
+    "id": "U3-27-oltp-vs-olap-concept",
+    "title": "OLTP vs OLAP",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actMode",
+      "actRun"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-27-oltp-vs-olap-realworld.html",
+    "id": "U3-27-oltp-vs-olap-realworld",
+    "title": "OLTP vs OLAP — Till vs Accountant",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actMode",
+      "actRun"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-28-change-data-capture-concept.html",
+    "id": "U3-28-change-data-capture-concept",
+    "title": "Change Data Capture (CDC)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statChanges"
+    ],
+    "buttons": [
+      "actChange",
+      "actAddConsumer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-28-change-data-capture-realworld.html",
+    "id": "U3-28-change-data-capture-realworld",
+    "title": "CDC — The School Announcement",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statChanges"
+    ],
+    "buttons": [
+      "actChange",
+      "actAddConsumer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-29-object-blob-storage-concept.html",
+    "id": "U3-29-object-blob-storage-concept",
+    "title": "Object / Blob Storage (S3-style)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statObjects"
+    ],
+    "buttons": [
+      "actUpload",
+      "actGet"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-29-object-blob-storage-realworld.html",
+    "id": "U3-29-object-blob-storage-realworld",
+    "title": "Blob Storage — A Self-Storage Warehouse",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statObjects"
+    ],
+    "buttons": [
+      "actUpload",
+      "actGet"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-30-warehouse-lake-lakehouse-concept.html",
+    "id": "U3-30-warehouse-lake-lakehouse-concept",
+    "title": "Warehouse vs Lake vs Lakehouse",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statItems"
+    ],
+    "buttons": [
+      "actMode",
+      "actIngest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-30-warehouse-lake-lakehouse-realworld.html",
+    "id": "U3-30-warehouse-lake-lakehouse-realworld",
+    "title": "Warehouse / Lake / Lakehouse — Pantry vs Garage",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statItems"
+    ],
+    "buttons": [
+      "actMode",
+      "actIngest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-31-columnar-databases-concept.html",
+    "id": "U3-31-columnar-databases-concept",
+    "title": "Columnar Databases",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statScans"
+    ],
+    "buttons": [
+      "actMode",
+      "actScan"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U3-31-columnar-databases-realworld.html",
+    "id": "U3-31-columnar-databases-realworld",
+    "title": "Columnar — Totalling a Ledger Column",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statScans"
+    ],
+    "buttons": [
+      "actMode",
+      "actScan"
+    ],
+    "steps": 11
+  },
+  {
+    "file": "U3-32-inverted-index-concept.html",
+    "id": "U3-32-inverted-index-concept",
+    "title": "Inverted Index & Search Engines",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSearches"
+    ],
+    "buttons": [
+      "actIndex",
+      "actSearch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-32-inverted-index-realworld.html",
+    "id": "U3-32-inverted-index-realworld",
+    "title": "Inverted Index — Recipes by Ingredient",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSearches"
+    ],
+    "buttons": [
+      "actIndex",
+      "actSearch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-33-isolation-levels-concept.html",
+    "id": "U3-33-isolation-levels-concept",
+    "title": "Database Isolation Levels",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statRuns"
+    ],
+    "buttons": [
+      "actLevel",
+      "actRun"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-33-isolation-levels-realworld.html",
+    "id": "U3-33-isolation-levels-realworld",
+    "title": "Isolation Levels — A Shared Note",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statRuns"
+    ],
+    "buttons": [
+      "actLevel",
+      "actRun"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-34-optimistic-vs-pessimistic-locking-concept.html",
+    "id": "U3-34-optimistic-vs-pessimistic-locking-concept",
+    "title": "Optimistic vs Pessimistic Locking",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statEdits"
+    ],
+    "buttons": [
+      "actMode",
+      "actEdit"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-34-optimistic-vs-pessimistic-locking-realworld.html",
+    "id": "U3-34-optimistic-vs-pessimistic-locking-realworld",
+    "title": "Locking — Library Hold vs Wiki Edit",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statEdits"
+    ],
+    "buttons": [
+      "actMode",
+      "actEdit"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-35-vector-search-ann-concept.html",
+    "id": "U3-35-vector-search-ann-concept",
+    "title": "Vector Search & ANN (HNSW)",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statSearches"
+    ],
+    "buttons": [
+      "actMode",
+      "actSearch"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U3-35-vector-search-ann-realworld.html",
+    "id": "U3-35-vector-search-ann-realworld",
+    "title": "Vector Search / ANN — Find a Friend in a Crowd",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statSearches"
+    ],
+    "buttons": [
+      "actMode",
+      "actSearch"
+    ],
+    "steps": 10
+  }
+]

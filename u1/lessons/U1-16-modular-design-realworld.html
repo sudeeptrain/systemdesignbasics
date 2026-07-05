@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modular Design — LEGO vs Glue · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.swapping .box{border-color:var(--warn) !important; animation:sd-pulse 1s ease-in-out infinite}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Modular Design — LEGO vs Glue</h1>
+  <p class="subtitle">A LEGO car lets you snap off the wheels and click on new ones in seconds. A model glued together forces you to smash and rebuild the whole thing to change one part. That's modular vs monolithic.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Parts swapped</div><div class="stat-v accent" id="statSwaps">0</div></div>
+  <div class="stat"><div class="stat-k">Build</div><div class="stat-v good" id="statMode">LEGO (modular)</div></div>
+  <div class="stat"><div class="stat-k">Rebuild needed</div><div class="stat-v good" id="statDown">none</div></div>
+</div>
+<div class="wireline" style="left:16%;width:20%;top:55%"></div>
+<div class="node abs gw" data-show="1" style="left:40%;top:55%"><div class="box mono">🧱</div><div class="lbl"><span class="k" id="gwlbl">LEGO base</span></div></div>
+<div class="node abs modn m-0" data-show="1" style="left:72%;top:24%"><div class="box">🛞</div><div class="lbl"><span class="k">Wheels</span></div></div>
+<div class="node abs modn m-1" data-show="1" style="left:72%;top:55%"><div class="box">🚗</div><div class="lbl"><span class="k">Body</span></div></div>
+<div class="node abs modn m-2" data-show="1" style="left:72%;top:86%"><div class="box">🔝</div><div class="lbl"><span class="k">Roof</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actSwap">🔧 Swap a part</button>
+  <button class="act" id="actMode">🔀 LEGO / Glued</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let mode='lego', swaps=0, downUntil=0, running=false;
+  const elS=document.getElementById('statSwaps'), elM=document.getElementById('statMode'), elDown=document.getElementById('statDown');
+  const gw=scene.querySelector('.gw'), modEls=[0,1,2].map(i=>scene.querySelector('.m-'+i)), gwlbl=document.getElementById('gwlbl');
+  function setMode(m){ mode=m; elM.textContent=(m==='lego'?'LEGO (modular)':'Glued (monolith)'); elM.className='stat-v '+(m==='lego'?'good':'warn');
+    modEls.forEach(e=>e.style.display = m==='lego'?'':'none'); gwlbl.textContent = m==='lego'?'LEGO base':'Glued model'; }
+  function fmt(){ const down=performance.now()<downUntil; elDown.textContent=down?'WHOLE REBUILD':'none'; elDown.className='stat-v '+(down?'bad':'good'); }
+  function swap(){
+    if(document.hidden) return;
+    swaps++; elS.textContent=swaps;
+    if(mode==='lego'){ const e=modEls[Math.floor(Math.random()*3)]; e.classList.add('swapping'); setTimeout(()=>e.classList.remove('swapping'),1100*simRate()); elDown.textContent='none'; elDown.className='stat-v good'; }
+    else { gw.classList.add('swapping'); downUntil=performance.now()+1500*simRate(); fmt(); setTimeout(()=>{ gw.classList.remove('swapping'); fmt(); },1500*simRate()); }
+  }
+  function play(){ if(document.hidden) return; const down=performance.now()<downUntil;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='55%'; scene.appendChild(d);
+    const leg=460*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ if(down){ d.classList.add('fail'); setTimeout(()=>d.remove(),340); return; }
+      const t = mode==='lego'? [{x:72,y:24},{x:72,y:55},{x:72,y:86}][Math.floor(Math.random()*3)] : {x:40,y:55};
+      d.style.left=t.x+'%'; d.style.top=t.y+'%'; setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),250); }, mode==='lego'?leg:120); }, leg);
+  }
+  function loop(){ if(!running)return; play(); setTimeout(loop, 460*simRate()); }
+  document.getElementById('actSwap').onclick=swap;
+  document.getElementById('actMode').onclick=()=>setMode(mode==='lego'?'glued':'lego');
+  setMode('lego'); fmt(); running=true; loop();
+  return {swap,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A <b>LEGO car</b> is built from snap-together parts — wheels, body, roof — each a self-contained module.", dur:4400},
+  {cap:"Want different wheels? <b>Snap off</b> the old, <b>click on</b> the new. Only that part changes; the rest stays put.", dur:4600, on(){SIM.swap();}},
+  {cap:"Seconds of work, zero risk to the body or roof. That's the power of <b>modular design.</b>", dur:4200},
+  {cap:"You can swap wheels ten times and never once disturb the body. Independent parts, independent changes.", dur:4400},
+  {cap:"Now imagine the same car <b>glued solid</b> — one inseparable lump.", dur:4000, on(){SIM.setMode('glued');}},
+  {cap:"To change one wheel you must <span class='hl-bad'>smash and rebuild the whole model</span> — and it's unusable while you do.", dur:4600, on(){SIM.swap();}},
+  {cap:"One tiny change forced a full, risky rebuild. That's the pain of a <b>monolith.</b>", dur:4200},
+  {cap:"Software modules work like LEGO bricks: clean connectors let you replace one piece without touching the others.", dur:4400},
+  {cap:"Your turn 👉 flip <b>🔀 LEGO / Glued</b> and hit <b>🔧 Swap a part</b> to feel the difference in effort and risk.", dur:5200, on(){SIM.setMode('lego');}},
+  {cap:"Build with bricks, not glue: modular parts you can swap freely beat one block you must rebuild whole.", dur:4400}
+]});
+
+</script>
+</body></html>

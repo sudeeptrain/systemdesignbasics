@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warehouse / Lake / Lakehouse — Pantry vs Garage · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.repo{position:absolute; left:60%; top:20%; width:34%; min-height:60%; border:2px solid var(--line2); border-radius:14px; z-index:2; padding:10px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; transition:.3s}
+.item{font-family:var(--fmono); font-size:10px; padding:5px 7px; border-radius:6px; text-align:center; transition:.3s; opacity:0; transform:scale(.85)}
+.item.on{opacity:1; transform:none}
+.item.struct{background:#eaf2fe; border:1.5px solid var(--accent); color:var(--accent-d)}
+.item.raw{background:#fff7e9; border:1.5px solid var(--warn); color:var(--warn)}
+.rhdr{position:absolute; left:60%; top:12%; font-family:var(--fmono); font-size:12px; font-weight:700; z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Warehouse / Lake / Lakehouse — Pantry vs Garage</h1>
+  <p class="subtitle">A pantry holds food, labelled and shelved — tidy and instantly usable, but everything must be sorted before it goes in. A garage takes anything, dumped as-is — flexible, but it can become a junk pile. A well-organized garage gives you both: store anything, yet still find it fast.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Items stored</div><div class="stat-v accent" id="statItems">0</div></div>
+  <div class="stat"><div class="stat-k">Store</div><div class="stat-v" id="statMode">Pantry</div></div>
+  <div class="stat"><div class="stat-k">Sorting</div><div class="stat-v good" id="statSchema">before storing</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">📥</div><div class="lbl"><span class="k">Incoming<br>stuff</span></div></div>
+<div class="rhdr" id="rhdr">🥫 Pantry</div>
+<div class="repo" id="repo"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Pantry / Garage / Organized garage</button>
+  <button class="act ok" id="actIngest">📥 Store something</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const repo=document.getElementById('repo'), rhdr=document.getElementById('rhdr');
+  const elI=document.getElementById('statItems'), elM=document.getElementById('statMode'), elS=document.getElementById('statSchema');
+  const modes=['warehouse','lake','lakehouse'];
+  let mode=0, items=0, running=false;
+  function clean(){ repo.innerHTML=''; }
+  function ingest(){ if(document.hidden) return; if(repo.children.length>=8) clean();
+    items++; elI.textContent=items; const m=modes[mode];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); const el=document.createElement('div');
+      if(m==='warehouse'){ el.className='item struct'; el.innerHTML='🥫<br>labelled'; }
+      else if(m==='lake'){ const raw=[['📦','box'],['🧴','bottle'],['🚲','bike'],['🪑','chair']][items%4]; el.className='item raw'; el.innerHTML=raw[0]+'<br>'+raw[1]; }
+      else { el.className='item '+(items%2?'struct':'raw'); el.innerHTML=(items%2?'🏷️<br>shelved':'📦<br>raw'); }
+      repo.appendChild(el); requestAnimationFrame(()=>el.classList.add('on')); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function setMode(i){ mode=i; clean(); const m=modes[i];
+    elM.textContent=m==='warehouse'?'Pantry':m==='lake'?'Garage':'Organized garage'; elM.className='stat-v '+(m==='warehouse'?'accent':m==='lake'?'warn':'good');
+    elS.textContent=m==='warehouse'?'before storing':m==='lake'?'whenever you need it':'flexible + shelved';
+    rhdr.textContent=m==='warehouse'?'🥫 Pantry':m==='lake'?'🚪 Garage':'🗄️ Organized garage';
+    repo.style.borderColor=m==='warehouse'?'var(--accent)':m==='lake'?'var(--warn)':'var(--good)'; }
+  function loop(){ if(!running)return; ingest(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode((mode+1)%3);
+  document.getElementById('actIngest').onclick=ingest;
+  setMode(0); running=true; loop();
+  return {ingest,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Where do you keep all your stuff? Three storage styles — and they map exactly to how companies store data for analytics.", dur:4600},
+  {cap:"A <b>pantry</b> holds food, each item labelled and shelved. Tidy and instantly usable — that's a <b>data warehouse.</b>", dur:4800, on(){SIM.ingest();}},
+  {cap:"But everything must be <b>sorted before it goes in</b>. Awkward-shaped or unknown items don't fit the neat shelves easily.", dur:4600, on(){SIM.ingest();}},
+  {cap:"A <b>garage</b> is the opposite: dump <b>anything in, as-is</b> — boxes, bikes, bottles. That's a <b>data lake.</b>", dur:4600, on(){SIM.setMode(1);}},
+  {cap:"Wonderfully flexible — store now, figure it out later. But a neglected garage becomes a <b>junk pile</b> nobody can navigate.", dur:4800, on(){SIM.ingest();}},
+  {cap:"You waste hours hunting for that one tool. A lake with no structure or rules becomes a 'data swamp.'", dur:4400, on(){SIM.ingest();}},
+  {cap:"An <b>organized garage</b> gives you both: store anything you like, but with shelving, labels, and a system. That's a <b>lakehouse.</b>", dur:4800, on(){SIM.setMode(2);}},
+  {cap:"Cheap, take-anything storage <em>plus</em> the tidy structure that makes it fast and trustworthy to use. The modern best-of-both.", dur:4600, on(){SIM.ingest();}},
+  {cap:"Your turn 👉 cycle <b>🔀 Pantry / Garage / Organized garage</b> and <b>📥 store</b> things to compare the three.", dur:5200, on(){SIM.setMode(0);}},
+  {cap:"Warehouse = tidy pantry; lake = take-anything garage; lakehouse = organized garage. Choose by how varied your data is.", dur:4800}
+]});
+
+</script>
+</body></html>

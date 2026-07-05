@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vector Database · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.space{position:absolute; left:38%; top:14%; width:56%; height:74%; border:1.5px solid var(--line2); border-radius:12px; background:#fbfdff;
+  background-image:linear-gradient(rgba(70,110,160,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(70,110,160,.06) 1px,transparent 1px); background-size:24px 24px; z-index:1}
+.vec{position:absolute; width:16px; height:16px; border-radius:50%; transform:translate(-50%,-50%); background:var(--accent); border:1.5px solid #1657bf; z-index:3; transition:.3s}
+.vec.q{background:var(--pink); border-color:#a01f63; width:20px; height:20px; box-shadow:0 0 0 4px rgba(204,47,134,.18)}
+.vec.near{background:var(--good); border-color:#0c7a4d; box-shadow:0 0 0 4px rgba(18,163,104,.2)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Vector Database</h1>
+  <p class="subtitle">AI models turn text, images, or audio into vectors — long lists of numbers where similar things sit close together. A vector database stores these points and answers "what's most similar to this?" by finding the nearest neighbours in that space.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Similarity searches</div><div class="stat-v accent" id="statQueries">0</div></div>
+  <div class="stat"><div class="stat-k">Vectors stored</div><div class="stat-v" id="statVecs">0</div></div>
+  <div class="stat"><div class="stat-k">Find</div><div class="stat-v good" id="statFind">nearest neighbours</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:50%"><div class="box sm">🧠</div><div class="lbl"><span class="k">Embed<br>model</span></div></div>
+<div class="space" id="space"></div>
+<div class="acts">
+  <button class="act ok" id="actAddVec">➕ Embed an item</button>
+  <button class="act" id="actSearch">🔎 Find similar</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const space=document.getElementById('space');
+  let vecs=[], queries=0, running=false;
+  const elQ=document.getElementById('statQueries'), elV=document.getElementById('statVecs');
+  function rnd(){ return 42+Math.random()*48; } // % within scene where space sits (38-94 x, 14-88 y)
+  function rndY(){ return 20+Math.random()*60; }
+  function add(){ if(document.hidden) return; if(vecs.length>=12) return;
+    const x=rnd(), y=rndY();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=x+'%'; d.style.top=y+'%'; });
+    setTimeout(()=>{ d.remove(); const v=document.createElement('div'); v.className='vec'; v.style.left=x+'%'; v.style.top=y+'%'; space.parentElement.appendChild(v); vecs.push({x,y,el:v}); elV.textContent=vecs.length; }, leg);
+  }
+  function search(){ if(document.hidden||vecs.length<3) return; queries++; elQ.textContent=queries;
+    vecs.forEach(v=>v.el.classList.remove('near','q'));
+    const qx=rnd(), qy=rndY();
+    const q=document.createElement('div'); q.className='vec q'; q.style.left='16%'; q.style.top='50%'; scene.appendChild(q);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ q.style.transition='left '+leg+'ms, top '+leg+'ms'; q.style.left=qx+'%'; q.style.top=qy+'%'; });
+    setTimeout(()=>{ // find 3 nearest
+      const sorted=vecs.map(v=>({v,d:Math.hypot(v.x-qx,v.y-qy)})).sort((a,b)=>a.d-b.d).slice(0,3);
+      sorted.forEach((s,k)=>setTimeout(()=>{ s.v.el.classList.add('near'); const ln=document.createElement('div'); ln.className='dot done'; ln.style.left=qx+'%'; ln.style.top=qy+'%'; scene.appendChild(ln); requestAnimationFrame(()=>{ln.style.transition='left .4s, top .4s'; ln.style.left=s.v.x+'%'; ln.style.top=s.v.y+'%';}); setTimeout(()=>ln.remove(),460); }, k*240*simRate()));
+      setTimeout(()=>q.remove(), 1600*simRate());
+    }, leg);
+  }
+  function loop(){ if(!running)return; if(vecs.length<8) add(); else search(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actAddVec').onclick=add;
+  document.getElementById('actSearch').onclick=search;
+  running=true; loop();
+  return {add,search};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"AI models turn text, images, or audio into <b>vectors</b> — long lists of numbers that capture <em>meaning.</em>", dur:4600},
+  {cap:"The magic property: similar things produce <b>nearby vectors.</b> \"Puppy\" and \"dog\" land close; \"dog\" and \"tax form\" land far apart.", dur:4800},
+  {cap:"A <b>vector database</b> stores these vectors as points in a high-dimensional space. Embed an item, drop a point.", dur:4600, on(){SIM.add();}},
+  {cap:"Add many items and you get a cloud of points where <b>distance means similarity.</b>", dur:4400, on(){SIM.add();}},
+  {cap:"Now the key operation: take a <b>query</b> vector (the pink point) and ask, \"what's closest to this?\"", dur:4600, on(){SIM.search();}},
+  {cap:"The database returns the <b>nearest neighbours</b> — the most semantically similar items, by distance in the space.", dur:4600, on(){SIM.search();}},
+  {cap:"This powers semantic search, recommendations, image search, and the <b>retrieval</b> step in RAG for AI assistants.", dur:4600},
+  {cap:"It's a totally different query from a database WHERE clause — you're searching by <em>meaning</em>, not exact values.", dur:4400},
+  {cap:"Your turn 👉 <b>➕ Embed items</b> to fill the space, then <b>🔎 find similar</b> to a query point.", dur:5200},
+  {cap:"Vector databases make 'find things like this' a first-class query — the storage layer behind modern AI and semantic search.", dur:4800}
+]});
+
+</script>
+</body></html>

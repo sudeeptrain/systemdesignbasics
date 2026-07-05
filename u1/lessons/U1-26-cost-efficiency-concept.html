@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cost / Cost-Efficiency · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.loadmeter{position:absolute; left:50%; bottom:9%; transform:translateX(-50%); width:62%; height:16px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.loadfill{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#7fb0ef,#1f6fe6); transition:width .4s, background .3s}
+.loadlbl{position:absolute; left:50%; bottom:3%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--faint)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Cost / Cost-Efficiency</h1>
+  <p class="subtitle">Every idle server still bills you. Cost-efficiency is meeting the load with just enough capacity — not the fanciest possible build. Over-provision and you burn money; under-provision and you drop requests.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Monthly bill</div><div class="stat-v" id="statBill">$—</div></div>
+  <div class="stat"><div class="stat-k">Utilization</div><div class="stat-v good" id="statUtil">—%</div><div class="stat-sub">load ÷ capacity</div></div>
+  <div class="stat"><div class="stat-k">Servers</div><div class="stat-v accent" id="statSrv">2</div></div>
+</div>
+<div class="nlbl" style="left:12%;top:16%">Incoming load</div>
+<div id="servers"></div>
+<div class="nlbl" style="left:66%;top:14%">Servers (you pay per box)</div>
+<div class="loadmeter"><div class="loadfill" id="loadfill"></div></div>
+<div class="loadlbl">live load vs capacity</div>
+<div class="acts">
+  <button class="act ok" id="actAdd">➕ Add server</button>
+  <button class="act bad" id="actRemove">➖ Remove server</button>
+  <button class="act" id="actAuto">🤖 Autoscale ON/OFF</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CAP=40, COST=200, U={x:12,y:46};
+  let servers=2, t=0, auto=false, running=false, rr=0;
+  const wrap=document.getElementById('servers');
+  const elBill=document.getElementById('statBill'), elUtil=document.getElementById('statUtil'), elSrv=document.getElementById('statSrv'), loadfill=document.getElementById('loadfill');
+  let nodes=[];
+  function load(){ return Math.round(70 + 55*Math.sin(t/6) + 20*Math.sin(t/2.3)); } // fluctuating 0..~145
+  function ys(n){const a=[],top=24,bot=84;for(let i=0;i<n;i++)a.push(n===1?54:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(servers); nodes=[]; for(let i=0;i<servers;i++){ const el=document.createElement('div'); el.className='wbox'; el.textContent='🖥️'; el.style.left='66%'; el.style.top=y[i]+'%'; wrap.appendChild(el); nodes.push({y:y[i],el}); } }
+  function fmt(){ const L=Math.max(0,load()), cap=servers*CAP, util=cap?L/cap*100:0;
+    elSrv.textContent=servers; elBill.textContent='$'+(servers*COST).toLocaleString();
+    elUtil.textContent=Math.round(util)+'%'; elUtil.className='stat-v '+(util>100?'bad':util>40?'good':'warn');
+    loadfill.style.width=Math.min(100,util)+'%'; loadfill.style.background=util>100?'linear-gradient(90deg,#f08070,#d83a2e)':util>40?'linear-gradient(90deg,#3fcf8e,#0f8f5b)':'linear-gradient(90deg,#9cc2f5,#5e93e0)';
+    nodes.forEach(n=>n.el.classList.toggle('busy',util>100)); }
+  function spawn(){ if(document.hidden||!nodes.length) return; const over=load()>servers*CAP;
+    const s=nodes[rr++%nodes.length]; const d=document.createElement('div'); d.className='dot'; d.style.left=U.x+'%'; d.style.top=U.y+'%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='66%'; d.style.top=s.y+'%'; });
+    setTimeout(()=>{ if(over && Math.random()<0.5){ d.classList.add('fail'); } else d.classList.add('done'); setTimeout(()=>d.remove(),300); }, leg); }
+  function tick(){ t++; if(auto){ const target=Math.max(1,Math.ceil(load()/(CAP*0.7))); servers=Math.max(1,Math.min(6,target)); render(); } fmt(); }
+  function loop(){ if(!running)return; spawn(); setTimeout(loop, 420*simRate()); }
+  document.getElementById('actAdd').onclick=()=>{ if(servers<6){servers++; render(); fmt();} };
+  document.getElementById('actRemove').onclick=()=>{ if(servers>1){servers--; render(); fmt();} };
+  document.getElementById('actAuto').onclick=()=>{ auto=!auto; document.getElementById('actAuto').textContent=auto?'🤖 Autoscale ON':'🤖 Autoscale OFF'; };
+  render(); fmt(); running=true; loop(); setInterval(tick,900);
+  return {tick};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"In the cloud you rent capacity by the hour. Every server on this screen is money leaving your account — busy or not.", dur:4600},
+  {cap:"<b>Utilization</b> = load ÷ capacity. It's the single number that tells you if you're spending wisely.", dur:4400},
+  {cap:"<b>Over-provision:</b> pile on servers and utilization drops low. Requests fly through — but the bill is fat and mostly idle.", dur:4600, on(){SIM.tick();}},
+  {cap:"<b>Under-provision:</b> strip servers away and utilization shoots past 100%. Cheap bill, but now you're <span class='hl-bad'>dropping requests.</span>", dur:4600},
+  {cap:"Neither extreme is right. The sweet spot keeps utilization comfortably high <em>without</em> overload — around 60–70%.", dur:4400},
+  {cap:"The load isn't constant, though — it rises and falls all day. A fixed server count is wrong most of the time.", dur:4400},
+  {cap:"<b>Autoscale</b> fixes that: add servers when load climbs, remove them when it falls. You pay for what you use.", dur:4600, on(){SIM.tick();}},
+  {cap:"Now utilization hovers in the green and the bill tracks demand instead of your worst-case guess.", dur:4400},
+  {cap:"Your turn 👉 <b>➕ / ➖ servers</b> manually, or flip <b>🤖 Autoscale</b> and watch cost follow load.", dur:5400},
+  {cap:"Cost-efficiency = meet the requirement at the lowest sensible spend. Right-size, autoscale, and stop paying for idle.", dur:4800}
+]});
+
+</script>
+</body></html>

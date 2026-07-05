@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Availability · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.wireline{position:absolute; height:3px; background:var(--line2); transform:translateY(-50%); z-index:1; transition:.3s; border-radius:3px}
+.wireline.dead{background:#e9c4c4; opacity:.7}
+.nines{position:absolute; right:14px; bottom:14px; z-index:7; font-family:var(--fmono); font-size:11px; background:#ffffffee; border:1px solid var(--line2); border-radius:12px; padding:10px 12px; opacity:0; transform:translateY(6px); transition:.4s; min-width:190px; box-shadow:0 8px 18px -10px rgba(40,70,120,.4)}
+.nines.vis{opacity:1; transform:none}
+.nines div{display:flex; justify-content:space-between; gap:14px; padding:2px 0; color:var(--muted)}
+.nines div b{color:var(--ink); font-weight:500}
+.nines .row-hi b{color:var(--good)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Availability</h1>
+  <p class="subtitle">The share of time your system is actually up and answering. Watch real traffic flow, a server die, and the load balancer keep the lights on — while the uptime meter ticks live.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Availability</div><div class="stat-v good" id="statUp">100.00%</div></div>
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v" id="statServed">0</div></div>
+  <div class="stat"><div class="stat-k">Requests failed</div><div class="stat-v" id="statFailed">0</div></div>
+</div>
+<div class="wireline" id="wSrc" style="left:11%;width:21%;top:55%"></div>
+<div class="wireline" id="wA" style="left:38%;width:26%;top:33%;transform:rotate(-13deg);transform-origin:left center"></div>
+<div class="wireline" id="wB" style="left:38%;width:26%;top:55%"></div>
+<div class="wireline" id="wC" style="left:38%;width:26%;top:55%;transform:rotate(13deg);transform-origin:left center"></div>
+<div class="node abs" data-show="1" style="left:10%;top:55%"><div class="box">🌐</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs" data-show="1" data-active="2" style="left:35%;top:55%"><div class="box">⚖️</div><div class="lbl"><span class="k">Load Balancer</span></div></div>
+<div class="node abs" data-show="1" style="left:70%;top:26%"><div class="box srvbox srv-A">🖥️</div><div class="lbl"><span class="k">Server A</span></div></div>
+<div class="node abs" data-show="1" style="left:70%;top:55%"><div class="box srvbox srv-B">🖥️</div><div class="lbl"><span class="k">Server B</span></div></div>
+<div class="node abs" data-show="1" style="left:70%;top:84%"><div class="box srvbox srv-C">🖥️</div><div class="lbl"><span class="k">Server C</span></div></div>
+<div class="nines" id="nines">
+  <div class="row"><span>99%</span><b>3.65 days/yr down</b></div>
+  <div class="row"><span>99.9%</span><b>8.8 hours/yr</b></div>
+  <div class="row row-hi"><span>99.99%</span><b>52 min/yr</b></div>
+  <div class="row row-hi"><span>99.999%</span><b>5 min/yr</b></div>
+</div>
+<div class="acts">
+  <button class="act bad" id="actKill">💥 Kill a server</button>
+  <button class="act ok" id="actRevive">♻ Revive all</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const SRC={x:10,y:55}, LB={x:35,y:55}, TRAY={x:92,y:92};
+  const servers=[{id:'A',x:70,y:26},{id:'B',x:70,y:55},{id:'C',x:70,y:84}].map(s=>({...s,el:scene.querySelector('.srv-'+s.id),alive:true}));
+  let served=0, failed=0, rr=0, running=false;
+  const elUp=document.getElementById('statUp'), elS=document.getElementById('statServed'), elF=document.getElementById('statFailed');
+  function fmt(){const tot=served+failed,av=tot?served/tot:1;elUp.textContent=(av*100).toFixed(2)+'%';elUp.className='stat-v '+(av>=0.999?'good':av>=0.99?'warn':'bad');elS.textContent=served;elF.textContent=failed;}
+  function healthy(){return servers.filter(s=>s.alive);}
+  function mkDot(){const d=document.createElement('div');d.className='dot';d.style.left=SRC.x+'%';d.style.top=SRC.y+'%';scene.appendChild(d);return d;}
+  function move(d,x,y,ms){d.style.transition='left '+ms+'ms cubic-bezier(.45,0,.25,1), top '+ms+'ms cubic-bezier(.45,0,.25,1), background .3s';d.style.left=x+'%';d.style.top=y+'%';}
+  function spawn(){
+    if(document.hidden) return;
+    const leg=700*simRate();
+    const d=mkDot();
+    requestAnimationFrame(()=>move(d,LB.x,LB.y,leg));
+    setTimeout(()=>{
+      const hs=healthy();
+      if(!hs.length){move(d,TRAY.x,TRAY.y,leg);d.classList.add('fail');failed++;fmt();setTimeout(()=>d.remove(),650);return;}
+      const s=hs[rr++%hs.length];
+      move(d,s.x,s.y,leg);
+      setTimeout(()=>{
+        if(!s.alive){move(d,TRAY.x,TRAY.y,leg);d.classList.add('fail');failed++;fmt();setTimeout(()=>d.remove(),650);return;}
+        served++;d.classList.add('done');fmt();s.el.classList.add('ping');setTimeout(()=>s.el.classList.remove('ping'),350);setTimeout(()=>d.remove(),250);
+      },leg);
+    },leg);
+  }
+  function loop(){ if(running){ spawn(); setTimeout(loop, 540*simRate()); } }
+  function kill(id){const pool=healthy();if(!pool.length)return;const s=id?servers.find(x=>x.id===id&&x.alive):pool[Math.floor(Math.random()*pool.length)];if(!s)return;s.alive=false;s.el.classList.add('crash');const w=document.getElementById('w'+s.id);if(w)w.classList.add('dead');}
+  function reviveAll(){servers.forEach(s=>{s.alive=true;s.el.classList.remove('crash');const w=document.getElementById('w'+s.id);if(w)w.classList.remove('dead');});}
+  function start(){if(!running){running=true;loop();}}
+  document.getElementById('actKill').onclick=()=>kill();
+  document.getElementById('actRevive').onclick=()=>reviveAll();
+  fmt(); start();
+  return {kill,reviveAll};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Availability</b> is the slice of time your system is actually up and answering. It's measured in <b>nines</b> — and yes, that meter up top is live.", dur:4200},
+  {cap:"Real traffic pours in from users. A <b>load balancer</b> spreads each request across a pool of identical servers.", dur:3800},
+  {cap:"Every request that lands on a healthy server is <span class='hl-good'>served</span> — watch the counter climb while availability holds at 100%.", dur:3800},
+  {cap:"How many nines do you need? Each extra nine slashes the downtime you're allowed all year.", dur:4200, on(){document.getElementById('nines').classList.add('vis');}},
+  {cap:"The trick behind high availability is <b>redundancy</b>: several servers do the same job, so one dying isn't fatal.", dur:3800},
+  {cap:"Watch — <span class='hl-bad'>Server B crashes.</span> A few requests already in flight to it are lost.", dur:3600, on(){SIM.kill('B');}},
+  {cap:"A <b>health check</b> misses B's heartbeat and marks it dead. Its wire goes dark.", dur:3600},
+  {cap:"The balancer instantly <span class='hl-good'>reroutes</span> B's share onto A and C. The failed count barely moved — uptime stays high.", dur:4200},
+  {cap:"Contrast a <span class='hl-bad'>single server</span> with no backup: when it dies, that's 100% downtime — a single point of failure.", dur:4200},
+  {cap:"Your turn 👉 hit <b>💥 Kill a server</b> and watch failover happen. Hit <b>♻ Revive all</b> to heal the pool.", dur:5200},
+  {cap:"Healed — B rejoins the pool and traffic rebalances. <span class='hl-good'>That's high availability:</span> expect failure, and design so users never feel it.", dur:4600, on(){SIM.reviveAll();}}
+]});
+
+</script>
+</body></html>

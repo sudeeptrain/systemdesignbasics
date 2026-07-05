@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRDTs (Conflict-Free Replicated Data Types) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rep3{position:absolute; width:150px; transform:translateX(-50%); border:2px solid var(--line2); border-radius:12px; background:#fff; z-index:2; text-align:center; padding:10px; transition:.3s}
+.rep3 .nm{font-family:var(--fmono); font-size:12px; color:var(--faint)}
+.rep3 .set{font-size:26px; margin-top:6px; min-height:34px; letter-spacing:2px}
+.rep3.merged{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.link3{position:absolute; left:35%; width:30%; top:42%; height:3px; background:var(--line2); border-radius:3px; z-index:1; transition:.3s}
+.link3.cut{background:repeating-linear-gradient(90deg,var(--warn) 0 8px,transparent 8px 16px)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">CRDTs (Conflict-Free Replicated Data Types)</h1>
+  <p class="subtitle">CRDTs let replicas edit the same data independently — even offline — and merge automatically with no conflicts. The merge rule is built into the data type, so two divergent copies always converge to the same value.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Edits made</div><div class="stat-v accent" id="statOps">0</div></div>
+  <div class="stat"><div class="stat-k">Replicas agree?</div><div class="stat-v warn" id="statAgree">diverged</div></div>
+  <div class="stat"><div class="stat-k">Merge</div><div class="stat-v good" id="statMerge">automatic ✓</div></div>
+</div>
+<div class="rep3 r-a" style="left:24%;top:42%"><div class="nm">📱 Replica A (offline)</div><div class="set" id="setA">🍎</div></div>
+<div class="rep3 r-b" style="left:76%;top:42%"><div class="nm">💻 Replica B (offline)</div><div class="set" id="setB">🍎</div></div>
+<div class="link3" id="link3"></div>
+<div class="nlbl" style="left:50%;top:74%">shared set · merge = union</div>
+<div class="acts">
+  <button class="act" id="actDiverge">✏️ Edit both (while apart)</button>
+  <button class="act ok" id="actMerge">🔗 Reconnect & merge</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let A=['🍎'], B=['🍎'], ops=0, running=false, di=0;
+  const setA=document.getElementById('setA'), setB=document.getElementById('setB'), elO=document.getElementById('statOps'), elAg=document.getElementById('statAgree');
+  const repA=scene.querySelector('.r-a'), repB=scene.querySelector('.r-b'), link=document.getElementById('link3');
+  const poolA=['🍌','🍇','🍑'], poolB=['🥝','🍒','🍍'];
+  function render(){ setA.textContent=A.join(''); setB.textContent=B.join(''); const same=A.slice().sort().join('')===B.slice().sort().join('');
+    elAg.textContent=same?'converged ✓':'diverged'; elAg.className='stat-v '+(same?'good':'warn');
+    repA.classList.toggle('merged',same); repB.classList.toggle('merged',same); }
+  function diverge(){ if(document.hidden) return; link.classList.add('cut');
+    const a=poolA[di%poolA.length], b=poolB[di%poolB.length]; di++;
+    if(!A.includes(a)) A.push(a); if(!B.includes(b)) B.push(b); ops+=2; elO.textContent=ops; render(); }
+  function merge(){ link.classList.remove('cut'); const union=Array.from(new Set([...A,...B]));
+    // animate a couple dots across the link
+    [0,1].forEach(k=>{ const d=document.createElement('div'); d.className='dot done'; d.style.left=(k?76:24)+'%'; d.style.top='42%'; scene.appendChild(d);
+      requestAnimationFrame(()=>{ d.style.transition='left .5s'; d.style.left='50%'; }); setTimeout(()=>d.remove(),600*simRate()); });
+    setTimeout(()=>{ A=union.slice(); B=union.slice(); render(); }, 520*simRate());
+  }
+  function loop(){ if(!running)return; diverge(); setTimeout(()=>merge(), 1700*simRate()); setTimeout(loop, 4200*simRate()); }
+  document.getElementById('actDiverge').onclick=diverge;
+  document.getElementById('actMerge').onclick=merge;
+  render(); running=true; loop();
+  return {diverge,merge,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two devices share the same data — a set of items — and both are <b>offline</b>, unable to talk to each other.", dur:4600},
+  {cap:"Normally, letting both edit freely is asking for a <b>conflict</b> when they reconnect. CRDTs make conflicts impossible.", dur:4800},
+  {cap:"Edit each replica independently: A adds one item, B adds a different one — <span class='hl-warn'>they diverge.</span>", dur:4600, on(){SIM.diverge();}},
+  {cap:"Right now the two copies disagree. With ordinary data, merging would force a painful 'who wins?' decision.", dur:4600, on(){SIM.diverge();}},
+  {cap:"But a CRDT has its <b>merge rule baked in.</b> For a set, merge = <b>union</b> — just combine everything.", dur:4600},
+  {cap:"Reconnect and <b>merge</b>: both replicas converge to the union of all edits, <span class='hl-good'>automatically.</span>", dur:4800, on(){SIM.merge();}},
+  {cap:"No central coordinator, no locks, no conflict prompts. The math guarantees both sides reach the <em>same</em> state.", dur:4600},
+  {cap:"Counters (sum the increments), sets (union), text (special sequence types) — each has a conflict-free merge.", dur:4600, on(){SIM.diverge();}},
+  {cap:"Your turn 👉 <b>✏️ Edit both</b> replicas apart, then <b>🔗 Reconnect &amp; merge</b> to watch them converge cleanly.", dur:5200, on(){SIM.merge();}},
+  {cap:"CRDTs power offline-first apps and collaborative editors: edit anywhere, merge anytime, always converge — conflict-free.", dur:4800}
+]});
+
+</script>
+</body></html>

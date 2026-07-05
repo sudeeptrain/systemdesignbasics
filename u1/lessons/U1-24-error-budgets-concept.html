@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error Budgets · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gauge{position:absolute; left:50%; top:80%; transform:translateX(-50%); width:60%; height:26px; border:1.5px solid var(--line2); border-radius:14px; background:#eef5fd; overflow:hidden; z-index:2}
+.gfill{position:absolute; left:0; top:0; bottom:0; width:100%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .5s, background .3s}
+.glabel{position:absolute; left:50%; top:88%; transform:translateX(-50%); font-family:var(--fmono); font-size:11px; color:var(--faint)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Error Budgets</h1>
+  <p class="subtitle">An error budget is the failure your SLO allows. Spend it on bold releases — but when it runs out, you freeze and stabilise. It turns reliability into a number teams can spend.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Error budget</div><div class="stat-v good" id="statBudget">100%</div></div>
+  <div class="stat"><div class="stat-k">Releases shipped</div><div class="stat-v accent" id="statReleases">0</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statStatus">Shipping</div></div>
+</div>
+<div class="wireline" style="left:16%;width:56%;top:45%"></div>
+<div class="node abs" data-show="1" style="left:14%;top:45%"><div class="box">🧑‍💻</div><div class="lbl"><span class="k">Dev</span></div></div>
+<div class="node abs" data-show="1" style="left:80%;top:45%"><div class="box prod">🚀</div><div class="lbl"><span class="k">Production</span></div></div>
+<div class="gauge"><div class="gfill" id="gfill"></div></div>
+<div class="glabel">monthly error budget</div>
+<div class="acts">
+  <button class="act ok" id="actShip">📦 Ship release</button>
+  <button class="act bad" id="actRisky">🎲 Ship risky release</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let budget=100, releases=0, running=false;
+  const elB=document.getElementById('statBudget'), elR=document.getElementById('statReleases'), elS=document.getElementById('statStatus');
+  const gfill=document.getElementById('gfill'), prod=scene.querySelector('.prod');
+  function fmt(){ budget=Math.max(0,Math.min(100,budget)); elB.textContent=Math.round(budget)+'%';
+    gfill.style.width=budget+'%'; elB.className='stat-v '+(budget>40?'good':budget>0?'warn':'bad');
+    gfill.style.background=budget>40?'linear-gradient(90deg,#3fcf8e,#0f8f5b)':budget>0?'linear-gradient(90deg,#f0c050,#b9730b)':'linear-gradient(90deg,#f08070,#d83a2e)';
+    const frozen=budget<=0; elS.textContent=frozen?'FROZEN':'Shipping'; elS.className='stat-v '+(frozen?'bad':'good'); }
+  function ship(risky){
+    if(document.hidden) return;
+    releases++; elR.textContent=releases;
+    const frozen=budget<=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='45%'; scene.appendChild(d);
+    const leg=620*simRate();
+    if(frozen){ requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; }); setTimeout(()=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),500); },leg); return; }
+    const incident = risky && Math.random()<0.8;
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left='80%'; });
+    setTimeout(()=>{ if(incident){ d.classList.add('fail'); budget-=26; if(prod){prod.classList.add('crash'); setTimeout(()=>prod.classList.remove('crash'),800);} }
+      else { d.classList.add('done'); budget-=risky?4:1; } fmt(); setTimeout(()=>d.remove(),500); }, leg);
+  }
+  function refill(){ if(budget<100){ budget=Math.min(100,budget+3); fmt(); } }
+  document.getElementById('actShip').onclick=()=>ship(false);
+  document.getElementById('actRisky').onclick=()=>ship(true);
+  function loop(){ if(!running)return; ship(Math.random()<0.25); setTimeout(loop, 2400*simRate()); }
+  fmt(); running=true; loop(); setInterval(refill,2200);
+  return {ship};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"If your SLO is 99.9% uptime, you're <em>allowed</em> 0.1% downtime. That tiny slice is your <b>error budget</b>.", dur:4400},
+  {cap:"Think of it as a monthly allowance for failure — shown in the gauge below. It starts full.", dur:4200},
+  {cap:"Every <b>release</b> you ship to production spends a little of it. Clean releases cost almost nothing.", dur:4200, on(){SIM.ship(false);}},
+  {cap:"Here's the point: a healthy budget means you can take <b>risks</b> — ship bold features fast.", dur:4200},
+  {cap:"Ship a <span class='hl-bad'>risky release</span> that causes an incident, and it takes a big bite out of the budget.", dur:4400, on(){SIM.ship(true);}},
+  {cap:"A couple more incidents and the gauge runs low. The team is <span class='hl-warn'>at risk.</span>", dur:4200, on(){SIM.ship(true);}},
+  {cap:"Budget hits zero → the policy kicks in: <span class='hl-bad'>FREEZE.</span> No new features until reliability recovers.", dur:4600, on(){SIM.ship(true);}},
+  {cap:"This is the magic: it turns a fuzzy argument (\"are we reliable enough?\") into a number both devs and ops can spend.", dur:4600},
+  {cap:"Your turn 👉 <b>📦 Ship</b> clean releases, then <b>🎲 Ship risky</b> ones and watch the budget drain to a freeze.", dur:5400},
+  {cap:"Error budgets balance <b>speed vs stability</b>: spend it on innovation while it lasts, protect reliability when it's gone.", dur:4800}
+]});
+
+</script>
+</body></html>

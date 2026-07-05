@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Availability vs Consistency — Two Tills · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.till{position:absolute; width:120px; height:80px; border:2px solid var(--line2); border-radius:12px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; z-index:2}
+.till .ic{font-size:24px} .till .nm{font-family:var(--fmono); font-size:11px; color:var(--faint)}
+.till.frozen{border-color:var(--muted); background:#eef1f5; opacity:.7}
+.line{position:absolute; left:31%; width:38%; top:46%; height:4px; background:var(--good); border-radius:3px; z-index:1; transition:.3s}
+.line.cut{background:repeating-linear-gradient(90deg,var(--bad) 0 8px,transparent 8px 16px)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Availability vs Consistency — Two Tills</h1>
+  <p class="subtitle">Two shop tills share live prices over a phone line. When the line drops, you face the classic choice: keep both tills selling (maybe at a stale price), or freeze one to guarantee correct prices.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Sales rung up</div><div class="stat-v accent" id="statSales">0</div></div>
+  <div class="stat"><div class="stat-k">Phone line</div><div class="stat-v good" id="statLink">Connected</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v good" id="statMode">Available (AP)</div></div>
+</div>
+<div class="till t-a" style="left:15%;top:34%"><div class="ic">🧾</div><div class="nm">Till A</div></div>
+<div class="till t-b" style="left:63%;top:34%"><div class="ic">🧾</div><div class="nm">Till B</div></div>
+<div class="line" id="line"></div>
+<div class="acts">
+  <button class="act bad" id="actCut">✂️ Cut the phone line</button>
+  <button class="act" id="actMode">🔀 Available / Consistent</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let link=true, mode='AP', sales=0, running=false, flip=0;
+  const tillA=scene.querySelector('.t-a'), tillB=scene.querySelector('.t-b'), lineEl=document.getElementById('line');
+  const elS=document.getElementById('statSales'), elL=document.getElementById('statLink'), elM=document.getElementById('statMode');
+  function fmt(){ elL.textContent=link?'Connected':'CUT'; elL.className='stat-v '+(link?'good':'bad'); lineEl.classList.toggle('cut',!link);
+    elM.textContent=mode==='AP'?'Available (AP)':'Consistent (CP)'; elM.className='stat-v '+(mode==='AP'?'good':'warn');
+    tillB.classList.toggle('frozen', !link && mode==='CP'); }
+  function serve(){ if(document.hidden) return;
+    const atB = (flip++ %2)===1;
+    const till = atB?tillB:tillA, tx=atB?63+9:15+9;
+    // CP + partition + till B → refuse
+    if(!link && mode==='CP' && atB){ const d=document.createElement('div'); d.className='dot fail'; d.style.left=tx+'%'; d.style.top='42%'; scene.appendChild(d); setTimeout(()=>d.remove(),420*simRate()); return; }
+    const d=document.createElement('div'); d.className='dot'; d.style.left=tx+'%'; d.style.top='18%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='top '+leg+'ms'; d.style.top='42%'; });
+    setTimeout(()=>{ const stale = !link && mode==='AP' && atB;
+      if(stale){ d.classList.add('fail'); } else { d.classList.add('done'); }
+      sales++; elS.textContent=sales; setTimeout(()=>d.remove(),300);
+    }, leg);
+  }
+  function loop(){ if(!running)return; serve(); setTimeout(loop, 1100*simRate()); }
+  function cut(){ link=!link; fmt(); }
+  function toggleMode(){ mode=mode==='AP'?'CP':'AP'; fmt(); }
+  document.getElementById('actCut').onclick=cut;
+  document.getElementById('actMode').onclick=toggleMode;
+  fmt(); running=true; loop();
+  return {cut,toggleMode,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two tills in a shop share <b>live prices</b> over a phone line. Both ring up sales, always in agreement.", dur:4400},
+  {cap:"While the line is <b>connected</b>, everything is both available <em>and</em> consistent. No conflict yet.", dur:4200},
+  {cap:"Then the <span class='hl-bad'>phone line is cut</span> — the tills can no longer sync. This is a network partition.", dur:4400, on(){SIM.cut();}},
+  {cap:"Now you must choose. In <b>Available (AP)</b> mode, both tills keep selling no matter what.", dur:4400},
+  {cap:"But till B can't see a price update, so it may sell at a <span class='hl-warn'>stale price</span> — available, not consistent.", dur:4600},
+  {cap:"Switch to <b>Consistent (CP)</b> mode instead.", dur:3600, on(){SIM.toggleMode();}},
+  {cap:"Now till B <b>freezes</b> rather than risk a wrong price. Always correct — but one till is <span class='hl-warn'>unavailable.</span>", dur:4600},
+  {cap:"That's the CAP trade-off: during a partition you get <b>either</b> availability <b>or</b> consistency, not both.", dur:4600, on(){SIM.fmt();}},
+  {cap:"Your turn 👉 <b>✂️ Cut the line</b> and flip <b>🔀 AP / CP</b> to feel stale-but-open vs correct-but-closed.", dur:5200},
+  {cap:"Choose per feature: a shopping cart picks availability; a bank balance picks consistency. Same partition, different call.", dur:4800}
+]});
+
+</script>
+</body></html>

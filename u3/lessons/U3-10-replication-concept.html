@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Replication · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.repl.dead .box{border-color:var(--bad); opacity:.5}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Replication</h1>
+  <p class="subtitle">Replication keeps copies of your data on several machines. Writes go to a leader and stream to follower replicas; reads spread across all the copies. If a replica dies, the others keep serving — more read capacity and built-in redundancy.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Operations</div><div class="stat-v accent" id="statOps">0</div></div>
+  <div class="stat"><div class="stat-k">Live replicas</div><div class="stat-v good" id="statLive">2</div></div>
+  <div class="stat"><div class="stat-k">Read capacity</div><div class="stat-v" id="statCap">×2</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🖥️</div><div class="lbl"><span class="k">App</span></div></div>
+<div class="node abs" data-show="1" style="left:40%;top:50%"><div class="box ldr">👑</div><div class="lbl"><span class="k">Leader</span></div></div>
+<div id="replicas"></div>
+<div class="acts">
+  <button class="act ok" id="actAddReplica">➕ Add a read replica</button>
+  <button class="act bad" id="actKill">💥 Kill a replica</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const wrap=document.getElementById('replicas');
+  const L={x:40,y:50};
+  let replicas=[{alive:true},{alive:true}], ops=0, running=false, rr=0;
+  const elO=document.getElementById('statOps'), elLive=document.getElementById('statLive'), elCap=document.getElementById('statCap');
+  function live(){ return replicas.filter(r=>r.alive); }
+  function ys(n){const a=[],top=20,bot=84;for(let i=0;i<n;i++)a.push(n===1?50:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(replicas.length);
+    replicas.forEach((r,i)=>{ r.y=y[i]; const el=document.createElement('div'); el.className='node abs vis repl rp-'+i+(r.alive?'':' dead'); el.style.left='74%'; el.style.top=y[i]+'%';
+      el.innerHTML='<div class="box sm">🗄️</div><div class="lbl"><span class="k">Replica '+(i+1)+'</span></div>'; wrap.appendChild(el); r.el=el; });
+    const n=live().length; elLive.textContent=n; elLive.className='stat-v '+(n?'good':'bad'); elCap.textContent='×'+n; }
+  function writeOp(){ // app → leader → fan to live replicas
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.remove(); live().forEach(r=>{ const f=document.createElement('div'); f.className='dot'; f.style.left='40%'; f.style.top='50%'; scene.appendChild(f);
+      requestAnimationFrame(()=>{ f.style.transition='left '+leg+'ms, top '+leg+'ms'; f.style.left='74%'; f.style.top=r.y+'%'; });
+      setTimeout(()=>{ f.classList.add('done'); if(r.el){r.el.classList.add('active'); setTimeout(()=>r.el.classList.remove('active'),200);} setTimeout(()=>f.remove(),240); }, leg); }); }, leg);
+  }
+  function readOp(){ const lv=live(); if(!lv.length){ const d=document.createElement('div'); d.className='dot fail'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d); setTimeout(()=>d.remove(),360); return; }
+    const r=lv[rr++%lv.length]; const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='74%'; d.style.top=r.y+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='13%'; d.style.top='50%'; setTimeout(()=>d.remove(),leg); }, leg);
+  }
+  function op(){ if(document.hidden) return; ops++; elO.textContent=ops; (Math.random()<0.4?writeOp:readOp)(); }
+  function addReplica(){ if(replicas.length<5){ replicas.push({alive:true}); render(); } }
+  function kill(){ const r=live()[0]; if(r){ r.alive=false; if(r.el)r.el.classList.add('dead');
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='74%'; d.style.top=r.y+'%'; scene.appendChild(d); setTimeout(()=>d.remove(),480*simRate());
+    setTimeout(()=>{ r.alive=true; render(); }, 4200*simRate()); render(); } }
+  function loop(){ if(!running)return; op(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actAddReplica').onclick=addReplica;
+  document.getElementById('actKill').onclick=kill;
+  render(); running=true; loop();
+  return {op,addReplica,kill,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Replication</b> keeps copies of your database on multiple machines. One <b>leader</b> plus one or more <b>followers.</b>", dur:4600},
+  {cap:"All <b>writes</b> go to the leader, which then streams every change out to the follower replicas.", dur:4600, on(){SIM.op();}},
+  {cap:"<b>Reads</b>, though, can be served by <em>any</em> replica — so read traffic spreads across all the copies.", dur:4600, on(){SIM.op();}},
+  {cap:"Most apps read far more than they write, so this is huge: <b>add read replicas</b> to multiply read capacity.", dur:4600, on(){SIM.addReplica();}},
+  {cap:"Each new replica is another copy serving reads <em>and</em> another backup of your data. Capacity and safety together.", dur:4400, on(){SIM.op();}},
+  {cap:"Now the real test — a replica <span class='hl-bad'>dies.</span>", dur:3600, on(){SIM.kill();}},
+  {cap:"Reads simply <span class='hl-good'>reroute</span> to the surviving replicas. No data lost, no outage — that's the redundancy payoff.", dur:4600, on(){SIM.op();}},
+  {cap:"The catch is <b>replication lag</b>: a follower can be a beat behind the leader, so a fresh write may not show on it yet.", dur:4600},
+  {cap:"Your turn 👉 <b>➕ Add replicas</b> to grow read capacity and <b>💥 kill one</b> to watch reads survive.", dur:5200, on(){SIM.render();}},
+  {cap:"Replication buys read scalability and high availability — at the cost of eventual consistency between leader and followers.", dur:4800}
+]});
+
+</script>
+</body></html>

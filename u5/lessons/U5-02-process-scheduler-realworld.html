@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Process Scheduler — Calling the Next Patient · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.qcol{position:absolute; left:34%; top:22%; width:48px; height:56%; transform:translateX(-50%); border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:1}
+.qfill{position:absolute; left:0; right:0; bottom:0; height:0%; background:linear-gradient(180deg,#6fb1ff,#1f6fe6); transition:height .3s}
+.cpu .box{transition:.3s}
+.cpu.busy .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 5 · Operating Systems &amp; Caching</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Process Scheduler — Calling the Next Patient</h1>
+  <p class="subtitle">A clinic has one doctor and a full waiting room. The receptionist decides who's seen next and in what order — keeping the doctor busy while making sure nobody waits all day. A process scheduler does exactly this for ready processes and the CPU.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Patients seen</div><div class="stat-v accent" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-k">Waiting room</div><div class="stat-v" id="statQ">0</div></div>
+  <div class="stat"><div class="stat-k">Doctor</div><div class="stat-v" id="statCpu">free</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box sm">🚪</div><div class="lbl"><span class="k">Arrivals</span></div></div>
+<div class="qcol"><div class="qfill" id="qfill"></div></div>
+<div class="nlbl" style="left:34%;top:82%">waiting room</div>
+<div class="node abs cpu" data-show="1" style="left:64%;top:50%"><div class="box">🩺</div><div class="lbl"><span class="k">Doctor</span></div></div>
+<div class="node abs" data-show="1" style="left:88%;top:50%"><div class="box sm">🏁</div><div class="lbl"><span class="k">Done</span></div></div>
+<div class="acts">
+  <button class="act" id="actArrive">➕ A patient arrives</button>
+  <button class="act ok" id="actDispatch">▶️ Call the next patient</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let q=0, done=0, busy=false, running=false;
+  const elD=document.getElementById('statDone'), elQ=document.getElementById('statQ'), elCpu=document.getElementById('statCpu'), qfill=document.getElementById('qfill');
+  const cpu=scene.querySelector('.cpu');
+  function setQ(v){ q=Math.max(0,v); elQ.textContent=q; qfill.style.height=Math.min(100,q*12)+'%'; elQ.className='stat-v '+(q>6?'warn':''); }
+  function arrive(){ if(document.hidden) return; setQ(q+1);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='34%'; }); setTimeout(()=>d.remove(),leg+80);
+  }
+  function dispatch(){ if(busy||q<=0){ if(q<=0){ if(cpu){cpu.classList.add('busy'); setTimeout(()=>cpu.classList.remove('busy'),200);} return; } }
+    busy=true; setQ(q-1); elCpu.textContent='with patient'; elCpu.className='stat-v good';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='34%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='64%'; });
+    setTimeout(()=>{ if(cpu)cpu.classList.add('busy');
+      setTimeout(()=>{ if(cpu)cpu.classList.remove('busy'); d.classList.add('done'); d.style.left='88%'; setTimeout(()=>d.remove(),leg);
+        done++; elD.textContent=done; elCpu.textContent='free'; elCpu.className='stat-v'; busy=false; }, 500*simRate());
+    }, leg);
+  }
+  function loop(){ if(!running)return; if(Math.random()<0.6) arrive(); if(!busy) dispatch(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actArrive').onclick=arrive;
+  document.getElementById('actDispatch').onclick=dispatch;
+  setQ(0); running=true; loop();
+  return {arrive,dispatch};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A clinic has one doctor but a room full of patients. Someone must decide <b>who's seen next</b> — the <b>receptionist.</b> That's the scheduler's job.", dur:4800},
+  {cap:"Patients arrive and take a seat in the <b>waiting room</b>, all hoping to be called. Watch them fill in.", dur:4400, on(){SIM.arrive();}},
+  {cap:"The receptionist <b>calls the next patient</b> through to the doctor, who actually does the work.", dur:4400, on(){SIM.dispatch();}},
+  {cap:"As soon as one appointment ends, the receptionist calls the <b>next</b> — the doctor is never left sitting idle while people wait.", dur:4600, on(){SIM.dispatch();}},
+  {cap:"The order matters. <b>First-come-first-served</b> is fair-seeming, but one very long appointment makes everyone behind it wait.", dur:4600, on(){SIM.arrive();}},
+  {cap:"Seeing <b>quick cases first</b> clears the room faster; giving everyone a fixed <b>time slot</b> keeps it fair. Different policies, different goals.", dur:4800},
+  {cap:"The receptionist juggles two aims: <b>get lots of people seen</b> (throughput) and <b>make sure nobody waits all day</b> (fairness).", dur:4600, on(){SIM.dispatch();}},
+  {cap:"If patients arrive faster than the doctor can see them, the <b>waiting room fills up</b> — a sign the clinic is overloaded.", dur:4400, on(){SIM.arrive();}},
+  {cap:"Your turn 👉 let <b>➕ patients arrive</b> and <b>▶️ call the next</b> one to watch the waiting room drain.", dur:5200},
+  {cap:"The scheduler is the clinic receptionist: call from the waiting room, see them, repeat — balancing how many are seen against nobody waiting forever.", dur:4800}
+]});
+
+</script>
+</body></html>

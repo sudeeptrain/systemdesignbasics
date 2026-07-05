@@ -1,0 +1,221 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Design — Unit 5 Animations</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css">
+<style>.hero{max-width:1000px;margin:0 auto 18px;text-align:center}.grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);box-shadow:0 10px 24px -18px rgba(40,70,120,.5);transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}.card .t{font-family:var(--fdisp);font-weight:600;font-size:16px}
+.card .badge{font-family:var(--fmono);font-size:10.5px;color:var(--faint)}.card.real{border-left:4px solid var(--pink)}.card.concept{border-left:4px solid var(--accent)}
+body{display:block;padding:26px 26px 48px}</style>
+<style>.mnav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;align-items:center;padding:9px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 15px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:6px 14px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a class="cur">▶ Animated Lessons</a><a href="study.html">📊 Study Slides</a></div><div style="width:100%"><div class="hero"><h1 class="title" style="font-size:30px">System Design · Unit 5 — Operating Systems &amp; Caching</h1>
+<p class="subtitle" style="margin:0 auto">70 interactive, projector-ready lessons. Each plays in any browser — press ▶ and use the in-scene buttons.</p></div>
+<div class="grid"><a class="card concept" href="lessons/U5-01-process-lifecycle-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Process Lifecycle</span></a>
+<a class="card real" href="lessons/U5-01-process-lifecycle-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Process Lifecycle — An Employee's Workday</span></a>
+<a class="card concept" href="lessons/U5-02-process-scheduler-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Process Scheduler</span></a>
+<a class="card real" href="lessons/U5-02-process-scheduler-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Process Scheduler — Calling the Next Patient</span></a>
+<a class="card concept" href="lessons/U5-03-preemptive-vs-nonpreemptive-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Preemptive vs Non-Preemptive Scheduling</span></a>
+<a class="card real" href="lessons/U5-03-preemptive-vs-nonpreemptive-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Preemptive vs Non-Preemptive — The Supermarket Checkout</span></a>
+<a class="card concept" href="lessons/U5-04-race-condition-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Race Condition</span></a>
+<a class="card real" href="lessons/U5-04-race-condition-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Race Condition — Two Waiters, One Order Pad</span></a>
+<a class="card concept" href="lessons/U5-05-mutex-lock-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Mutex / Lock</span></a>
+<a class="card real" href="lessons/U5-05-mutex-lock-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Mutex / Lock — The Single Restroom Key</span></a>
+<a class="card concept" href="lessons/U5-06-memory-allocation-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Memory Allocation</span></a>
+<a class="card real" href="lessons/U5-06-memory-allocation-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Memory Allocation — A Parking Lot</span></a>
+<a class="card concept" href="lessons/U5-07-paging-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Paging</span></a>
+<a class="card real" href="lessons/U5-07-paging-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Paging — A Coat-Check with Numbered Cubbies</span></a>
+<a class="card concept" href="lessons/U5-08-segmentation-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Segmentation</span></a>
+<a class="card real" href="lessons/U5-08-segmentation-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Segmentation — A House Divided by Room</span></a>
+<a class="card concept" href="lessons/U5-09-virtual-memory-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Virtual Memory</span></a>
+<a class="card real" href="lessons/U5-09-virtual-memory-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Virtual Memory — A Small Desk, a Big Filing Cabinet</span></a>
+<a class="card concept" href="lessons/U5-10-page-fault-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Page Fault</span></a>
+<a class="card real" href="lessons/U5-10-page-fault-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Page Fault — Fetching a File from the Archive</span></a>
+<a class="card concept" href="lessons/U5-11-thrashing-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Thrashing</span></a>
+<a class="card real" href="lessons/U5-11-thrashing-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Thrashing — A Desk Too Small for the Job</span></a>
+<a class="card concept" href="lessons/U5-12-fifo-page-replacement-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">FIFO Page Replacement</span></a>
+<a class="card real" href="lessons/U5-12-fifo-page-replacement-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">FIFO Replacement — Clearing the Fridge by Date</span></a>
+<a class="card concept" href="lessons/U5-13-lru-page-replacement-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">LRU Page Replacement</span></a>
+<a class="card real" href="lessons/U5-13-lru-page-replacement-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">LRU Replacement — Clearing Out the Wardrobe</span></a>
+<a class="card concept" href="lessons/U5-14-lfu-page-replacement-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">LFU Page Replacement</span></a>
+<a class="card real" href="lessons/U5-14-lfu-page-replacement-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">LFU Replacement — Keep the Tools You Reach For Most</span></a>
+<a class="card concept" href="lessons/U5-15-cache-hierarchy-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache Hierarchy (L1 / L2 / L3 / RAM)</span></a>
+<a class="card real" href="lessons/U5-15-cache-hierarchy-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache Hierarchy — From Countertop to Basement</span></a>
+<a class="card concept" href="lessons/U5-16-cache-hit-vs-miss-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache Hit vs Cache Miss</span></a>
+<a class="card real" href="lessons/U5-16-cache-hit-vs-miss-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache Hit vs Miss — The Fridge or the Shop</span></a>
+<a class="card concept" href="lessons/U5-17-cache-aside-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache-Aside Pattern</span></a>
+<a class="card real" href="lessons/U5-17-cache-aside-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache-Aside — Your Personal Address Book</span></a>
+<a class="card concept" href="lessons/U5-18-write-through-cache-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Write-Through Cache</span></a>
+<a class="card real" href="lessons/U5-18-write-through-cache-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Write-Through — Planner and Shared Calendar Together</span></a>
+<a class="card concept" href="lessons/U5-19-write-back-cache-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Write-Back Cache</span></a>
+<a class="card real" href="lessons/U5-19-write-back-cache-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Write-Back — Sticky Notes Now, Calendar Later</span></a>
+<a class="card concept" href="lessons/U5-20-distributed-cache-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Distributed Cache (Redis Cluster)</span></a>
+<a class="card real" href="lessons/U5-20-distributed-cache-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Distributed Cache — Books Split Across Library Branches</span></a>
+<a class="card concept" href="lessons/U5-21-cdn-cache-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CDN Cache</span></a>
+<a class="card real" href="lessons/U5-21-cdn-cache-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CDN Cache — The Corner Newsstand</span></a>
+<a class="card concept" href="lessons/U5-22-cache-invalidation-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache Invalidation</span></a>
+<a class="card real" href="lessons/U5-22-cache-invalidation-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache Invalidation — The Outdated Printed Menu</span></a>
+<a class="card concept" href="lessons/U5-23-cache-eviction-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache Eviction (LRU / LFU)</span></a>
+<a class="card real" href="lessons/U5-23-cache-eviction-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache Eviction — Making Room on a Full Shelf</span></a>
+<a class="card concept" href="lessons/U5-24-threads-vs-processes-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Threads vs Processes</span></a>
+<a class="card real" href="lessons/U5-24-threads-vs-processes-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Threads vs Processes — Shared Office vs Separate Companies</span></a>
+<a class="card concept" href="lessons/U5-25-concurrency-vs-parallelism-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Concurrency vs Parallelism</span></a>
+<a class="card real" href="lessons/U5-25-concurrency-vs-parallelism-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Concurrency vs Parallelism — One Chef or Many</span></a>
+<a class="card concept" href="lessons/U5-26-context-switching-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Context Switching</span></a>
+<a class="card real" href="lessons/U5-26-context-switching-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Context Switching — Swapping Between Craft Projects</span></a>
+<a class="card concept" href="lessons/U5-27-deadlock-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Deadlock</span></a>
+<a class="card real" href="lessons/U5-27-deadlock-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Deadlock — Two Cars at a One-Lane Bridge</span></a>
+<a class="card concept" href="lessons/U5-28-semaphore-mutex-spinlock-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Semaphore vs Mutex vs Spinlock</span></a>
+<a class="card real" href="lessons/U5-28-semaphore-mutex-spinlock-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Semaphore vs Mutex vs Spinlock — Getting a Desk</span></a>
+<a class="card concept" href="lessons/U5-29-ipc-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Inter-Process Communication (IPC)</span></a>
+<a class="card real" href="lessons/U5-29-ipc-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">IPC — How Two Neighbors Share</span></a>
+<a class="card concept" href="lessons/U5-30-copy-on-write-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Copy-on-Write</span></a>
+<a class="card real" href="lessons/U5-30-copy-on-write-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Copy-on-Write — Photocopy Only What You'll Mark Up</span></a>
+<a class="card concept" href="lessons/U5-31-tlb-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">TLB (Translation Lookaside Buffer)</span></a>
+<a class="card real" href="lessons/U5-31-tlb-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">TLB — A Speed-Dial Note vs the Phone Book</span></a>
+<a class="card concept" href="lessons/U5-32-read-through-write-around-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Read-Through &amp; Write-Around Cache</span></a>
+<a class="card real" href="lessons/U5-32-read-through-write-around-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Read-Through &amp; Write-Around — A Librarian Who Fetches</span></a>
+<a class="card concept" href="lessons/U5-33-cache-stampede-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache Stampede / Thundering Herd</span></a>
+<a class="card real" href="lessons/U5-33-cache-stampede-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache Stampede — The Rush When the Sign Comes Down</span></a>
+<a class="card concept" href="lessons/U5-34-cache-warming-negative-caching-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cache Warming &amp; Negative Caching</span></a>
+<a class="card real" href="lessons/U5-34-cache-warming-negative-caching-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cache Warming &amp; Negative Caching — Prep Before the Rush</span></a>
+<a class="card concept" href="lessons/U5-35-ttl-cache-coherence-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">TTL Strategies &amp; Cache Coherence</span></a>
+<a class="card real" href="lessons/U5-35-ttl-cache-coherence-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">TTL &amp; Coherence — Expiry Dates and Synced Branch Menus</span></a></div></div></body></html>

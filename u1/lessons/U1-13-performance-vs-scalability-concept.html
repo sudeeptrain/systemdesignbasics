@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Performance vs Scalability · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.rmeter{position:absolute; right:9%; top:16%; width:58px; height:66%; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.rfill{position:absolute; left:0; right:0; bottom:0; height:8%; background:linear-gradient(180deg,#3fcf8e,#0f8f5b); transition:height .4s, background .3s}
+.rlabel{position:absolute; right:9%; bottom:10%; transform:translateX(50%); font-family:var(--fmono); font-size:11px; color:var(--faint)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Performance vs Scalability</h1>
+  <p class="subtitle">Performance is how fast for ONE user right now. Scalability is staying fast as MANY users arrive. A system can be lightning-fast for one and collapse for ten thousand.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Users</div><div class="stat-v accent" id="statUsers">1</div></div>
+  <div class="stat"><div class="stat-k">Response time</div><div class="stat-v good" id="statP99">— ms</div><div class="stat-sub">how fast it feels</div></div>
+  <div class="stat"><div class="stat-k">Autoscale</div><div class="stat-v" id="statAuto">OFF</div></div>
+</div>
+<div class="wireline" style="left:16%;width:22%;top:55%"></div>
+<div class="wireline" style="left:42%;width:18%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:14%;top:55%"><div class="box">👥</div><div class="lbl"><span class="k">Users</span></div></div>
+<div class="node abs" data-show="1" style="left:40%;top:55%"><div class="box sys">🖥️</div><div class="lbl"><span class="k">System</span></div></div>
+<div class="node abs" data-show="1" style="left:62%;top:55%"><div class="box">✅</div><div class="lbl"><span class="k">Response</span></div></div>
+<div class="rmeter"><div class="rfill" id="rfill"></div></div>
+<div class="rlabel">response time</div>
+<div class="acts">
+  <button class="act" id="actRamp">📈 3× the users</button>
+  <button class="act ok" id="actAuto">🤖 Autoscale ON/OFF</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let users=1, capacity=200, auto=false, running=false;
+  const elU=document.getElementById('statUsers'), elP=document.getElementById('statP99'), elA=document.getElementById('statAuto');
+  const rfill=document.getElementById('rfill'), sysEl=scene.querySelector('.sys');
+  function p99(){ return Math.round(20 + Math.max(0, users-capacity)*0.06); }
+  function hum(n){ const u=['','K','M']; let i=0; while(n>=1000&&i<2){n/=1000;i++;} return n.toFixed(n<10&&i>0?1:0)+u[i]; }
+  function fmt(){ const p=p99(); elU.textContent=hum(users); elP.textContent=p+' ms';
+    elP.className='stat-v '+(p<80?'good':p<250?'warn':'bad');
+    const h=Math.max(8,Math.min(100,p/600*100)); rfill.style.height=h+'%';
+    rfill.style.background=p<80?'linear-gradient(180deg,#3fcf8e,#0f8f5b)':p<250?'linear-gradient(180deg,#f0c050,#b9730b)':'linear-gradient(180deg,#f08070,#d83a2e)';
+    elA.textContent=auto?'ON':'OFF'; elA.className='stat-v '+(auto?'good':'');
+    if(sysEl) sysEl.classList.toggle('busy',p>=250); }
+  function flow(){ if(document.hidden) return; const slow=p99()>=250; const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='55%'; scene.appendChild(d);
+    const leg=(slow?900:420)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='40%'; });
+    setTimeout(()=>{ d.classList.add('done'); d.style.left='62%'; setTimeout(()=>d.remove(),leg); }, leg); }
+  function tick(){ if(auto){ capacity=Math.max(200, users*1.2); } fmt(); }
+  function loop(){ if(!running)return; users=Math.round(users*1.12)+1; fmt(); flow(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actRamp').onclick=()=>{ users*=3; fmt(); };
+  document.getElementById('actAuto').onclick=()=>{ auto=!auto; tick(); };
+  fmt(); running=true; loop(); setInterval(tick,800);
+  return {tick};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Two words people use interchangeably — and shouldn't. Let's separate <b>performance</b> from <b>scalability.</b>", dur:4400},
+  {cap:"With a <b>single user</b>, the system replies in ~20 ms. Lightning fast. That snappiness is <b>performance.</b>", dur:4400},
+  {cap:"Great performance for one says nothing about a crowd. Watch the user count <b>ramp up.</b>", dur:4200},
+  {cap:"As users climb past capacity, the response-time meter <span class='hl-bad'>shoots up.</span> Fast for one, sluggish for thousands.", dur:4600},
+  {cap:"That's poor <b>scalability</b>: the system can't <em>hold</em> its speed under load — even though its single-user performance was excellent.", dur:4600},
+  {cap:"Turn on <b>autoscale</b> and capacity grows with demand. The meter drops back into the green.", dur:4400, on(){SIM.tick();}},
+  {cap:"Now it's fast for one <em>and</em> fast for many. That's a scalable system.", dur:4000},
+  {cap:"Tuning one query helps performance; adding capacity that grows with load helps scalability. Different problems, different fixes.", dur:4600},
+  {cap:"Your turn 👉 <b>📈 3× the users</b> to watch response time degrade, then <b>🤖 Autoscale</b> to rescue it.", dur:5200, on(){SIM.tick();}},
+  {cap:"Always ask both: is it fast <em>now</em> (performance), and will it stay fast at 100× (scalability)?", dur:4600}
+]});
+
+</script>
+</body></html>

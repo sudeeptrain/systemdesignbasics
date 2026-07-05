@@ -1,0 +1,185 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Design — Unit 1 Animations</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css">
+<style>.hero{max-width:1000px;margin:0 auto 18px;text-align:center}.grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);box-shadow:0 10px 24px -18px rgba(40,70,120,.5);transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}.card .t{font-family:var(--fdisp);font-weight:600;font-size:16px}
+.card .badge{font-family:var(--fmono);font-size:10.5px;color:var(--faint)}.card.real{border-left:4px solid var(--pink)}.card.concept{border-left:4px solid var(--accent)}
+body{display:block;padding:26px 26px 48px}</style>
+<style>.mnav{position:sticky;top:0;z-index:50;display:flex;gap:8px;justify-content:center;align-items:center;padding:9px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 15px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:6px 14px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a class="cur">▶ Animated Lessons</a><a href="study.html">📊 Study Slides</a></div><div style="width:100%"><div class="hero"><h1 class="title" style="font-size:30px">System Design · Unit 1 — Animated Lessons</h1>
+<p class="subtitle" style="margin:0 auto">58 interactive, projector-ready lessons. Each plays in any browser — press ▶ and use the in-scene buttons.</p></div>
+<div class="grid"><a class="card concept" href="lessons/U1-01-what-is-system-design-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">What is System Design?</span></a>
+<a class="card real" href="lessons/U1-01-what-is-system-design-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">What is System Design — Ordering Food</span></a>
+<a class="card concept" href="lessons/U1-02-growth-of-an-application-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Growth of an Application</span></a>
+<a class="card real" href="lessons/U1-02-growth-of-an-application-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Growth of an Application — Tea Stall to Chain</span></a>
+<a class="card concept" href="lessons/U1-03-availability-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Availability</span></a>
+<a class="card real" href="lessons/U1-03-availability-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Availability — Hospital Power</span></a>
+<a class="card concept" href="lessons/U1-04-reliability-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Reliability</span></a>
+<a class="card real" href="lessons/U1-04-reliability-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Reliability — ATM Cash Withdrawal</span></a>
+<a class="card concept" href="lessons/U1-05-scalability-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Scalability</span></a>
+<a class="card real" href="lessons/U1-05-scalability-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Scalability — Supermarket Checkouts</span></a>
+<a class="card concept" href="lessons/U1-06-vertical-scaling-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Vertical Scaling (Scale Up)</span></a>
+<a class="card real" href="lessons/U1-06-vertical-scaling-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Vertical Scaling — Upgrading Your PC</span></a>
+<a class="card concept" href="lessons/U1-07-horizontal-scaling-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Horizontal Scaling (Scale Out)</span></a>
+<a class="card real" href="lessons/U1-07-horizontal-scaling-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Horizontal Scaling — Toll Booths</span></a>
+<a class="card concept" href="lessons/U1-08-maintainability-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Maintainability</span></a>
+<a class="card real" href="lessons/U1-08-maintainability-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Maintainability — Fixing One Room</span></a>
+<a class="card concept" href="lessons/U1-09-consistency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Consistency</span></a>
+<a class="card real" href="lessons/U1-09-consistency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Consistency — A Shared Doc</span></a>
+<a class="card concept" href="lessons/U1-10-fault-tolerance-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Fault Tolerance</span></a>
+<a class="card real" href="lessons/U1-10-fault-tolerance-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Fault Tolerance — Twin-Engine Plane</span></a>
+<a class="card concept" href="lessons/U1-11-latency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Latency</span></a>
+<a class="card real" href="lessons/U1-11-latency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Latency — Texting a Friend</span></a>
+<a class="card concept" href="lessons/U1-12-throughput-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Throughput</span></a>
+<a class="card real" href="lessons/U1-12-throughput-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Throughput — Burger Kitchen</span></a>
+<a class="card concept" href="lessons/U1-13-performance-vs-scalability-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Performance vs Scalability</span></a>
+<a class="card real" href="lessons/U1-13-performance-vs-scalability-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Performance vs Scalability — Chef vs Restaurant</span></a>
+<a class="card concept" href="lessons/U1-14-latency-vs-throughput-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Latency vs Throughput</span></a>
+<a class="card real" href="lessons/U1-14-latency-vs-throughput-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Latency vs Throughput — Highway</span></a>
+<a class="card concept" href="lessons/U1-15-availability-vs-consistency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Availability vs Consistency</span></a>
+<a class="card real" href="lessons/U1-15-availability-vs-consistency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Availability vs Consistency — Two Tills</span></a>
+<a class="card concept" href="lessons/U1-16-modular-design-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Modular Design</span></a>
+<a class="card real" href="lessons/U1-16-modular-design-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Modular Design — LEGO vs Glue</span></a>
+<a class="card concept" href="lessons/U1-17-clean-code-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Clean Code Principles</span></a>
+<a class="card real" href="lessons/U1-17-clean-code-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Clean Code — A Tidy Kitchen</span></a>
+<a class="card concept" href="lessons/U1-18-ci-cd-pipeline-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">CI/CD Pipeline</span></a>
+<a class="card real" href="lessons/U1-18-ci-cd-pipeline-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">CI/CD — A Car Assembly Line</span></a>
+<a class="card concept" href="lessons/U1-19-back-of-envelope-estimation-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Back-of-the-Envelope Estimation</span></a>
+<a class="card real" href="lessons/U1-19-back-of-envelope-estimation-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Estimation — Catering a Wedding</span></a>
+<a class="card concept" href="lessons/U1-20-single-point-of-failure-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Single Point of Failure</span></a>
+<a class="card real" href="lessons/U1-20-single-point-of-failure-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Single Point of Failure — One Bridge</span></a>
+<a class="card concept" href="lessons/U1-21-redundancy-replication-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Redundancy &amp; Replication</span></a>
+<a class="card real" href="lessons/U1-21-redundancy-replication-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Redundancy — The Spare Tyre</span></a>
+<a class="card concept" href="lessons/U1-22-coupling-vs-cohesion-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Coupling vs Cohesion</span></a>
+<a class="card real" href="lessons/U1-22-coupling-vs-cohesion-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Coupling — Wired vs Wireless Earbuds</span></a>
+<a class="card concept" href="lessons/U1-23-sla-slo-sli-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">SLA vs SLO vs SLI</span></a>
+<a class="card real" href="lessons/U1-23-sla-slo-sli-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">SLA / SLO / SLI — Pizza in 30 Minutes</span></a>
+<a class="card concept" href="lessons/U1-24-error-budgets-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Error Budgets</span></a>
+<a class="card real" href="lessons/U1-24-error-budgets-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Error Budgets — Monthly Pocket Money</span></a>
+<a class="card concept" href="lessons/U1-25-disaster-recovery-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Disaster Recovery (RTO / RPO)</span></a>
+<a class="card real" href="lessons/U1-25-disaster-recovery-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Disaster Recovery — Phone Photo Backup</span></a>
+<a class="card concept" href="lessons/U1-26-cost-efficiency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Cost / Cost-Efficiency</span></a>
+<a class="card real" href="lessons/U1-26-cost-efficiency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Cost Efficiency — Renting the Right Car</span></a>
+<a class="card concept" href="lessons/U1-27-resilience-degradation-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Resilience &amp; Graceful Degradation</span></a>
+<a class="card real" href="lessons/U1-27-resilience-degradation-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Graceful Degradation — Escalator to Stairs</span></a>
+<a class="card concept" href="lessons/U1-28-idempotency-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Idempotency</span></a>
+<a class="card real" href="lessons/U1-28-idempotency-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Idempotency — The Elevator Button</span></a>
+<a class="card concept" href="lessons/U1-29-latency-numbers-concept.html">
+    <span class="badge">💡 Concept</span>
+    <span class="t">Latency Numbers Every Engineer Should Know</span></a>
+<a class="card real" href="lessons/U1-29-latency-numbers-realworld.html">
+    <span class="badge">🌍 Real-world</span>
+    <span class="t">Latency Numbers — Recall vs the Post</span></a></div></div></body></html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Read Replicas &amp; Connection Pooling · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.conn{position:absolute; width:30px; height:30px; border-radius:8px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:13px; background:#e7f7ef; border:1.5px solid var(--good); z-index:3; transition:.2s}
+.conn.busy{background:#fff3e0; border-color:var(--warn)}
+.poollbl{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Read Replicas &amp; Connection Pooling</h1>
+  <p class="subtitle">Opening a database connection is surprisingly expensive. A connection pool keeps a set of them open and hands them out, reused, to incoming requests. Pair that with read replicas and your database serves far more traffic with far less waste.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests served</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Pool</div><div class="stat-v bad" id="statPool">OFF</div></div>
+  <div class="stat"><div class="stat-k">Connection churn</div><div class="stat-v" id="statChurn">high</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">📱</div><div class="lbl"><span class="k">Requests</span></div></div>
+<div class="poollbl" id="poollbl">no pool · open & close every time</div>
+<div id="pool"></div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box sm">🗄️</div><div class="lbl"><span class="k">Database</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actPool">🔁 Turn on the pool</button>
+  <button class="act" id="actBurst">📈 Traffic burst</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const poolEl=document.getElementById('pool'), poollbl=document.getElementById('poollbl');
+  let pooled=false, conns=[], reqs=0, running=false;
+  const elR=document.getElementById('statReqs'), elP=document.getElementById('statPool'), elCh=document.getElementById('statChurn');
+  function buildPool(){ poolEl.innerHTML=''; conns=[]; if(!pooled) return; const ys=[30,50,70];
+    ys.forEach((y,i)=>{ const el=document.createElement('div'); el.className='conn'; el.textContent='🔌'; el.style.left='50%'; el.style.top=y+'%'; poolEl.appendChild(el); conns.push({el,busy:false,y}); }); }
+  function request(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    if(pooled){ let c=conns.find(x=>!x.busy)|| conns[reqs%conns.length]; c.busy=true; c.el.classList.add('busy');
+      const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=300*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top=c.y+'%'; });
+      setTimeout(()=>{ d.style.left='86%'; d.style.top='50%'; setTimeout(()=>{ d.classList.add('done'); c.busy=false; c.el.classList.remove('busy'); setTimeout(()=>d.remove(),200); }, leg); }, leg);
+    } else { // open a fresh connection (slow), use, close
+      const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=420*simRate();
+      // show the cost: a 'fail'-colored setup dot first
+      const setup=document.createElement('div'); setup.className='dot fail'; setup.style.left='32%'; setup.style.top='50%'; scene.appendChild(setup); setTimeout(()=>setup.remove(),360*simRate());
+      requestAnimationFrame(()=>{ d.style.transition='left '+leg*1.6+'ms'; d.style.left='86%'; });
+      setTimeout(()=>{ d.classList.add('done'); d.style.transition='left '+leg+'ms'; d.style.left='13%'; setTimeout(()=>d.remove(),leg); }, leg*1.6);
+    }
+  }
+  function setPool(on){ pooled=on; buildPool(); elP.textContent=on?'ON':'OFF'; elP.className='stat-v '+(on?'good':'bad');
+    elCh.textContent=on?'low (reused)':'high'; elCh.className='stat-v '+(on?'good':'bad');
+    poollbl.textContent=on?'pool of reusable connections':'no pool · open & close every time'; }
+  function burst(){ for(let k=0;k<6;k++) setTimeout(request, k*120*simRate()); }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 800*simRate()); }
+  document.getElementById('actPool').onclick=()=>setPool(true);
+  document.getElementById('actBurst').onclick=burst;
+  setPool(false); running=true; loop();
+  return {request,setPool,burst};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Every database request needs a <b>connection</b> — and opening one is expensive: a handshake, authentication, setup.", dur:4600},
+  {cap:"With <b>no pool</b>, each request opens a brand-new connection, uses it, and throws it away. Watch the setup cost on every one.", dur:4800, on(){SIM.request();}},
+  {cap:"Under load that <span class='hl-bad'>churn</span> is brutal — the database spends its time on handshakes instead of real work.", dur:4600, on(){SIM.burst();}},
+  {cap:"A <b>connection pool</b> fixes it: keep a handful of connections open and <b>reuse</b> them for incoming requests.", dur:4600, on(){SIM.setPool(true);}},
+  {cap:"Now a request just <b>borrows</b> an idle connection, does its work, and returns it to the pool — no setup cost.", dur:4600, on(){SIM.request();}},
+  {cap:"The same burst now flies through the few reused connections. Far less waste, much higher throughput.", dur:4400, on(){SIM.burst();}},
+  {cap:"The pool also <b>caps</b> total connections, protecting the database from being overwhelmed by thousands at once.", dur:4400},
+  {cap:"Combine this with <b>read replicas</b> — pool connections to several read copies — and reads scale out beautifully.", dur:4600, on(){SIM.request();}},
+  {cap:"Your turn 👉 <b>🔁 Turn on the pool</b> and fire a <b>📈 traffic burst</b> to compare churn with reuse.", dur:5200},
+  {cap:"Connection pooling is a quiet, huge win: reuse connections, cap the count, and pair with read replicas to serve more for less.", dur:4800}
+]});
+
+</script>
+</body></html>

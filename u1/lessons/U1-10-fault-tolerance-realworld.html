@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fault Tolerance — Twin-Engine Plane · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.plane{position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); font-size:54px; z-index:2}
+.eng{position:absolute; transform:translate(-50%,-50%); width:46px; height:46px; border-radius:50%; border:2.5px solid var(--good); background:#e7f7ef; display:flex; align-items:center; justify-content:center; font-size:20px; transition:.3s; z-index:3}
+.eng.dead{border-color:var(--bad); background:#fdeceb; opacity:.55}
+.altbar{position:absolute; left:50%; bottom:12%; transform:translateX(-50%); width:58%; height:16px; border:1.5px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:2}
+.afill{position:absolute; left:0; top:0; bottom:0; width:100%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .5s, background .3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Fault Tolerance — Twin-Engine Plane</h1>
+  <p class="subtitle">Airliners have two engines for a reason: if one quits mid-flight, the other keeps you flying safely to land. Designing so a failure is survivable — not catastrophic — is fault tolerance.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Distance flown</div><div class="stat-v accent" id="statMiles">0 km</div><div class="stat-sub" id="statThrust">thrust 100%</div></div>
+  <div class="stat"><div class="stat-k">Status</div><div class="stat-v good" id="statFly">Cruising</div></div>
+  <div class="stat"><div class="stat-k">Live engines</div><div class="stat-v accent" id="statEng">2 / 2</div></div>
+</div>
+<div class="plane">✈️</div>
+<div class="eng e-0" id="e0" style="left:40%;top:46%">🟢</div>
+<div class="eng e-1" id="e1" style="left:60%;top:46%">🟢</div>
+<div class="nlbl" style="left:50%;bottom:23%">altitude</div>
+<div class="altbar"><div class="afill" id="afill"></div></div>
+<div class="acts">
+  <button class="act bad" id="actFail">🔥 Fail an engine</button>
+  <button class="act ok" id="actRepair">🔧 Restart engine</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let engines=[true,true], miles=0, running=false;
+  const elT=document.getElementById('statThrust'), elF=document.getElementById('statFly'), elE=document.getElementById('statEng'), afill=document.getElementById('afill');
+  const elMi=document.getElementById('statMiles');
+  const els=[document.getElementById('e0'),document.getElementById('e1')];
+  function live(){ return engines.filter(Boolean).length; }
+  function fmt(){ const n=live(); const thrust=n*50; elT.textContent='thrust '+thrust+'%';
+    els.forEach((el,i)=>{ el.classList.toggle('dead',!engines[i]); el.textContent=engines[i]?'🟢':'🔴'; });
+    elE.textContent=n+' / 2'; elE.className='stat-v '+(n===2?'accent':n===1?'warn':'bad');
+    if(n===2){ elF.textContent='Cruising'; elF.className='stat-v good'; afill.style.width='100%'; afill.style.background='linear-gradient(90deg,#3fcf8e,#0f8f5b)'; }
+    else if(n===1){ elF.textContent='Flying on one ✈️'; elF.className='stat-v warn'; afill.style.width='70%'; afill.style.background='linear-gradient(90deg,#f0c050,#b9730b)'; }
+    else { elF.textContent='No power!'; elF.className='stat-v bad'; afill.style.width='14%'; afill.style.background='linear-gradient(90deg,#f08070,#d83a2e)'; } }
+  function thrustDot(){ if(document.hidden) return; const n=live();
+    if(n>0){ miles += n*4; elMi.textContent=miles+' km'; }
+    if(n===0){ const d=document.createElement('div'); d.className='dot fail'; d.style.left='50%'; d.style.top='30%'; scene.appendChild(d); setTimeout(()=>d.remove(),360); return; }
+    const idx=engines[0]?0:1; const el=els[idx]; const d=document.createElement('div'); d.className='dot'; d.style.left=(idx===0?40:60)+'%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),260); }, leg); }
+  function fail(){ const i=engines.indexOf(true); if(i>=0){ engines[i]=false; if(els[i]){ els[i].classList.add('crash'); setTimeout(()=>els[i].classList.remove('crash'),500);}
+    // immediate visible fail token
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left=(i===0?40:60)+'%'; d.style.top='46%'; scene.appendChild(d); setTimeout(()=>d.remove(),420*simRate());
+    fmt(); } }
+  function repair(){ const i=engines.indexOf(false); if(i>=0){ engines[i]=true; fmt(); } }
+  function loop(){ if(!running)return; thrustDot(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actFail').onclick=fail;
+  document.getElementById('actRepair').onclick=repair;
+  fmt(); running=true; loop();
+  return {fail,repair,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A jet cruises with <b>two engines</b>, each providing half the thrust. Smooth, stable, safe.", dur:4200},
+  {cap:"Engineers asked the scary question up front: <em>what if an engine fails at 35,000 feet?</em>", dur:4200},
+  {cap:"Watch — <span class='hl-bad'>one engine flames out.</span>", dur:3600, on(){SIM.fail();}},
+  {cap:"The plane <span class='hl-good'>keeps flying</span> on the remaining engine. Less thrust, but enough to fly and land safely.", dur:4600, on(){SIM.fmt();}},
+  {cap:"That survivability is <b>fault tolerance</b>: a component failed, yet the system kept doing its job.", dur:4400},
+  {cap:"The trick is <b>no single point of failure</b> — two engines, so losing one isn't the end of the flight.", dur:4400},
+  {cap:"Restart the engine and full thrust returns. Tolerate the fault now, repair it when you can.", dur:4200, on(){SIM.repair();}},
+  {cap:"A one-engine plane would crash the moment that engine quit. Redundancy is what turns disaster into an inconvenience.", dur:4600},
+  {cap:"Your turn 👉 <b>🔥 Fail an engine</b> and watch it fly on; <b>🔧 Restart</b> to recover full power.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Fault tolerance ≠ never failing. It's designing so that when parts fail, the whole still survives.", dur:4400}
+]});
+
+</script>
+</body></html>

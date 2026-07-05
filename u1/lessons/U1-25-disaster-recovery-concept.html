@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disaster Recovery (RTO / RPO) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.dr.active .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Disaster Recovery (RTO / RPO)</h1>
+  <p class="subtitle">DR is your plan for when a whole site dies. RTO is how fast you get back up; RPO is how much recent data you can lose. Frequent backups shrink both — watch a disaster and a restore play out.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Data since backup</div><div class="stat-v warn" id="statSince">0</div><div class="stat-sub">= data at risk (RPO)</div></div>
+  <div class="stat"><div class="stat-k">Last RPO lost</div><div class="stat-v" id="statRPO">—</div></div>
+  <div class="stat"><div class="stat-k">Last RTO</div><div class="stat-v" id="statRTO">—</div></div>
+</div>
+<div class="wireline" id="wbk" style="left:30%;width:0;height:0;top:38%"></div>
+<div class="node abs" data-show="1" style="left:28%;top:38%"><div class="box prim">🏢</div><div class="lbl"><span class="k">Primary site</span></div></div>
+<div class="node abs" data-show="1" style="left:28%;top:82%"><div class="box">💾</div><div class="lbl"><span class="k">Backups</span></div></div>
+<div class="node abs dr" data-show="1" style="left:78%;top:60%"><div class="box">🏬</div><div class="lbl"><span class="k">DR site</span></div></div>
+<div class="acts">
+  <button class="act bad" id="actDisaster">🔥 Trigger disaster</button>
+  <button class="act ok" id="actBackup">💾 Back up now</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const PRIM={x:28,y:38}, BK={x:28,y:82}, DR={x:78,y:60};
+  let since=0, running=true, down=false;
+  const elSince=document.getElementById('statSince'), elRPO=document.getElementById('statRPO'), elRTO=document.getElementById('statRTO');
+  const primEl=scene.querySelector('.prim'), drEl=scene.querySelector('.dr');
+  function fmt(){ elSince.textContent=since; elSince.className='stat-v '+(since>10?'bad':since>4?'warn':'good'); }
+  function dot(cls,fx,fy,tx,ty,ms,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+ms+'ms cubic-bezier(.45,0,.25,1), top '+ms+'ms cubic-bezier(.45,0,.25,1)'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),300); }, ms); }
+  function write(){ if(document.hidden||down) return; since++; fmt(); dot('', 14, 38, PRIM.x, PRIM.y, 380*simRate(), ()=>{ primEl.classList.add('ping'); setTimeout(()=>primEl.classList.remove('ping'),250); }); }
+  function backup(){ if(down) return; dot('', PRIM.x,PRIM.y, BK.x,BK.y, 520*simRate(), ()=>{ since=0; fmt(); }); }
+  function disaster(){ if(down) return; down=true; const lost=since; elRPO.textContent=lost+' writes'; elRPO.className='stat-v '+(lost>4?'bad':'warn');
+    primEl.classList.add('crash');
+    const rto=1600*simRate(); elRTO.textContent='restoring…';
+    // restore from backups to DR
+    dot('', BK.x,BK.y, DR.x,DR.y, rto, ()=>{ drEl.classList.add('active'); drEl.querySelector('.box').classList.add('done'); });
+    setTimeout(()=>{ elRTO.textContent=(rto/1000).toFixed(1)+'s'; elRTO.className='stat-v good'; }, rto+50);
+  }
+  function recover(){ down=false; since=0; primEl.classList.remove('crash'); drEl.classList.remove('active'); fmt(); }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actDisaster').onclick=()=>{ if(down) recover(); else disaster(); };
+  document.getElementById('actBackup').onclick=backup;
+  fmt(); loop(); setInterval(()=>{ if(!down) backup(); }, 5000);
+  return {disaster,backup,recover};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Disaster recovery</b> is the plan for the worst day: an entire data centre goes down — fire, flood, power.", dur:4400},
+  {cap:"Your <b>primary site</b> is busily writing data. Every write that isn't backed up yet is data <span class='hl-warn'>at risk.</span>", dur:4400},
+  {cap:"So you take <b>backups</b> on a schedule. Each backup copies the data to safe storage and resets the 'at risk' counter to zero.", dur:4600, on(){SIM.backup();}},
+  {cap:"Between backups, the at-risk pile grows again. The bigger it gets, the more you'd lose in a disaster.", dur:4200},
+  {cap:"Now <span class='hl-bad'>trigger a disaster.</span> The primary site is gone.", dur:3800, on(){SIM.disaster();}},
+  {cap:"<b>RPO</b> — Recovery Point Objective — is what you lost: everything written <em>since the last backup.</em>", dur:4600},
+  {cap:"You restore from the last backup onto the <b>DR site</b>. The time that takes is your <b>RTO</b> — Recovery Time Objective.", dur:4800},
+  {cap:"Smaller RTO and RPO = better DR — but both cost money (more frequent backups, hot standby sites).", dur:4400, on(){SIM.recover();}},
+  {cap:"Your turn 👉 <b>💾 Back up now</b> to shrink the at-risk data, then <b>🔥 Trigger disaster</b> to see RPO &amp; RTO.", dur:5400},
+  {cap:"Pick targets up front: \"we can lose ≤5 min of data and must recover in ≤1 hour\" — then design backups to match.", dur:4800}
+]});
+
+</script>
+</body></html>

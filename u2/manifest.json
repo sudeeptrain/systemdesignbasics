@@ -1,0 +1,1182 @@
+[
+  {
+    "file": "U2-01-cap-theorem-concept.html",
+    "id": "U2-01-cap-theorem-concept",
+    "title": "CAP Theorem",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actPartition",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-01-cap-theorem-realworld.html",
+    "id": "U2-01-cap-theorem-realworld",
+    "title": "CAP Theorem — A Shared Shopping List",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actPartition",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-02-weak-consistency-concept.html",
+    "id": "U2-02-weak-consistency-concept",
+    "title": "Weak Consistency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSent"
+    ],
+    "buttons": [
+      "actGlitch",
+      "actStabilize"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-02-weak-consistency-realworld.html",
+    "id": "U2-02-weak-consistency-realworld",
+    "title": "Weak Consistency — A Live Score Ticker",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSent"
+    ],
+    "buttons": [
+      "actGlitch",
+      "actStabilize"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-03-eventual-consistency-concept.html",
+    "id": "U2-03-eventual-consistency-concept",
+    "title": "Eventual Consistency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actReadFollower"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-03-eventual-consistency-realworld.html",
+    "id": "U2-03-eventual-consistency-realworld",
+    "title": "Eventual Consistency — Group Chat",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actReadFollower"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-04-strong-consistency-concept.html",
+    "id": "U2-04-strong-consistency-concept",
+    "title": "Strong Consistency",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-04-strong-consistency-realworld.html",
+    "id": "U2-04-strong-consistency-realworld",
+    "title": "Strong Consistency — Bank Teller",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statWrites"
+    ],
+    "buttons": [
+      "actWrite",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-05-functional-requirements-concept.html",
+    "id": "U2-05-functional-requirements-concept",
+    "title": "Functional Requirements",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statPassed"
+    ],
+    "buttons": [
+      "actDemo",
+      "actAddReq"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-05-functional-requirements-realworld.html",
+    "id": "U2-05-functional-requirements-realworld",
+    "title": "Functional Requirements — A Restaurant Menu",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statPassed"
+    ],
+    "buttons": [
+      "actDemo",
+      "actAddReq"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-06-non-functional-requirements-concept.html",
+    "id": "U2-06-non-functional-requirements-concept",
+    "title": "Non-Functional Requirements",
+    "variant": "concept",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actLoad",
+      "actHarden"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-06-non-functional-requirements-realworld.html",
+    "id": "U2-06-non-functional-requirements-realworld",
+    "title": "Non-Functional Requirements — Restaurant Quality",
+    "variant": "real",
+    "legend": [
+      "dot"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actLoad",
+      "actHarden"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-07-high-level-design-concept.html",
+    "id": "U2-07-high-level-design-concept",
+    "title": "High Level Design (HLD)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAddCache",
+      "actAddQueue"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-07-high-level-design-realworld.html",
+    "id": "U2-07-high-level-design-realworld",
+    "title": "HLD — A Town Master Plan",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAddCache",
+      "actAddQueue"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-08-low-level-design-concept.html",
+    "id": "U2-08-low-level-design-concept",
+    "title": "Low Level Design (LLD)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actZoom",
+      "actAddClass"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-08-low-level-design-realworld.html",
+    "id": "U2-08-low-level-design-realworld",
+    "title": "LLD — A Room's Detailed Blueprint",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actZoom",
+      "actAddClass"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-09-monolithic-architecture-concept.html",
+    "id": "U2-09-monolithic-architecture-concept",
+    "title": "Monolithic Architecture",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actDeploy",
+      "actCrash"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-09-monolithic-architecture-realworld.html",
+    "id": "U2-09-monolithic-architecture-realworld",
+    "title": "Monolith — A Swiss Army Knife",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actDeploy",
+      "actCrash"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-10-microservices-concept.html",
+    "id": "U2-10-microservices-concept",
+    "title": "Microservices",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actScale",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-10-microservices-realworld.html",
+    "id": "U2-10-microservices-realworld",
+    "title": "Microservices — A Food Court",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actScale",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-11-event-driven-architecture-concept.html",
+    "id": "U2-11-event-driven-architecture-concept",
+    "title": "Event-Driven Architecture",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actEmit",
+      "actAddConsumer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-11-event-driven-architecture-realworld.html",
+    "id": "U2-11-event-driven-architecture-realworld",
+    "title": "Event-Driven — A Town Notice Board",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actEmit",
+      "actAddConsumer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-12-monolith-microservices-serverless-concept.html",
+    "id": "U2-12-monolith-microservices-serverless-concept",
+    "title": "Monolith vs Microservices vs Serverless",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actScale"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-12-monolith-microservices-serverless-realworld.html",
+    "id": "U2-12-monolith-microservices-serverless-realworld",
+    "title": "Mono vs Micro vs Serverless — Three Kitchens",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actScale"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-13-service-mesh-concept.html",
+    "id": "U2-13-service-mesh-concept",
+    "title": "Service Mesh",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actPolicy",
+      "actFault"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-13-service-mesh-realworld.html",
+    "id": "U2-13-service-mesh-realworld",
+    "title": "Service Mesh — Couriers' Dispatch Clerks",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actPolicy",
+      "actFault"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-14-backend-for-frontend-concept.html",
+    "id": "U2-14-backend-for-frontend-concept",
+    "title": "Backend for Frontend (BFF)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAddClient",
+      "actTrace"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-14-backend-for-frontend-realworld.html",
+    "id": "U2-14-backend-for-frontend-realworld",
+    "title": "BFF — A Translator per Guest",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAddClient",
+      "actTrace"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-15-api-composition-concept.html",
+    "id": "U2-15-api-composition-concept",
+    "title": "API Composition",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAddSource",
+      "actCompose"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-15-api-composition-realworld.html",
+    "id": "U2-15-api-composition-realworld",
+    "title": "API Composition — A Travel Agent",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAddSource",
+      "actCompose"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-16-pacelc-theorem-concept.html",
+    "id": "U2-16-pacelc-theorem-concept",
+    "title": "PACELC Theorem",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actPartition",
+      "actPrefer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-16-pacelc-theorem-realworld.html",
+    "id": "U2-16-pacelc-theorem-realworld",
+    "title": "PACELC — GPS Navigation",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actPartition",
+      "actPrefer"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-17-quorum-concept.html",
+    "id": "U2-17-quorum-concept",
+    "title": "Quorum (R + W > N)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actStrict",
+      "actLoose"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-17-quorum-realworld.html",
+    "id": "U2-17-quorum-realworld",
+    "title": "Quorum — A Panel of Judges",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actStrict",
+      "actLoose"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-18-layered-n-tier-architecture-concept.html",
+    "id": "U2-18-layered-n-tier-architecture-concept",
+    "title": "Layered / N-Tier Architecture",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actSwapDB",
+      "actScaleBiz"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-18-layered-n-tier-architecture-realworld.html",
+    "id": "U2-18-layered-n-tier-architecture-realworld",
+    "title": "N-Tier — Waiter, Kitchen, Pantry",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actSwapDB",
+      "actScaleBiz"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-19-hexagonal-architecture-concept.html",
+    "id": "U2-19-hexagonal-architecture-concept",
+    "title": "Hexagonal (Ports & Adapters)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actSwapDB",
+      "actSwapDriver"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-19-hexagonal-architecture-realworld.html",
+    "id": "U2-19-hexagonal-architecture-realworld",
+    "title": "Hexagonal — A Universal Power Socket",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actSwapDB",
+      "actSwapDriver"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-20-cqrs-concept.html",
+    "id": "U2-20-cqrs-concept",
+    "title": "CQRS (Command Query Responsibility Segregation)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actWrite",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-20-cqrs-realworld.html",
+    "id": "U2-20-cqrs-realworld",
+    "title": "CQRS — A Library",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actWrite",
+      "actRead"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-21-event-sourcing-concept.html",
+    "id": "U2-21-event-sourcing-concept",
+    "title": "Event Sourcing",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actEvent",
+      "actReplay"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-21-event-sourcing-realworld.html",
+    "id": "U2-21-event-sourcing-realworld",
+    "title": "Event Sourcing — A Bank Passbook",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actEvent",
+      "actReplay"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-22-saga-pattern-concept.html",
+    "id": "U2-22-saga-pattern-concept",
+    "title": "Saga Pattern",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSagas"
+    ],
+    "buttons": [
+      "actRun",
+      "actFail"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-22-saga-pattern-realworld.html",
+    "id": "U2-22-saga-pattern-realworld",
+    "title": "Saga — Booking a Trip",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSagas"
+    ],
+    "buttons": [
+      "actRun",
+      "actFail"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-23-outbox-pattern-concept.html",
+    "id": "U2-23-outbox-pattern-concept",
+    "title": "Outbox / Inbox Pattern",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actWrite",
+      "actBroker"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-23-outbox-realworld.html",
+    "id": "U2-23-outbox-realworld",
+    "title": "Outbox — The Outbox Tray",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actWrite",
+      "actBroker"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-24-two-phase-commit-concept.html",
+    "id": "U2-24-two-phase-commit-concept",
+    "title": "Two-Phase Commit (2PC)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTxns"
+    ],
+    "buttons": [
+      "actCommit",
+      "actAbort"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-24-two-phase-commit-realworld.html",
+    "id": "U2-24-two-phase-commit-realworld",
+    "title": "Two-Phase Commit — Wedding Vows",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statTxns"
+    ],
+    "buttons": [
+      "actCommit",
+      "actAbort"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-25-circuit-breaker-concept.html",
+    "id": "U2-25-circuit-breaker-concept",
+    "title": "Circuit Breaker Pattern",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actFlake",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-25-circuit-breaker-realworld.html",
+    "id": "U2-25-circuit-breaker-realworld",
+    "title": "Circuit Breaker — Home Fuse Box",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actFlake",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-26-bulkhead-pattern-concept.html",
+    "id": "U2-26-bulkhead-pattern-concept",
+    "title": "Bulkhead Pattern",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actFlood",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-26-bulkhead-realworld.html",
+    "id": "U2-26-bulkhead-realworld",
+    "title": "Bulkhead — Watertight Ship Compartments",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actFlood",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-27-retry-backoff-jitter-concept.html",
+    "id": "U2-27-retry-backoff-jitter-concept",
+    "title": "Retry with Exponential Backoff & Jitter",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAttempts"
+    ],
+    "buttons": [
+      "actBreak",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-27-retry-backoff-jitter-realworld.html",
+    "id": "U2-27-retry-backoff-jitter-realworld",
+    "title": "Retry & Backoff — Knocking on a Door",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAttempts"
+    ],
+    "buttons": [
+      "actBreak",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-28-sidecar-ambassador-concept.html",
+    "id": "U2-28-sidecar-ambassador-concept",
+    "title": "Sidecar & Ambassador Patterns",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actSidecar",
+      "actAmbassador"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-28-sidecar-ambassador-realworld.html",
+    "id": "U2-28-sidecar-ambassador-realworld",
+    "title": "Sidecar & Ambassador — A Motorcycle Sidecar",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actSidecar",
+      "actAmbassador"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-29-strangler-fig-concept.html",
+    "id": "U2-29-strangler-fig-concept",
+    "title": "Strangler Fig (Migration Pattern)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMigrate",
+      "actBurst"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-29-strangler-fig-realworld.html",
+    "id": "U2-29-strangler-fig-realworld",
+    "title": "Strangler Fig — Renovating Room by Room",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMigrate",
+      "actBurst"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-30-serverless-faas-concept.html",
+    "id": "U2-30-serverless-faas-concept",
+    "title": "Serverless / FaaS",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statInvokes"
+    ],
+    "buttons": [
+      "actBurst",
+      "actIdle"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-30-serverless-faas-realworld.html",
+    "id": "U2-30-serverless-faas-realworld",
+    "title": "Serverless — Pop-Up Shop Temp Staff",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statInvokes"
+    ],
+    "buttons": [
+      "actBurst",
+      "actIdle"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-31-pubsub-vs-event-streaming-concept.html",
+    "id": "U2-31-pubsub-vs-event-streaming-concept",
+    "title": "Pub/Sub vs Event Streaming",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actMode",
+      "actReplay"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-31-pubsub-vs-event-streaming-realworld.html",
+    "id": "U2-31-pubsub-vs-event-streaming-realworld",
+    "title": "Pub/Sub vs Streaming — Live TV vs DVR",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actMode",
+      "actReplay"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-32-crdts-concept.html",
+    "id": "U2-32-crdts-concept",
+    "title": "CRDTs (Conflict-Free Replicated Data Types)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actDiverge",
+      "actMerge"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U2-32-crdts-realworld.html",
+    "id": "U2-32-crdts-realworld",
+    "title": "CRDTs — A Shared Shopping List Offline",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statOps"
+    ],
+    "buttons": [
+      "actDiverge",
+      "actMerge"
+    ],
+    "steps": 10
+  }
+]

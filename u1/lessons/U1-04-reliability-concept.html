@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reliability · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.ledger{position:absolute; left:74%; top:74%; transform:translateX(-50%); display:flex; gap:6px; z-index:3}
+.cell{width:30px; height:20px; border-radius:5px; border:1.5px solid var(--line2); background:#eef5fd; transition:.2s}
+.cell.ok{background:var(--good); border-color:var(--good)}
+.cell.bad{background:var(--bad); border-color:var(--bad)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 1 · Fundamentals</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Reliability</h1>
+  <p class="subtitle">Reliable means correct — even when something fails mid-operation. A transaction makes a multi-step write all-or-nothing, so a crash rolls back cleanly instead of corrupting data.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Transfers</div><div class="stat-v accent" id="statTx">0</div></div>
+  <div class="stat"><div class="stat-k">Corruptions</div><div class="stat-v bad" id="statCorr">0</div></div>
+  <div class="stat"><div class="stat-k">Transaction</div><div class="stat-v good" id="statTxn">ON</div></div>
+</div>
+<div class="wireline" style="left:16%;width:24%;top:55%"></div>
+<div class="wireline" style="left:44%;width:26%;top:55%"></div>
+<div class="node abs" data-show="1" style="left:14%;top:55%"><div class="box">🧑</div><div class="lbl"><span class="k">User</span></div></div>
+<div class="node abs" data-show="1" style="left:42%;top:55%"><div class="box">🖥️</div><div class="lbl"><span class="k">Service</span></div></div>
+<div class="node abs" data-show="1" style="left:74%;top:55%"><div class="box">🗄️</div><div class="lbl"><span class="k">Account DB</span></div></div>
+<div class="ledger"><div class="cell" id="e0"></div><div class="cell" id="e1"></div><div class="cell" id="e2"></div></div>
+<div class="nlbl" style="left:74%;top:88%">debit · credit · log</div>
+<div class="acts">
+  <button class="act bad" id="actFault">💥 Inject failure</button>
+  <button class="act" id="actTxn">🔒 Transaction ON/OFF</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let tx=0, corrupt=0, txn=true, faultNext=false, running=false, busy=false;
+  const elTx=document.getElementById('statTx'), elC=document.getElementById('statCorr'), elT=document.getElementById('statTxn');
+  const cells=[0,1,2].map(i=>document.getElementById('e'+i));
+  const btnF=document.getElementById('actFault');
+  function clearCells(){ cells.forEach(c=>c.className='cell'); }
+  function transfer(){
+    if(document.hidden||busy) return; busy=true; tx++; elTx.textContent=tx; clearCells();
+    const leg=460*simRate();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='55%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms cubic-bezier(.45,0,.25,1)'; d.style.left='42%'; });
+    setTimeout(()=>{ d.style.left='74%'; setTimeout(()=>{
+      const fault=faultNext; faultNext=false; if(btnF)btnF.textContent='💥 Inject failure';
+      const failAt=fault?1:3; let i=0;
+      (function writeStep(){
+        if(i<failAt){ cells[i].className='cell ok'; i++; setTimeout(writeStep,340*simRate()); return; }
+        if(fault){
+          if(txn){ cells.forEach(c=>c.className='cell bad'); d.classList.add('fail');
+            setTimeout(()=>{ clearCells(); d.style.transition='left '+leg+'ms'; d.style.left='42%'; setTimeout(()=>{d.remove(); busy=false;}, leg); }, 420*simRate()); }
+          else { if(cells[i])cells[i].className='cell bad'; corrupt++; elC.textContent=corrupt; d.classList.add('fail'); setTimeout(()=>{d.remove(); busy=false;},600); }
+        } else { d.classList.add('done'); d.style.transition='left '+leg+'ms'; d.style.left='90%'; setTimeout(()=>{d.remove(); busy=false;}, leg); }
+      })();
+    }, leg); }, leg);
+  }
+  function loop(){ if(!running)return; transfer(); setTimeout(loop, 2600*simRate()); }
+  function injectFault(){ faultNext=true; if(!busy) transfer(); }
+  function toggleTxn(){ txn=!txn; elT.textContent=txn?'ON':'OFF'; elT.className='stat-v '+(txn?'good':'bad'); }
+  document.getElementById('actFault').onclick=injectFault;
+  document.getElementById('actTxn').onclick=toggleTxn;
+  running=true; loop();
+  return {transfer,injectFault,toggleTxn};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"<b>Reliability</b> is about staying <em>correct</em>, not just staying up. A money transfer is a great stress test.", dur:4200},
+  {cap:"Each transfer writes three things to the database: a <b>debit</b>, a <b>credit</b>, and a <b>log</b> entry.", dur:4200},
+  {cap:"Normally all three commit together — the ledger turns green and the result is correct.", dur:4000},
+  {cap:"A <b>transaction</b> ties those writes into one all-or-nothing unit. Watch what it does when a crash hits.", dur:4200},
+  {cap:"Inject a failure mid-write <em>with the transaction ON</em>: everything <span class='hl-good'>rolls back</span> — no half-done damage.", dur:4600, on(){SIM.injectFault();}},
+  {cap:"The account is exactly as it was before. A failed operation left <b>zero corruption.</b>", dur:4200},
+  {cap:"Now turn the <b>transaction OFF</b> and fail again — the debit lands but the credit never does.", dur:4400, on(){SIM.toggleTxn();SIM.injectFault();}},
+  {cap:"<span class='hl-bad'>Corrupted state:</span> money left one account and never arrived. That's an unreliable system.", dur:4400, on(){SIM.toggleTxn();}},
+  {cap:"Your turn 👉 toggle <b>🔒 Transaction</b> and hit <b>💥 Inject failure</b> — see rollback vs corruption.", dur:5400},
+  {cap:"Reliability = correct results every time, even through failures. Transactions, retries and checks are how we get there.", dur:4600}
+]});
+
+</script>
+</body></html>
