@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCP Three-Way Handshake · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.msg{position:absolute; font-family:var(--fmono); font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; z-index:5; opacity:0; transition:.2s; white-space:nowrap}
+.msg.on{opacity:1}
+.state{position:absolute; left:50%; top:16%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; z-index:5}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 4 · Networking &amp; APIs</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">TCP Three-Way Handshake</h1>
+  <p class="subtitle">Before TCP sends a byte of data, the two sides agree to talk in three messages: the client says SYN (let's connect), the server replies SYN-ACK (ok, and you?), the client says ACK (confirmed). Only then does data flow.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Connections opened</div><div class="stat-v accent" id="statConns">0</div></div>
+  <div class="stat"><div class="stat-k">State</div><div class="stat-v" id="statState">CLOSED</div></div>
+  <div class="stat"><div class="stat-k">Data packets</div><div class="stat-v" id="statData">0</div></div>
+</div>
+<div class="state" id="stateBadge">CLOSED</div>
+<div class="node abs" data-show="1" style="left:16%;top:52%"><div class="box client">💻</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:84%;top:52%"><div class="box server">🖥️</div><div class="lbl"><span class="k">Server</span></div></div>
+<div class="msg" id="m0" style="left:35%;top:38%;color:var(--accent-d)">1 · SYN →</div>
+<div class="msg" id="m1" style="left:35%;top:62%;color:var(--violet)">← 2 · SYN-ACK</div>
+<div class="msg" id="m2" style="left:35%;top:46%;color:var(--good)">3 · ACK →</div>
+<div class="acts">
+  <button class="act ok" id="actConnect">🤝 Open connection</button>
+  <button class="act" id="actData">📦 Send data</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let conns=0, data=0, established=false, busy=false, running=false;
+  const elC=document.getElementById('statConns'), elS=document.getElementById('statState'), elD=document.getElementById('statData'), badge=document.getElementById('stateBadge');
+  const ms=[document.getElementById('m0'),document.getElementById('m1'),document.getElementById('m2')];
+  function setState(s,cls){ elS.textContent=s; elS.className='stat-v '+(cls||''); badge.textContent=s; badge.style.color = s==='ESTABLISHED'?'var(--good)':s==='CLOSED'?'var(--muted)':'var(--warn)'; }
+  function fly(fromX,toX,y,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fromX+'%'; d.style.top=y+'%'; scene.appendChild(d);
+    const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=toX+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),240); }, leg); }
+  function connect(){ if(busy) return; busy=true; established=false; ms.forEach(m=>m.classList.remove('on'));
+    setState('SYN-SENT','warn'); ms[0].classList.add('on');
+    fly(16,84,38,'',()=>{ setState('SYN-RECEIVED','warn'); ms[1].classList.add('on');
+      fly(84,16,62,'',()=>{ ms[2].classList.add('on');
+        fly(16,84,46,'done',()=>{ established=true; conns++; elC.textContent=conns; setState('ESTABLISHED','good'); busy=false; }); }); });
+  }
+  function send(){ if(!established){ return; } if(document.hidden) return;
+    fly(16,84,52,'done',()=>{ data++; elD.textContent=data; }); }
+  function loop(){ if(!running)return; if(!established && !busy){ connect(); } else if(established){ send(); } setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actConnect').onclick=connect;
+  document.getElementById('actData').onclick=send;
+  setState('CLOSED'); running=true; loop();
+  return {connect,send};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Before any data crosses a TCP connection, the two sides must <b>agree to talk.</b> They do it in a three-step handshake.", dur:4600},
+  {cap:"The connection starts <b>CLOSED.</b> The client wants in, so it sends step 1: <b>SYN</b> — \"let's synchronize, I'd like to connect.\"", dur:4800, on(){SIM.connect();}},
+  {cap:"The server hears it and replies with step 2: <b>SYN-ACK</b> — \"I acknowledge you, <em>and</em> I'd like to connect back.\"", dur:4800},
+  {cap:"The client finishes with step 3: <b>ACK</b> — \"acknowledged.\" Three messages, both sides now agreed.", dur:4600},
+  {cap:"The connection is now <span class='hl-good'>ESTABLISHED.</span> Only at this point can actual data start flowing.", dur:4400},
+  {cap:"Why three steps? So <em>both</em> sides confirm they can send <b>and</b> receive — no half-open, one-way connections.", dur:4600, on(){SIM.send();}},
+  {cap:"Now data packets fly freely over the open connection. The handshake happened once, up front.", dur:4400, on(){SIM.send();}},
+  {cap:"This setup cost is why opening many short connections is wasteful — and why connections get reused (keep-alive).", dur:4600},
+  {cap:"Your turn 👉 <b>🤝 Open a connection</b> to watch SYN, SYN-ACK, ACK, then <b>📦 send data</b> once established.", dur:5200},
+  {cap:"The three-way handshake is TCP's polite hello: both sides confirm before a single byte of real data is sent.", dur:4600}
+]});
+
+</script>
+</body></html>
