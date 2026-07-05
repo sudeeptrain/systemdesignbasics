@@ -1,0 +1,247 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Design · Unit 5 — Study Slides</title>
+<style>
+:root{--bg:#eef3f9;--surface:#fff;--ink:#13202f;--muted:#3f5266;--faint:#65788e;--line:#d3deeb;--line2:#b9c9dd;--accent:#1f6fe6;--accentd:#1657bf;--good:#0f8f5b;--warn:#b9730b;--bad:#d83a2e;--violet:#6a4fe0;--pink:#cc2f86;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(160deg,#eef3f9,#e6eef7);font-size:18px;line-height:1.5}
+#stage{height:100vh;display:flex;flex-direction:column;padding:18px 22px 64px;max-width:1180px;margin:0 auto}
+.head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:8px;margin-bottom:10px}
+.unit{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accentd);background:rgba(31,111,230,.08);border:1px solid var(--line2);padding:4px 10px;border-radius:999px}
+.tnum{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint)}
+.ttl{font-family:'Space Grotesk',ui-sans-serif,system-ui;font-weight:700;font-size:27px;letter-spacing:-.01em;flex:1;min-width:200px}
+.rating{font-size:14px;color:var(--warn)}
+.slide{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px -24px rgba(40,70,120,.5);padding:20px 26px;overflow:auto}
+.slide h2{font-family:'Space Grotesk',ui-sans-serif;font-size:21px;margin:0 0 12px;color:var(--accentd);display:flex;align-items:center;gap:8px}
+.slide h2 .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block}
+ul{margin:6px 0 12px;padding-left:24px}
+li{margin:5px 0}
+li b{color:var(--accentd)}
+.sub{font-weight:700;color:var(--ink);margin:12px 0 4px;font-size:18px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0 12px}
+.kv .k{font-weight:700;color:var(--violet)}
+.kv .v{color:var(--muted)}
+table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:16.5px}
+th,td{border:1px solid var(--line2);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#eef4ff;color:var(--accentd);font-family:'IBM Plex Mono',monospace;font-size:14px}
+.note{margin:8px 0;padding:9px 13px;border-left:4px solid var(--good);background:#e9f7f0;border-radius:0 8px 8px 0;font-size:16.5px}
+.note.warn{border-left-color:var(--warn);background:#fff6e8}
+.note.key{border-left-color:var(--accent);background:#eaf2fe}
+.note.rw{border-left-color:var(--pink);background:#fdeef6}
+.foot{position:fixed;left:0;right:0;bottom:0;height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:15px}
+.foot button{font:inherit;font-size:15px;padding:6px 14px;border:1px solid var(--line2);background:#f3f7fc;border-radius:8px;cursor:pointer;color:var(--ink)}
+.foot button:hover{border-color:var(--accent);color:var(--accentd)}
+.counter{font-family:'IBM Plex Mono',monospace;color:var(--faint)}
+.spacer{flex:1}
+select{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff;max-width:42vw}
+.hint{color:var(--faint);font-size:13px}
+@media print{.foot{display:none}#stage{height:auto}.slide{break-inside:avoid;box-shadow:none}}
+</style><style>.mnav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;gap:8px;justify-content:center;align-items:center;padding:7px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 14px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:5px 12px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}#stage{padding-top:50px!important}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a href="index.html">▶ Animated Lessons</a><a class="cur">📊 Study Slides</a></div>
+<div id="stage">
+  <div class="head"><span class="unit">Unit 5 · Operating Systems & Caching</span><span class="tnum" id="tnum"></span><span class="ttl" id="ttl"></span><span class="rating" id="rating"></span></div>
+  <div class="slide" id="slide"></div>
+</div>
+<div class="foot">
+  <button onclick="prev()">◀ Prev</button><button onclick="next()">Next ▶</button>
+  <span class="counter" id="counter"></span><span class="spacer"></span><span class="hint">← → keys</span>
+  <select id="jump" onchange="jumpTo(this.value)"></select>
+</div>
+<script>
+const TOPICS=[
+{n:1,t:"Process Lifecycle",r:"★★★★",slides:[
+ {h:"States a process moves through",body:["<b>New → Ready → Running</b>, dipping to <b>Waiting</b> (blocked on I/O), ending in <b>Terminated</b>.","Scheduler shuttles processes between <b>Ready and Running</b> as the CPU frees up.",{kv:[["Ready","runnable, waiting for CPU"],["Running","executing on CPU"],["Waiting","blocked on I/O/event"]]},"A Process Control Block (PCB) stores its state/registers.",{note:"After I/O completes a process goes back to Ready, not straight to Running.",cls:"key"}]}
+]},
+{n:2,t:"Process Scheduler",r:"★★★★",slides:[
+ {h:"Decides who runs next",body:["More ready processes than CPUs → scheduler picks order & duration from the ready queue.",{kv:[["FCFS","first-come; long job blocks others (convoy)"],["SJF","shortest job first; best avg wait, risks starvation"],["Round-robin","fixed time slice each; fair, responsive"],["Priority","by priority; risks starvation (use aging)"]]},"Balances <b>throughput</b> vs <b>fairness</b> vs <b>latency</b>.",{note:"The OS's traffic controller: pick from ready queue → run → repeat.",cls:"key"}]}
+]},
+{n:3,t:"Preemptive vs Non-Preemptive",r:"★★★★",slides:[
+ {h:"Can the OS interrupt a running process?",body:[{tbl:{head:["","Non-preemptive","Preemptive"],rows:[["CPU held until","finish/block","time slice ends → interrupted"],["Responsiveness","poor (hog blocks all)","good (short jobs interleave)"],["Cost","simple","context-switch overhead"]]}},"Modern OSes are preemptive (time-sliced).",{note:"Non-preemptive: a long job starves everyone. Preemptive: responsive at the cost of switching overhead.",cls:"key"}]}
+]},
+{n:4,t:"Race Condition",r:"★★★★★",slides:[
+ {h:"Unsynchronized shared writes",body:["Two threads do <b>read-modify-write</b> on shared data; interleaving causes a <b>lost update</b> (both read old, both write same new).","Result depends on timing → intermittent, hard to reproduce.","Increment isn't atomic: read → add → write; the gap is the danger.",{note:"Fix: make the critical section atomic with a lock/mutex (or atomic instructions).",cls:"key"}]}
+]},
+{n:5,t:"Mutex / Lock",r:"★★★★★",slides:[
+ {h:"Mutual exclusion",body:["A mutex guards a <b>critical section</b> so only one thread enters at a time: <b>acquire → use → release</b>.","Others that try while held <b>block/wait</b> — turns a race into an orderly queue.","Keep critical sections <b>small</b> (locks serialize → hurt concurrency).",{note:"Makes read-modify-write atomic w.r.t. other threads. Beware deadlocks from multiple locks.",cls:"warn"}]}
+]},
+{n:6,t:"Memory Allocation",r:"★★★★",slides:[
+ {h:"Hand out & reclaim memory",body:["Allocate contiguous chunks (first-fit / best-fit / worst-fit); free on release.","Freeing the middle leaves scattered holes → <b>external fragmentation</b>: free space exists but not in one usable piece.","Fixes: compaction, better fits, or <b>paging</b> (avoids external frag entirely).",{note:"Contiguous allocation fragments over time — paging sidesteps it with fixed-size pages.",cls:"warn"}]}
+]},
+{n:7,t:"Paging",r:"★★★★",slides:[
+ {h:"Fixed-size pages → frames",body:["Split memory into equal <b>pages</b> (virtual) & <b>frames</b> (physical). A <b>page table</b> maps page→frame.","A program's contiguous address space sits in <b>scattered</b> physical frames → no external fragmentation; per-process isolation.","Cost: a page-table lookup per access (sped up by the TLB).",{note:"Equal-size pieces mean any free frame fits any page. The basis of virtual memory.",cls:"key"}]}
+]},
+{n:8,t:"Segmentation",r:"★★★",slides:[
+ {h:"Divide by logical role",body:["Memory split into variable-size <b>segments</b> (code, data, heap, stack), each with a <b>base + limit</b>.","Address = segment + offset; offset checked against limit → <b>bounds protection</b> (segfault on overrun).","Maps to how programmers think + permissions; but variable sizes → external fragmentation.",{note:"Often combined with paging (segmented paging) to get both intuition and no fragmentation.",cls:"warn"}]}
+]},
+{n:9,t:"Virtual Memory",r:"★★★★",slides:[
+ {h:"Bigger address space than RAM",body:["Each program gets a large <b>private virtual address space</b>; only the active <b>working set</b> sits in RAM, the rest on disk (swap), paged in on demand.","Enables running more/bigger programs than physical RAM and isolates processes.","Access in RAM = fast; not in RAM → page fault → load from disk.",{note:"RAM holds the working set; disk backs the rest — the illusion of vast memory.",cls:"key"}]}
+]},
+{n:10,t:"Page Fault",r:"★★★★",slides:[
+ {h:"Accessing a non-resident page",body:["CPU touches a page not in RAM → fault → OS <b>pauses</b> the process, fetches the page from disk into a frame (evicting one if full), updates the page table, <b>resumes</b>.","Transparent to the program but a disk fetch is ~thousands× slower than RAM.",{kv:[["Minor fault","page in memory, just not mapped"],["Major fault","must read from disk (slow)"]]},{note:"A few faults are fine; many are deadly (see thrashing). Minimize them via locality.",cls:"warn"}]}
+]},
+{n:11,t:"Thrashing",r:"★★★★",slides:[
+ {h:"Swapping instead of working",body:["Too many active pages for RAM → processes constantly fault, evicting pages each other needs right back.","CPU spends nearly all time <b>swapping</b>, useful work collapses — more load makes throughput <em>worse</em>.","Fixes: add RAM, reduce multiprogramming (suspend processes), working-set model.",{note:"The cure is to reduce load so working sets fit in RAM again.",cls:"warn"}]}
+]},
+{n:12,t:"FIFO Page Replacement",r:"★★★★",slides:[
+ {h:"Evict the oldest-loaded page",body:["On a fault with full frames, evict whichever page has been resident longest (a queue).","Trivial to implement; <b>ignores actual usage</b> — may evict a hot page just for being old.","Can suffer <b>Belady's anomaly</b> (more frames → more faults).",{note:"The baseline policy; LRU/LFU improve on its usage-blindness.",cls:"key"}]}
+]},
+{n:13,t:"LRU Page Replacement",r:"★★★★★",slides:[
+ {h:"Evict least-recently-used",body:["Bet on <b>locality</b>: a page used recently will be used again → evict the one untouched longest.","On hit, mark most-recently-used (move to front); evict from the LRU end.","Usually beats FIFO; never suffers Belady's anomaly.","Cost: track recency every access → true LRU is pricey; approximated (clock/second-chance).",{note:"Recency-based; the most common cache/page replacement intuition.",cls:"key"}]}
+]},
+{n:14,t:"LFU Page Replacement",r:"★★★★",slides:[
+ {h:"Evict least-frequently-used",body:["Keep a per-page access <b>count</b>; evict the lowest-count page → protects genuinely hot pages even if not touched recently.","Good for stable hot sets.","Flaw: a once-popular page keeps a high count forever → fix with <b>aging</b> (decay counts).",{note:"Frequency-based; pair with aging so stale popularity fades.",cls:"warn"}]}
+]},
+{n:15,t:"Cache Hierarchy (L1/L2/L3/RAM)",r:"★★★★",slides:[
+ {h:"Trade size for speed",body:["Layers from fast/tiny to slow/huge: <b>L1 (~1ns) → L2 → L3 → RAM (~100ns) → SSD/disk</b>. Check nearest first; promote fetched data toward L1.",{kv:[["Fast memory","small & expensive"],["Big memory","slow & cheap"]]},"Works because of <b>locality</b> (reuse) — a few slow misses pay off across many fast hits.",{note:"Push hot data up the hierarchy (caching). Know the ratios: RAM~100ns, SSD ~100× RAM, disk ~10⁵× RAM.",cls:"key"}]}
+]},
+{n:16,t:"Cache Hit vs Miss",r:"★★★★★",slides:[
+ {h:"Hit rate is everything",body:["<b>Hit</b>: data in cache → fast. <b>Miss</b>: fetch from slow backing store, then cache it.","Miss types: <b>compulsory</b> (cold/first), <b>capacity</b> (too small), <b>conflict</b>.","Each hit is a DB/disk trip avoided; high hit rate (90%+) = backend barely touched.",{note:"Performance lives & dies by hit rate — size & policy tune it.",cls:"key"}]}
+]},
+{n:17,t:"Cache-Aside (Lazy Loading)",r:"★★★★★",slides:[
+ {h:"App manages the cache",body:["Read: check cache → on miss, load from DB and <b>populate cache</b>. Write: update DB, then <b>invalidate</b> the cached entry.","Only requested data is cached (demand-driven); degrades gracefully if cache dies (hit DB directly).","Most common caching pattern.",{note:"Invalidate (don't update) on writes — simpler, avoids subtle races. Beware stampedes on hot-key expiry.",cls:"key"}]}
+]},
+{n:18,t:"Write-Through Cache",r:"★★★★★",slides:[
+ {h:"Write to cache AND DB together",body:["Every write goes to cache and DB <b>synchronously</b> before returning → cache & DB always in sync; reads are safe & current; durable.","Cost: <b>write latency</b> (waits on DB every time); caches data even if never re-read.",{note:"Best for read-heavy, consistency-sensitive workloads. Always consistent, slower writes.",cls:"key"}]}
+]},
+{n:19,t:"Write-Back Cache",r:"★★★★★",slides:[
+ {h:"Write to cache now, DB later",body:["Write to cache & return immediately (mark <b>dirty</b>); flush to DB later/batched → fast writes, fewer DB hits (coalesce repeated writes).","Risk: <b>cache crash before flush = data loss</b>; DB is briefly stale.",{note:"Speed vs durability. Good for write-heavy with small tolerable loss windows; pair with replication/battery-backed cache.",cls:"warn"}]}
+]},
+{n:20,t:"Distributed Cache (Redis Cluster)",r:"★★★★★",slides:[
+ {h:"Shard cache across nodes",body:["Spread keys across many nodes by <b>hashing</b> (Redis: 16,384 hash slots) → more RAM & throughput than one node.","Add nodes to scale out; <b>replicas</b> per shard for HA + automatic failover.","Consistent hashing minimizes reshuffle on resize.",{note:"Scales the cache horizontally with resilience — the standard for large-scale caching.",cls:"key"}]}
+]},
+{n:21,t:"CDN Cache",r:"★★★★★",slides:[
+ {h:"Cache static assets at the edge",body:["Edge servers near users cache static content; first request misses → fetch from origin → serve locally many times until <b>TTL</b> expires (then revalidate).","Cuts latency & origin bandwidth massively for popular assets.","Short TTL = fresher/more origin load; long TTL = less load/staleness; purge on deploy.",{note:"Fetch once from origin, serve many from the edge — governed by TTL.",cls:"key"}]}
+]},
+{n:22,t:"Cache Invalidation",r:"★★★★★",slides:[
+ {h:"Keep the copy honest",body:["When the source changes, the cached copy is <b>stale</b> → serving it returns wrong data. Must evict/refresh.",{kv:[["TTL","expire after N seconds (simple, bounded staleness)"],["Write-invalidate","clear entry on every update"],["Event-driven","source notifies cache to invalidate"]]},{note:"'One of the two hard things.' Each strategy trades freshness vs load — get it wrong → stale data or hammered source.",cls:"warn"}]}
+]},
+{n:23,t:"Cache Eviction (LRU / LFU)",r:"★★★★★",slides:[
+ {h:"Free space when full",body:["On a full cache, the policy picks a victim: <b>LRU</b> (least-recently-used) or <b>LFU</b> (least-frequently-used); also FIFO, random, TTL-based.","LRU suits recency-heavy patterns; LFU suits stable hot sets.","Redis offers allkeys-lru, allkeys-lfu, volatile-*, etc.",{note:"Match the policy to your access pattern; LRU is the safe default.",cls:"key"}]}
+]},
+{n:24,t:"Threads vs Processes",r:"★★★★★",slides:[
+ {h:"Shared vs isolated memory",body:[{tbl:{head:["","Process","Thread"],rows:[["Memory","private, isolated","shared within a process"],["Weight","heavy (own space)","light (cheap to create)"],["Comm.","IPC needed","share variables directly"],["Failure","isolated (safe)","one can corrupt others"]]}},{note:"Process = safe but heavy; thread = fast but needs synchronization (locks).",cls:"key"}]}
+]},
+{n:25,t:"Concurrency vs Parallelism",r:"★★★★★",slides:[
+ {h:"Interleaved vs simultaneous",body:[{kv:[["Concurrency","deal with many tasks by interleaving on one core (structure)"],["Parallelism","run many tasks at the SAME instant on multiple cores"]]},"Concurrency keeps the CPU busy while a task waits (I/O); a well-structured concurrent program runs in parallel when cores are available.",{note:"Concurrency = one chef juggling dishes; parallelism = many chefs. Related, not the same.",cls:"key"}]}
+]},
+{n:26,t:"Context Switching",r:"★★★★",slides:[
+ {h:"The cost of multitasking",body:["To switch processes/threads, the OS <b>saves</b> one's state (registers, PC) and <b>loads</b> another's → pure overhead, no useful work.","Hidden cost: cold CPU caches/TLB after switching → extra misses.","Too-frequent switching wastes cycles; too-rare hurts responsiveness.",{note:"Short slices feel responsive but waste cycles; tune the slice. Switch wisely, not constantly.",cls:"warn"}]}
+]},
+{n:27,t:"Deadlock",r:"★★★★★",slides:[
+ {h:"Four conditions (all required)",body:["<b>Mutual exclusion + hold-and-wait + no preemption + circular wait</b> → processes frozen, each holding what another needs.",{sub:"Handling"},"<b>Prevent</b>: break one condition (e.g., global lock ordering kills circular wait; take all locks at once). <b>Avoid</b>: Banker's algorithm. <b>Detect & recover</b>: find cycle, kill a victim. <b>Timeouts</b>.",{note:"Break any one of the four conditions and deadlock can't form. Ordered locking is the classic fix.",cls:"key"}]}
+]},
+{n:28,t:"Semaphore vs Mutex vs Spinlock",r:"★★★★",slides:[
+ {h:"Three sync primitives",body:[{tbl:{head:["","Mutex","Semaphore","Spinlock"],rows:[["Allows","1 owner","up to N","1"],["When blocked","sleep","sleep","busy-spin (no sleep)"],["Best for","critical section","resource pool of N","very short waits / kernel"]]}},"Binary semaphore ≈ mutex (mutex adds ownership).",{note:"Spinlock wins for tiny waits (skips sleep/wake), disastrous for long ones. Mutex/sem sleep → better for longer waits.",cls:"key"}]}
+]},
+{n:29,t:"Inter-Process Communication (IPC)",r:"★★★★",slides:[
+ {h:"How isolated processes cooperate",body:[{kv:[["Pipes / queues","copy data via the kernel — simple, safe"],["Shared memory","map same region — fastest, needs locking"],["Sockets","work across machines too"],["Signals","tiny async notifications"]]},{note:"Copy-based IPC is simple & safe; shared memory is fastest but needs synchronization. Pick per data volume.",cls:"key"}]}
+]},
+{n:30,t:"Copy-on-Write (COW)",r:"★★★★",slides:[
+ {h:"Share until a write happens",body:["On <b>fork()</b>, parent & child <b>share pages read-only</b> instead of copying all memory → fork is fast & cheap.","A write to a shared page triggers copying <b>only that one page</b> for the writer.","Pay for copies only where data actually diverges.",{note:"Powers fast process spawning, snapshots, and efficient memory use.",cls:"key"}]}
+]},
+{n:31,t:"TLB (Translation Lookaside Buffer)",r:"★★★",slides:[
+ {h:"Cache for page-table lookups",body:["Tiny, fast cache of recent <b>page→frame</b> translations. Hit → instant address translation; miss → walk the page table (slow RAM) then cache the result.","Locality → very high hit rate (>99%), making paging fast.","<b>Flushed on context switch</b> (different process mappings) → part of switch cost.",{note:"A speed-dial note for address translation; flushing it is why switches are costly.",cls:"key"}]}
+]},
+{n:32,t:"Read-Through & Write-Around",r:"★★★★★",slides:[
+ {h:"Two more cache patterns",body:[{kv:[["Read-through","the CACHE loads from DB on a miss (app just asks the cache; library owns loading)"],["Write-around","writes go straight to DB, bypassing the cache — avoids polluting it with write-only data"]]},"Pair well for read-heavy, write-rarely-read workloads. (vs cache-aside, where the app does the loading.)",{note:"Read-through hides loading from the app; write-around protects hot read data from eviction.",cls:"key"}]}
+]},
+{n:33,t:"Cache Stampede / Thundering Herd",r:"★★★★★",slides:[
+ {h:"Synchronized miss floods the DB",body:["A hot key expires → all requests miss at once → all hit the DB to recompute the same value → overload (the cache's expiry caused the outage it was meant to prevent).",{sub:"Mitigations"},"<b>Single-flight lock</b> (one rebuilds, others wait), <b>TTL jitter</b> (stagger expiries), <b>early/background refresh</b> before expiry.",{note:"Let one request rebuild a hot key while others wait — one DB hit, not thousands.",cls:"key"}]}
+]},
+{n:34,t:"Cache Warming & Negative Caching",r:"★★★★",slides:[
+ {h:"Pre-load + cache the 'no'",body:[{kv:[["Warming","pre-load known-hot data BEFORE traffic → avoid cold-start miss storms after deploy/restart"],["Negative caching","cache 'not found' results (short TTL) → missing/bad keys stop hammering the DB"]]},{note:"Warming kills cold-start misses; negative caching absorbs repeated dead-end lookups. Both turn predictable misses into cheap hits.",cls:"key"}]}
+]},
+{n:35,t:"TTL Strategies & Cache Coherence",r:"★★★★",slides:[
+ {h:"Freshness dial + replica consistency",body:["<b>TTL</b> caps trust per entry: short = fresh but more backend load; long = less load but staler. Tune per data type (price=seconds, avatar=hours).","<b>Coherence</b>: with many cache replicas, a write must <b>propagate/invalidate ALL copies</b> or different users see different values.","Mechanisms: pub/sub invalidation, versioned keys, short TTL as a backstop.",{note:"TTL trades freshness vs load; coherence means every write reaches every copy so all users agree.",cls:"key"}]}
+]}
+];
+const DD="Deep dive: why · when · when-not";
+const EXTRA={
+1:[{h:DD,body:["<b>In one line:</b> a process moves New→Ready→Running, dipping to Waiting for I/O, ending Terminated.",{sub:"Why it's needed"},"Mental model for how the OS multitasks and why a 'running' program is often actually waiting.",{sub:"Use it for"},"Reasoning about CPU vs I/O bound work, schedulers, concurrency design.",{sub:"N/A"},"Foundational — always relevant background.",{note:"Staff insight: after I/O completes a process returns to Ready (not Running). Most server work is I/O-bound — concurrency keeps the CPU busy during waits.",cls:"key"}]}],
+2:[{h:DD,body:["<b>In one line:</b> decides which ready process runs next and for how long.",{sub:"Why it's needed"},"More runnable work than CPUs → order/duration determines throughput, fairness, latency.",{sub:"Use it for"},"Understanding OS behavior; the same ideas drive request schedulers & job queues.",{sub:"N/A"},"Single-task embedded systems.",{note:"Staff insight: the throughput-vs-fairness-vs-latency tension reappears everywhere — load balancers, task queues, thread pools all 'schedule'.",cls:"key"}]}],
+3:[{h:DD,body:["<b>In one line:</b> non-preemptive = run till done/block; preemptive = interrupt after a time slice.",{sub:"Why it's needed"},"A long job mustn't freeze interactive work; preemption keeps systems responsive.",{sub:"Use it for"},"Preemptive → all modern interactive OSes; non-preemptive → simple/real-time deterministic cases.",{sub:"Trade-off"},"Preemption adds context-switch overhead.",{note:"Staff insight: short time slices feel responsive but waste cycles switching — tuning the quantum is the classic balance.",cls:"warn"}]}],
+4:[{h:DD,body:["<b>In one line:</b> unsynchronized read-modify-write on shared data → lost updates; timing-dependent bugs.",{sub:"Why it's needed"},"The root cause of the nastiest concurrency bugs (intermittent, hard to reproduce).",{sub:"Use it for"},"Anywhere threads share mutable state: counters, balances, caches.",{sub:"N/A"},"Single-threaded or immutable/shared-nothing designs.",{note:"Staff insight: increment isn't atomic (read→add→write) — that gap is the bug. Fix with a lock or atomic instruction; or avoid shared mutable state entirely.",cls:"warn"}]}],
+5:[{h:DD,body:["<b>In one line:</b> a lock that lets only one thread into the critical section: acquire→use→release.",{sub:"Why it's needed"},"Serializes access to shared data, eliminating races.",{sub:"Use it for"},"Protecting shared counters, in-memory caches, data structures.",{sub:"Avoid/limit when"},"High contention — locks serialize and kill concurrency; keep sections tiny.",{note:"Staff insight: prefer lock-free/atomic ops or sharding the data over coarse locks. Multiple locks → deadlock risk (order them consistently).",cls:"warn"}]}],
+6:[{h:DD,body:["<b>In one line:</b> OS hands out & reclaims contiguous chunks; freeing the middle scatters holes (fragmentation).",{sub:"Why it's needed"},"Explains why contiguous allocation fails over time and why paging exists.",{sub:"Use it for"},"Understanding heaps, allocators, fragmentation; tuning GC/memory pools.",{sub:"N/A"},"Managed languages hide most of this.",{note:"Staff insight: external fragmentation = free memory you can't use as one block. Paging (fixed-size frames) sidesteps it — the key takeaway.",cls:"key"}]}],
+7:[{h:DD,body:["<b>In one line:</b> fixed-size pages→frames via a page table; scattered frames look contiguous to the program.",{sub:"Why it's needed"},"Eliminates external fragmentation and isolates each process's address space.",{sub:"Use it for"},"The foundation of virtual memory in every modern OS.",{sub:"Cost"},"A page-table lookup per access (mitigated by the TLB).",{note:"Staff insight: equal-size pieces mean any free frame fits any page — that's the whole trick. Isolation + no fragmentation.",cls:"key"}]}],
+8:[{h:DD,body:["<b>In one line:</b> split memory by logical role (code/data/heap/stack), each base+limit (bounds-checked).",{sub:"Why it's needed"},"Maps to how programmers think + enforces protection (segfault on overrun).",{sub:"Use it for"},"Conceptually; modern systems use segmented-paging (both together).",{sub:"Downside"},"Variable sizes reintroduce external fragmentation.",{note:"Staff insight: the bounds check is real memory protection — code can't stray into the stack. Combined with paging in practice.",cls:"warn"}]}],
+9:[{h:DD,body:["<b>In one line:</b> a large private address space backed by RAM (working set) + disk (swap), paged on demand.",{sub:"Why it's needed"},"Run more/bigger programs than physical RAM; isolate processes.",{sub:"Use it for"},"Every general-purpose OS.",{sub:"Watch out"},"Over-commit → excessive swapping → thrashing.",{note:"Staff insight: RAM holds the hot working set; the rest lives on disk. The illusion of vast memory — until thrashing breaks it.",cls:"key"}]}],
+10:[{h:DD,body:["<b>In one line:</b> touch a non-resident page → OS pauses, loads from disk, updates table, resumes.",{sub:"Why it's needed"},"Makes on-demand paging transparent to the program.",{sub:"Use it for"},"Understanding why memory-bound apps stall; tuning working-set size.",{sub:"Watch out"},"Disk fetch ≈ thousands× RAM — a few faults fine, many = thrashing.",{note:"Staff insight: minimize faults via locality (keep the working set in RAM). Major (disk) faults are the killer; minor faults are cheap.",cls:"warn"}]}],
+11:[{h:DD,body:["<b>In one line:</b> too many active pages for RAM → constant faulting, CPU swaps instead of working.",{sub:"Why it's needed"},"Explains the cliff where more load makes throughput collapse.",{sub:"Use it for"},"Diagnosing a server that's 'busy' but doing nothing; capacity planning.",{sub:"Fix by"},"Adding RAM or reducing concurrency so working sets fit.",{note:"Staff insight: same shape as cache thrashing and connection-pool exhaustion — the cure is to reduce load, not add it.",cls:"warn"}]}],
+12:[{h:DD,body:["<b>In one line:</b> evict the oldest-loaded page (a queue) — simple, usage-blind.",{sub:"Why it's needed"},"The baseline replacement policy to compare others against.",{sub:"Use it for"},"Teaching/simple caches; rarely optimal in practice.",{sub:"Avoid when"},"Hot pages get evicted just for being old; can hit Belady's anomaly.",{note:"Staff insight: FIFO ignores usage — that's its flaw and why LRU/LFU exist. Know Belady's anomaly as a gotcha.",cls:"key"}]}],
+13:[{h:DD,body:["<b>In one line:</b> evict least-recently-used — bet on locality (recent → reused soon).",{sub:"Why it's needed"},"Strong, intuitive policy that usually beats FIFO; the default for caches.",{sub:"Use it for"},"OS page replacement, Redis (allkeys-lru), CPU/app caches.",{sub:"Cost"},"Tracking recency per access — true LRU is pricey, so it's approximated (clock).",{note:"Staff insight: LRU is the cache eviction default you'll cite in interviews. Approximations (second-chance/clock) make it cheap.",cls:"key"}]}],
+14:[{h:DD,body:["<b>In one line:</b> evict least-frequently-used — protect genuinely hot pages by access count.",{sub:"Why it's needed"},"Beats LRU when a stable hot set matters more than recency.",{sub:"Use it for"},"Workloads with steady popular keys (Redis allkeys-lfu).",{sub:"Flaw"},"A once-popular item clings forever — fix with aging (decay counts).",{note:"Staff insight: frequency vs recency is the core eviction debate. LFU+aging is the strong combo; pick policy by access pattern.",cls:"warn"}]}],
+15:[{h:DD,body:["<b>In one line:</b> L1→L2→L3→RAM→disk trades size for speed; check nearest, promote what you fetch.",{sub:"Why it's needed"},"Bridges the huge CPU-vs-memory speed gap via locality.",{sub:"Use it for"},"Reasoning about performance; mirrors app-level caching (browser→CDN→app→DB).",{sub:"N/A"},"Always relevant.",{note:"Staff insight: the SAME hierarchy idea repeats at every layer of system design — cache hot data as close to the consumer as possible.",cls:"key"}]}],
+16:[{h:DD,body:["<b>In one line:</b> hit = in cache (fast); miss = fetch from slow store, then cache it.",{sub:"Why it's needed"},"Hit rate is the single biggest performance lever for read-heavy systems.",{sub:"Use it for"},"Any cache (CPU, Redis, CDN, browser, DB buffer pool).",{sub:"N/A"},"Always relevant.",{note:"Staff insight: a 90% hit rate means the backend sees 10% of traffic. Miss types (cold/capacity/conflict) tell you what to tune.",cls:"key"}]}],
+17:[{h:DD,body:["<b>In one line:</b> app checks cache; on miss loads DB + populates; on write invalidates the entry.",{sub:"Why it's needed"},"Simplest, most resilient caching pattern; only caches what's actually read.",{sub:"Use it for"},"The default app cache (Redis in front of a DB).",{sub:"Watch out"},"Stampede on hot-key expiry; stale data if invalidation is missed.",{note:"Staff insight: invalidate (don't update) on writes — simpler, fewer races. Degrades gracefully: if cache dies, hit the DB directly.",cls:"key"}]}],
+18:[{h:DD,body:["<b>In one line:</b> write to cache AND DB synchronously → always consistent, slower writes.",{sub:"Why it's needed"},"Guarantees the cache is never staler than the DB; reads are safe.",{sub:"Use it for"},"Read-heavy, consistency-sensitive data.",{sub:"Avoid when"},"Write-heavy (every write pays DB latency) or write-once-read-never data.",{note:"Staff insight: pairs well with read-through. Trades write latency for read safety — opposite trade to write-back.",cls:"key"}]}],
+19:[{h:DD,body:["<b>In one line:</b> write to cache now (mark dirty), flush to DB later/batched → fast, risk loss.",{sub:"Why it's needed"},"Maximizes write throughput and coalesces repeated writes.",{sub:"Use it for"},"Write-heavy workloads tolerating a small loss window (metrics, counters).",{sub:"Danger"},"Cache crash before flush = lost writes; DB briefly stale.",{note:"Staff insight: speed vs durability. Use replicated/persistent caches to shrink the loss window; never for money without safeguards.",cls:"warn"}]}],
+20:[{h:DD,body:["<b>In one line:</b> shard the cache across nodes by hashing (Redis Cluster) + replicas for HA.",{sub:"Why it's needed"},"One node's RAM/throughput isn't enough at scale.",{sub:"Use it for"},"Large-scale caching, shared sessions, rate limiters across a fleet.",{sub:"Watch out"},"Cross-slot operations, hot keys, resharding (use consistent hashing).",{note:"Staff insight: the standard scale-out cache. Replicas + failover give HA; hot keys are the classic gotcha (replicate/duplicate them).",cls:"key"}]}],
+21:[{h:DD,body:["<b>In one line:</b> cache static assets at edges near users, governed by TTL; fetch once, serve many.",{sub:"Why it's needed"},"Cuts latency and origin bandwidth dramatically.",{sub:"Use it for"},"Images/video/JS/CSS, downloads, any global static-heavy app.",{sub:"Avoid for"},"Highly dynamic/personalized content (without edge logic).",{note:"Staff insight: TTL is the freshness dial; purge on deploy. Same idea as app caching, pushed to the network edge.",cls:"key"}]}],
+22:[{h:DD,body:["<b>In one line:</b> when the source changes, evict/refresh the stale copy (TTL / write-invalidate / event).",{sub:"Why it's needed"},"Stale cache = confidently wrong answers — the cache's biggest risk.",{sub:"Use it for"},"Every cache holding mutable data.",{sub:"N/A"},"Truly immutable/append-only data.",{note:"Staff insight: 'one of the two hard things.' Each strategy trades freshness vs load — wrong = stale data or a hammered source.",cls:"warn"}]}],
+23:[{h:DD,body:["<b>In one line:</b> on a full cache, pick a victim by policy (LRU/LFU/FIFO/random/TTL).",{sub:"Why it's needed"},"Bounded memory forces a choice; the policy decides hit rate.",{sub:"Use it for"},"Configuring Redis maxmemory-policy; sizing any cache.",{sub:"Match to"},"Access pattern — LRU for recency, LFU for stable hot sets.",{note:"Staff insight: LRU is the safe default; measure your hit rate and switch policy/size based on data, not vibes.",cls:"key"}]}],
+24:[{h:DD,body:["<b>In one line:</b> process = isolated memory (safe, heavy); thread = shared memory (fast, needs locks).",{sub:"Why it's needed"},"Determines your concurrency model, safety, and IPC needs.",{sub:"Use it for"},"Threads → shared-state parallelism in one app; processes → isolation/fault containment.",{sub:"Avoid threads when"},"Shared mutable state would cause races you can't manage.",{note:"Staff insight: 'share nothing' (processes/actors) trades memory for safety & simpler reasoning — often worth it at scale.",cls:"key"}]}],
+25:[{h:DD,body:["<b>In one line:</b> concurrency = interleave many tasks (structure); parallelism = run them at once (cores).",{sub:"Why it's needed"},"Concurrency keeps the CPU busy during I/O waits; parallelism uses multiple cores for speed.",{sub:"Use it for"},"Concurrency → I/O-bound servers (async); parallelism → CPU-bound work.",{sub:"Don't confuse"},"More threads ≠ faster for CPU-bound work beyond core count.",{note:"Staff insight: most backends are I/O-bound → concurrency (async/event loops) wins; CPU-bound → parallelism. Know which you have.",cls:"key"}]}],
+26:[{h:DD,body:["<b>In one line:</b> saving one task's state and loading another's — pure overhead, no useful work.",{sub:"Why it's needed"},"Explains why excessive threads/switching hurts throughput.",{sub:"Use it for"},"Tuning thread-pool sizes, time slices, async vs thread-per-request.",{sub:"Watch out"},"Cold caches/TLB after a switch add hidden cost.",{note:"Staff insight: thousands of threads → death by context switching; this is why async/event-loop models (Node, Netty) scale connections better.",cls:"warn"}]}],
+27:[{h:DD,body:["<b>In one line:</b> four conditions together (mutual-exclusion, hold-and-wait, no-preempt, circular-wait) freeze processes.",{sub:"Why it's needed"},"Multi-lock/multi-resource systems can hang permanently.",{sub:"Use it for"},"Any code/system acquiring multiple locks or resources.",{sub:"Prevent by"},"Breaking one condition — usually global lock ordering.",{note:"Staff insight: ordered lock acquisition kills circular wait — the simplest, most-cited fix. Otherwise: timeouts, or detect-and-kill a victim.",cls:"key"}]}],
+28:[{h:DD,body:["<b>In one line:</b> mutex (1 owner, sleep), semaphore (N permits), spinlock (1, busy-wait).",{sub:"Why it's needed"},"Different waits need different primitives for efficiency.",{sub:"Use it for"},"Mutex → critical section; semaphore → resource pool of N; spinlock → very short waits/kernel.",{sub:"Avoid spinlock when"},"Waits are long — busy-spinning burns CPU.",{note:"Staff insight: spinlock wins only when the wait is shorter than a sleep/wake cycle; otherwise mutex/semaphore (which sleep) are better.",cls:"key"}]}],
+29:[{h:DD,body:["<b>In one line:</b> isolated processes cooperate via pipes/queues (copy), shared memory (fast), or sockets (cross-machine).",{sub:"Why it's needed"},"Processes can't share variables — they need an explicit channel.",{sub:"Use it for"},"Multi-process apps, OS plumbing, microservices (sockets = the distributed IPC).",{sub:"Pick by"},"Data volume & locality.",{note:"Staff insight: copy-based IPC is simple & safe; shared memory is fastest but needs synchronization. Sockets generalize to networked services.",cls:"key"}]}],
+30:[{h:DD,body:["<b>In one line:</b> fork shares pages read-only; copy a page only when it's written.",{sub:"Why it's needed"},"Makes fork() cheap and memory-efficient — pay for copies only where data diverges.",{sub:"Use it for"},"Fast process spawning, snapshots, fork-heavy servers, container layers.",{sub:"N/A"},"Mostly OS-internal, but the pattern (copy-on-write) appears in data structures & filesystems too.",{note:"Staff insight: COW is everywhere — immutable data structures, ZFS/btrfs snapshots, Redis BGSAVE. 'Share until mutated' is a powerful idea.",cls:"key"}]}],
+31:[{h:DD,body:["<b>In one line:</b> a tiny cache of recent page→frame translations; hit = instant, miss = walk the table.",{sub:"Why it's needed"},"Without it, every memory access would need an extra (slow) table lookup.",{sub:"Use it for"},"Understanding why context switches & huge memory footprints are costly.",{sub:"Watch out"},"Flushed on context switch → cold-TLB misses afterward.",{note:"Staff insight: >99% hit rate is what makes paging affordable; TLB flushes are part of why switching is expensive (huge-pages reduce pressure).",cls:"key"}]}],
+32:[{h:DD,body:["<b>In one line:</b> read-through = cache loads misses itself; write-around = writes skip the cache to DB.",{sub:"Why it's needed"},"Cleaner app code (cache owns loading) + protects hot read data from write pollution.",{sub:"Use it for"},"Read-heavy, write-rarely-read workloads.",{sub:"Trade-off"},"A read just after a write is a guaranteed miss (not cached yet).",{note:"Staff insight: vs cache-aside (app loads). Read-through + write-around is a clean combo; write-around keeps the cache full of what's actually read.",cls:"key"}]}],
+33:[{h:DD,body:["<b>In one line:</b> a hot key expires → all requests miss at once → DB overload (the cache caused the outage).",{sub:"Why it's needed"},"A real, dangerous failure mode of naive caching at scale.",{sub:"Use it for"},"Any high-traffic cached hot key (homepage, trending item).",{sub:"Mitigate with"},"Single-flight lock, TTL jitter, early/background refresh.",{note:"Staff insight: let ONE request rebuild while others wait → one DB hit, not thousands. Jitter TTLs so keys don't expire together.",cls:"key"}]}],
+34:[{h:DD,body:["<b>In one line:</b> warming pre-loads hot data before traffic; negative caching caches the 'not found'.",{sub:"Why it's needed"},"Avoids cold-start miss storms after deploy and repeated dead-end DB lookups.",{sub:"Use it for"},"Warming → post-deploy/restart; negative caching → bad-ID/probing traffic.",{sub:"Watch out"},"Negative entries need short TTLs (the item may be created later).",{note:"Staff insight: both turn predictable misses into cheap hits. Negative caching also blunts cache-penetration attacks (flooding non-existent keys).",cls:"key"}]}],
+35:[{h:DD,body:["<b>In one line:</b> TTL trades freshness vs load; coherence means every write reaches every replica.",{sub:"Why it's needed"},"Wrong TTL = stale data or hammered backend; incoherent replicas = users disagree.",{sub:"Use it for"},"Tuning per-data TTLs; multi-replica/multi-region cache invalidation.",{sub:"N/A"},"Single-cache, immutable data.",{note:"Staff insight: set TTL per data type (price=seconds, avatar=hours). Propagate writes via pub/sub invalidation or versioned keys; short TTL as a backstop.",cls:"key"}]}]
+};
+const RW={
+4:"Classic real bug: concurrent 'decrement inventory' without locks oversells the last item during a flash sale.",
+6:"Facebook uses jemalloc and Google uses tcmalloc — custom allocators to fight fragmentation at scale.",
+13:"Redis offers an allkeys-lru eviction policy; CPU caches and CDNs evict by recency.",
+14:"Redis added allkeys-lfu (Redis 4+) for workloads with a stable set of hot keys.",
+15:"Netflix mirrors this end-to-end: browser cache → CDN (Open Connect) → app cache → DB.",
+16:"Cloudflare and Netflix obsess over CDN cache-hit ratio — a few % swings huge backend load.",
+17:"Facebook's 'Scaling Memcache' paper describes cache-aside (look-aside) at billions of ops/sec.",
+19:"CPU caches and many DB buffer pools use write-back for write performance.",
+20:"Facebook runs TAO + memcached; Twitter and many others run large Redis fleets as distributed caches.",
+21:"Netflix Open Connect and Cloudflare cache content at the edge, governed by TTL.",
+22:"Facebook's cross-region memcache invalidation is a famous hard problem (detailed in its engineering papers).",
+23:"Redis ships multiple eviction policies (LRU/LFU/random/TTL) you select via maxmemory-policy.",
+24:"Chrome isolates each tab in its own process; Nginx uses an event loop instead of thread-per-request.",
+25:"Node.js handles massive concurrency on one thread (event loop); Go uses goroutines for parallelism.",
+26:"Nginx beats Apache at high concurrency partly by avoiding thread-per-connection context-switch overhead.",
+27:"PostgreSQL and MySQL automatically detect deadlocks and abort a victim transaction.",
+28:"The Linux kernel uses spinlocks for very short critical sections on multicore CPUs.",
+29:"Chrome uses IPC between its sandboxed processes; microservices use sockets as distributed IPC.",
+30:"Redis uses fork()+copy-on-write for background snapshots (BGSAVE); container image layers work the same way.",
+33:"Facebook's memcache uses 'leases' to prevent thundering-herd stampedes when a hot key expires.",
+34:"Negative caching blunts cache-penetration attacks (flooding non-existent keys); CDNs pre-warm before big launches.",
+35:"CDNs and DNS rely on TTLs; Facebook tackles cross-region cache coherence at massive scale."
+};
+let flat=[], idx=0;
+const BUDGET=18;
+function wt(body){let w=0;body.forEach(b=>{ if(typeof b==='string')w+=1.1; else if(b.sub!==undefined)w+=0.8; else if(b.kv)w+=0.6*b.kv.length+0.5; else if(b.tbl)w+=1.0*(b.tbl.rows.length+1)+1; else if(b.note!==undefined)w+=1.6;});return w;}
+function buildFlat(){ flat=[]; TOPICS.forEach((tp,ti)=>{
+  const base=tp.slides.map(s=>({h:s.h,body:s.body.slice()}));
+  const ex=EXTRA[tp.n]; let slides=base;
+  if(ex&&ex[0]&&ex[0].body){ let xb=ex[0].body; if(RW[tp.n]) xb=xb.concat([{note:'🏢 Real-world — '+RW[tp.n],cls:'rw'}]); const last=base[base.length-1];
+    if(wt(last.body)+wt(xb)<=BUDGET){ last.body=last.body.concat([{sub:"⭐ Interview deep dive"}],xb); }
+    else { slides=base.concat([{h:ex[0].h||DD,body:xb}]); } }
+  slides.forEach((s,si)=>flat.push({tp,ti,s,si,sn:slides.length})); }); }
+function render(){ const f=flat[idx], tp=f.tp, s=f.s;
+  document.getElementById('tnum').textContent='Topic '+tp.n+'/'+TOPICS.length;
+  document.getElementById('ttl').textContent=tp.t; document.getElementById('rating').textContent=tp.r||'';
+  let html='<h2><span class="dot"></span>'+s.h+'</h2><ul>';
+  s.body.forEach(b=>{ if(typeof b==='string'){html+='<li>'+b+'</li>';return;}
+    if(b.sub!==undefined){html+='</ul><div class="sub">'+b.sub+'</div><ul>';return;}
+    if(b.kv){html+='</ul><div class="kv">'+b.kv.map(r=>'<div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div>').join('')+'</div><ul>';return;}
+    if(b.tbl){const hh='<tr>'+b.tbl.head.map(x=>'<th>'+x+'</th>').join('')+'</tr>';const rr=b.tbl.rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');html+='</ul><table>'+hh+rr+'</table><ul>';return;}
+    if(b.note!==undefined){html+='</ul><div class="note '+(b.cls||'')+'">'+b.note+'</div><ul>';return;} });
+  html+='</ul>'; const sl=document.getElementById('slide'); sl.innerHTML=html; sl.scrollTop=0;
+  document.getElementById('counter').textContent='Slide '+(f.si+1)+'/'+f.sn+'  ·  ('+(idx+1)+'/'+flat.length+' total)';
+}
+function next(){ if(idx<flat.length-1){idx++;render();} }
+function prev(){ if(idx>0){idx--;render();} }
+function jumpTo(v){ idx=flat.findIndex(f=>f.ti===+v); render(); }
+function buildJump(){ document.getElementById('jump').innerHTML=TOPICS.map((tp,i)=>'<option value="'+i+'">'+tp.n+'. '+tp.t+'</option>').join(''); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();next();} if(e.key==='ArrowLeft')prev(); });
+buildFlat(); buildJump(); render();
+</script><style>body.embed .mnav{display:none!important}body.embed #stage{padding-top:8px!important}body.embed .foot .hint{display:none}body.embed{background:#eef3f9}</style><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")==="1")document.body.classList.add("embed");var t=p.get("t");if(t!==null&&typeof flat!=="undefined"){var T=+t;if(p.get("only")==="1"){flat=flat.filter(function(f){return f.ti===T;});var j=document.getElementById("jump");if(j)j.style.display="none";idx=0;}else{var k=flat.findIndex(function(f){return f.ti===T;});idx=k<0?0:k;}if(typeof render==="function")render();}}catch(e){}})();</script><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")!=="1")return;if(typeof next!=="function"||typeof prev!=="function")return;var _n=next,_p=prev;next=function(){ if(typeof idx!=="undefined"&&typeof flat!=="undefined"&&idx>=flat.length-1){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(1);return;} } _n(); };prev=function(){ if(typeof idx!=="undefined"&&idx<=0){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(-1);return;} } _p(); };}catch(e){}})();</script></body></html>
