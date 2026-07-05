@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partitioning — A Split Phone Book · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.tablegrid{position:absolute; left:48%; top:20%; transform:translateX(-50%); display:grid; gap:3px; z-index:2}
+.cell5{width:30px; height:20px; border-radius:4px; border:1px solid var(--line2); background:#fff; transition:.15s}
+.cell5.part0{background:#eaf2fe; border-color:var(--accent)}
+.cell5.part1{background:#fff3e0; border-color:var(--warn)}
+.cell5.part2{background:#e7f7ef; border-color:var(--good)}
+.cell5.lit{box-shadow:0 0 0 3px rgba(31,111,230,.3)}
+.plabel{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--faint); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Partitioning — A Split Phone Book</h1>
+  <p class="subtitle">A city phone book is too thick to lift, so it ships as volumes: A–M in one book, N–Z in another. Looking up "Patel" means grabbing just one volume. You can also split a different way — names in one book, full addresses in another.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Lookups</div><div class="stat-v accent" id="statQueries">0</div></div>
+  <div class="stat"><div class="stat-k">Split type</div><div class="stat-v" id="statMode">By rows (A–M, N–Z)</div></div>
+  <div class="stat"><div class="stat-k">Pages opened (last)</div><div class="stat-v good" id="statScan">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:48%"><div class="box sm">🔎</div><div class="lbl"><span class="k">Look up</span></div></div>
+<div class="tablegrid" id="grid"></div>
+<div class="plabel" id="plabel" style="left:48%;top:13%;transform:translateX(-50%)">split by NAME RANGE (A–M, N–Z…)</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 By rows / By columns</button>
+  <button class="act ok" id="actQuery">🔎 Look someone up</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const grid=document.getElementById('grid'), plabel=document.getElementById('plabel');
+  const ROWS=6, COLS=6; let cells=[], mode='h', queries=0, running=false;
+  const elQ=document.getElementById('statQueries'), elM=document.getElementById('statMode'), elS=document.getElementById('statScan');
+  function build(){ grid.style.gridTemplateColumns='repeat('+COLS+',1fr)'; grid.innerHTML=''; cells=[];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const el=document.createElement('div'); el.className='cell5'; const part = mode==='h'? Math.floor(r/2) : Math.floor(c/2); el.classList.add('part'+part); el.dataset.r=r; el.dataset.c=c; el.dataset.p=part; grid.appendChild(el); cells.push(el); } }
+  function query(){ if(document.hidden) return; queries++; elQ.textContent=queries; cells.forEach(c=>c.classList.remove('lit'));
+    const part=Math.floor(Math.random()*3); const hit=cells.filter(c=>+c.dataset.p===part);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='44%'; });
+    setTimeout(()=>{ d.classList.add('done'); hit.forEach(c=>c.classList.add('lit')); elS.textContent=hit.length+' / '+cells.length; elS.className='stat-v good'; setTimeout(()=>d.remove(),300); }, leg);
+  }
+  function setMode(m){ mode=m; build(); elM.textContent=m==='h'?'By rows (A–M, N–Z)':'By columns (name vs notes)'; elM.className='stat-v '+(m==='h'?'accent':'warn');
+    plabel.textContent=m==='h'?'split by NAME RANGE (A–M, N–Z…)':'split by COLUMN (names · vs · full details)'; }
+  function loop(){ if(!running)return; query(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='h'?'v':'h');
+  document.getElementById('actQuery').onclick=query;
+  setMode('h'); running=true; loop();
+  return {query,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A whole-city phone book is too thick to even lift. The fix: <b>split it into volumes</b> — that's partitioning.", dur:4600},
+  {cap:"<b>Split by rows</b> first: surnames A–M in one volume, N–Z in another, and so on — slicing the entries by range.", dur:4600, on(){SIM.query();}},
+  {cap:"Look up \"Patel\" and you grab <b>only the N–Z volume.</b> You never even open the A–M book.", dur:4800, on(){SIM.query();}},
+  {cap:"Watch 'pages opened' stay small — you touch one volume, not the whole directory. The other slices are skipped entirely.", dur:4600, on(){SIM.query();}},
+  {cap:"Now <b>split by columns</b> instead — a different way to cut the same data.", dur:4000, on(){SIM.setMode('v');}},
+  {cap:"Put just <b>names and numbers</b> in a slim everyday book, and rarely-needed <b>full addresses and notes</b> in a separate heavy volume.", dur:4800, on(){SIM.query();}},
+  {cap:"Now a quick \"what's their number?\" never has to haul around the heavy details book. Less to carry, faster lookups.", dur:4600, on(){SIM.query();}},
+  {cap:"Spread the row-volumes across <em>different buildings</em> and you've got sharding — partitioning across machines.", dur:4400, on(){SIM.setMode('h');}},
+  {cap:"Your turn 👉 flip <b>🔀 By rows / By columns</b> and <b>🔎 look someone up</b> to open only the slice you need.", dur:5200},
+  {cap:"Partitioning splits a giant table into manageable slices — by row range for region/time, by column for hot-vs-cold data.", dur:4800}
+]});
+
+</script>
+</body></html>

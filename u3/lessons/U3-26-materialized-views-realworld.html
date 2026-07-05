@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Materialized Views — Meal Prep · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.mv{position:absolute; left:62%; top:50%; transform:translate(-50%,-50%); width:120px; text-align:center; font-family:var(--fmono); font-size:12px; padding:12px; border-radius:10px; border:1.5px solid var(--violet); background:#f1edff; color:var(--violet); z-index:3; transition:.3s}
+.mv.stale{border-color:var(--warn); background:#fff7e9; color:var(--warn)}
+.srcbox .box{transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Materialized Views — Meal Prep</h1>
+  <p class="subtitle">Cooking every meal from scratch is fresh but slow. So on Sunday you batch-cook and stock the fridge: now dinner is grab-and-reheat, instant. The catch — it's only as fresh as your last cook, so you re-prep when the ingredients change.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Meals served</div><div class="stat-v accent" id="statReads">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Cook to order</div></div>
+  <div class="stat"><div class="stat-k">Time to serve</div><div class="stat-v" id="statCost">—</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">😋</div><div class="lbl"><span class="k">Dinner</span></div></div>
+<div class="node abs srcbox" data-show="1" style="left:88%;top:24%"><div class="box sm src">🍳</div><div class="lbl"><span class="k">Cook from<br>scratch</span></div></div>
+<div class="mv" id="mv">🍱 batch in<br>the fridge</div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Cook to order / Meal prep</button>
+  <button class="act ok" id="actRefresh">🔄 Cook a fresh batch</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const mv=document.getElementById('mv'), src=scene.querySelector('.src');
+  let mode='plain', reads=0, stale=false, running=false;
+  const elR=document.getElementById('statReads'), elM=document.getElementById('statMode'), elC=document.getElementById('statCost');
+  function read(){ if(document.hidden) return; reads++; elR.textContent=reads;
+    if(mode==='plain'){ const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=520*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='88%'; d.style.top='24%'; });
+      setTimeout(()=>{ if(src){src.classList.add('busy'); setTimeout(()=>src.classList.remove('busy'),400);} d.style.transition='left '+leg*1.4+'ms, top '+leg*1.4+'ms'; d.style.left='13%'; d.style.top='50%'; d.classList.add('done');
+        elC.textContent='slow (cook it) 🐌'; elC.className='stat-v bad'; setTimeout(()=>d.remove(),leg); }, leg);
+    } else { const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=360*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='62%'; });
+      setTimeout(()=>{ d.classList.add('done'); mv.style.boxShadow='0 0 0 4px rgba(106,79,224,.2)'; setTimeout(()=>mv.style.boxShadow='',300); d.style.left='13%'; elC.textContent='instant (reheat) ⚡'; elC.className='stat-v good'; setTimeout(()=>d.remove(),leg); }, leg);
+    }
+  }
+  function refresh(){ stale=false; mv.classList.remove('stale'); mv.innerHTML='🍱 batch in<br>the fridge';
+    const d=document.createElement('div'); d.className='dot'; d.style.left='88%'; d.style.top='24%'; scene.appendChild(d);
+    const leg=460*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='62%'; d.style.top='50%'; });
+    setTimeout(()=>{ d.classList.add('done'); mv.style.boxShadow='0 0 0 5px rgba(18,163,104,.22)'; setTimeout(()=>mv.style.boxShadow='',400); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function drift(){ if(mode==='materialized'){ stale=true; mv.classList.add('stale'); mv.innerHTML='🍱 batch<br>(getting old ⚠️)'; } }
+  function setMode(m){ mode=m; elM.textContent=m==='plain'?'Cook to order':'Meal prep'; elM.className='stat-v '+(m==='plain'?'warn':'good'); mv.style.opacity=m==='plain'?'.4':'1'; }
+  function loop(){ if(!running)return; read(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='plain'?'materialized':'plain');
+  document.getElementById('actRefresh').onclick=refresh;
+  setMode('plain'); running=true; loop(); setInterval(drift, 6000);
+  return {read,refresh,setMode,drift};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Dinner every night. Cooking <b>from scratch</b> each time is fresh and flexible — but slow when you're hungry and busy.", dur:4800},
+  {cap:"That's a plain database <b>view</b>: every time you read it, the kitchen re-cooks the whole query from the raw ingredients.", dur:4800, on(){SIM.read();}},
+  {cap:"Tasty, always current — but you wait for the full cook <em>every single time.</em> Painful if you eat the same dish daily.", dur:4600, on(){SIM.read();}},
+  {cap:"So you <b>meal prep</b>: cook a big batch on Sunday and stock the fridge. That's a <b>materialized view.</b>", dur:4600, on(){SIM.setMode('materialized');}},
+  {cap:"Now dinner is <span class='hl-good'>grab-and-reheat</span> — instant. The expensive cooking happened once, not on every meal.", dur:4600, on(){SIM.read();}},
+  {cap:"Perfect for the dishes you eat constantly — like a dashboard query that runs thousands of times a day.", dur:4400, on(){SIM.read();}},
+  {cap:"The catch: the batch is a snapshot. Buy fresh ingredients and the fridge batch is now <span class='hl-warn'>a little out of date.</span>", dur:4600, on(){SIM.drift();}},
+  {cap:"So you <b>cook a fresh batch</b> now and then — refresh the materialized view — on a schedule or when things change enough to matter.", dur:4600, on(){SIM.refresh();}},
+  {cap:"Your turn 👉 flip <b>🔀 Cook to order / Meal prep</b> and <b>🔄 cook a fresh batch</b> to compare re-cooking with reheating.", dur:5200, on(){SIM.setMode('materialized');}},
+  {cap:"Materialized views are meal prep for your database: pre-compute the heavy stuff for instant serving, and refresh to stay fresh.", dur:4800}
+]});
+
+</script>
+</body></html>

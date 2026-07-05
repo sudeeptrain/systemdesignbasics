@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connection Pooling — A Taxi Rank · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.conn{position:absolute; width:30px; height:30px; border-radius:8px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:13px; background:#e7f7ef; border:1.5px solid var(--good); z-index:3; transition:.2s}
+.conn.busy{background:#fff3e0; border-color:var(--warn)}
+.poollbl{position:absolute; left:50%; top:14%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Connection Pooling — A Taxi Rank</h1>
+  <p class="subtitle">Phoning for a brand-new taxi on every trip means waiting for one to be dispatched and drive over — wasteful. A taxi rank keeps a few cabs idling out front: you hop in a waiting one, and it returns to the rank when you're done. Same idea, far less waiting.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Trips taken</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Taxi rank</div><div class="stat-v bad" id="statPool">none</div></div>
+  <div class="stat"><div class="stat-k">Wasted waiting</div><div class="stat-v" id="statChurn">high</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">🧍</div><div class="lbl"><span class="k">Riders</span></div></div>
+<div class="poollbl" id="poollbl">no rank · call a new taxi each time</div>
+<div id="pool"></div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box sm">📍</div><div class="lbl"><span class="k">Destination</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actPool">🚖 Set up a taxi rank</button>
+  <button class="act" id="actBurst">📈 A crowd needs rides</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const poolEl=document.getElementById('pool'), poollbl=document.getElementById('poollbl');
+  let pooled=false, conns=[], reqs=0, running=false;
+  const elR=document.getElementById('statReqs'), elP=document.getElementById('statPool'), elCh=document.getElementById('statChurn');
+  function buildPool(){ poolEl.innerHTML=''; conns=[]; if(!pooled) return; const ys=[30,50,70];
+    ys.forEach((y,i)=>{ const el=document.createElement('div'); el.className='conn'; el.textContent='🚖'; el.style.left='50%'; el.style.top=y+'%'; poolEl.appendChild(el); conns.push({el,busy:false,y}); }); }
+  function request(){ if(document.hidden) return; reqs++; elR.textContent=reqs;
+    if(pooled){ let c=conns.find(x=>!x.busy)|| conns[reqs%conns.length]; c.busy=true; c.el.classList.add('busy');
+      const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=300*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='50%'; d.style.top=c.y+'%'; });
+      setTimeout(()=>{ d.style.left='86%'; d.style.top='50%'; setTimeout(()=>{ d.classList.add('done'); c.busy=false; c.el.classList.remove('busy'); setTimeout(()=>d.remove(),200); }, leg); }, leg);
+    } else {
+      const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+      const leg=420*simRate();
+      const setup=document.createElement('div'); setup.className='dot fail'; setup.style.left='32%'; setup.style.top='50%'; scene.appendChild(setup); setTimeout(()=>setup.remove(),360*simRate());
+      requestAnimationFrame(()=>{ d.style.transition='left '+leg*1.6+'ms'; d.style.left='86%'; });
+      setTimeout(()=>{ d.classList.add('done'); d.style.transition='left '+leg+'ms'; d.style.left='13%'; setTimeout(()=>d.remove(),leg); }, leg*1.6);
+    }
+  }
+  function setPool(on){ pooled=on; buildPool(); elP.textContent=on?'ready':'none'; elP.className='stat-v '+(on?'good':'bad');
+    elCh.textContent=on?'low (cabs reused)':'high'; elCh.className='stat-v '+(on?'good':'bad');
+    poollbl.textContent=on?'a rank of idling cabs, reused':'no rank · call a new taxi each time'; }
+  function burst(){ for(let k=0;k<6;k++) setTimeout(request, k*120*simRate()); }
+  function loop(){ if(!running)return; request(); setTimeout(loop, 800*simRate()); }
+  document.getElementById('actPool').onclick=()=>setPool(true);
+  document.getElementById('actBurst').onclick=burst;
+  setPool(false); running=true; loop();
+  return {request,setPool,burst};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Every database request needs a connection — and opening one is like <b>summoning a taxi:</b> dispatch, drive over, then setup.", dur:4800},
+  {cap:"With <b>no taxi rank</b>, each rider phones for a brand-new cab, waits for it to arrive, rides, and sends it away. Watch the wait.", dur:4800, on(){SIM.request();}},
+  {cap:"In a rush, all that <span class='hl-bad'>summoning and dismissing</span> wastes huge time — cabs spend it driving to and fro, not carrying riders.", dur:4800, on(){SIM.burst();}},
+  {cap:"A <b>taxi rank</b> fixes it: keep a few cabs idling out front, ready to go.", dur:4400, on(){SIM.setPool(true);}},
+  {cap:"Now a rider just <b>hops into a waiting cab</b>, takes the trip, and the cab returns to the rank — no summoning at all.", dur:4600, on(){SIM.request();}},
+  {cap:"The same crowd now flows through the few reused cabs. Far less waiting, many more trips per hour.", dur:4400, on(){SIM.burst();}},
+  {cap:"The rank also <b>caps the number of cabs</b>, so the streets (your database) never get swamped by thousands at once.", dur:4400},
+  {cap:"And with several <b>read replicas</b>, it's like ranks at multiple stands — reads spread out and scale beautifully.", dur:4600, on(){SIM.request();}},
+  {cap:"Your turn 👉 <b>🚖 Set up a taxi rank</b> and send a <b>📈 crowd</b> to compare summoning cabs with reusing them.", dur:5200},
+  {cap:"Connection pooling is a taxi rank for your database: reuse a few ready connections, cap the total, and serve far more for less.", dur:4800}
+]});
+
+</script>
+</body></html>

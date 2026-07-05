@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OLTP vs OLAP — Till vs Accountant · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.grid3{position:absolute; left:60%; top:20%; display:grid; grid-template-columns:repeat(6,1fr); gap:4px; width:34%; z-index:2}
+.cell3{height:20px; border-radius:4px; border:1px solid var(--line2); background:#fff; transition:.15s}
+.cell3.row{background:#eaf2fe; border-color:var(--accent)}
+.cell3.col{background:#fff3e0; border-color:var(--warn)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">OLTP vs OLAP — Till vs Accountant</h1>
+  <p class="subtitle">A shop till rings up one sale at a time, all day, fast — it touches a single receipt. The year-end accountant does the opposite: one giant query that sweeps a whole column of figures across every sale of the year. Different jobs, different tools.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Operations</div><div class="stat-v accent" id="statOps">0</div></div>
+  <div class="stat"><div class="stat-k">Job</div><div class="stat-v" id="statMode">Shop till (OLTP)</div></div>
+  <div class="stat"><div class="stat-k">Touches</div><div class="stat-v good" id="statTouch">one receipt, fast</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">🧾</div><div class="lbl"><span class="k" id="srclbl">Cashier</span></div></div>
+<div class="nlbl" style="left:77%;top:13%" id="gridlbl">the year's sales ledger</div>
+<div class="grid3" id="grid"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Till / Accountant</button>
+  <button class="act ok" id="actRun">▶️ Do the job</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const grid=document.getElementById('grid'); const ROWS=5, COLS=6;
+  let mode='oltp', ops=0, running=false, cells=[];
+  const elO=document.getElementById('statOps'), elM=document.getElementById('statMode'), elT=document.getElementById('statTouch'), gridlbl=document.getElementById('gridlbl'), srclbl=document.getElementById('srclbl');
+  function build(){ grid.innerHTML=''; cells=[]; for(let i=0;i<ROWS*COLS;i++){ const c=document.createElement('div'); c.className='cell3'; grid.appendChild(c); cells.push(c); } }
+  function clear(){ cells.forEach(c=>c.className='cell3'); }
+  function run(){ if(document.hidden) return; ops++; elO.textContent=ops; clear();
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='60%'; });
+    setTimeout(()=>{ d.classList.add('done'); setTimeout(()=>d.remove(),240);
+      if(mode==='oltp'){ const r=Math.floor(Math.random()*ROWS); for(let c=0;c<COLS;c++) cells[r*COLS+c].classList.add('row'); }
+      else { const col=Math.floor(Math.random()*COLS); for(let r=0;r<ROWS;r++) cells[r*COLS+col].classList.add('col'); }
+    }, leg);
+  }
+  function setMode(m){ mode=m; clear(); elM.textContent=m==='oltp'?'Shop till (OLTP)':'Accountant (OLAP)'; elM.className='stat-v '+(m==='oltp'?'accent':'warn');
+    elT.textContent=m==='oltp'?'one receipt, fast':'a whole column, big sweep'; elT.className='stat-v '+(m==='oltp'?'good':'warn');
+    gridlbl.textContent=m==='oltp'?'ring up one sale (a whole receipt)':'sum one column across the whole year';
+    srclbl.textContent=m==='oltp'?'Cashier':'Accountant'; }
+  function loop(){ if(!running)return; run(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='oltp'?'olap':'oltp');
+  document.getElementById('actRun').onclick=run;
+  build(); setMode('oltp'); running=true; loop();
+  return {run,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A shop's data gets used two very different ways. First, the busy <b>shop till</b> — that's <b>OLTP.</b>", dur:4400},
+  {cap:"All day it rings up <b>one sale at a time</b>: scan items, take payment, print a receipt. Each touches a single record.", dur:4600, on(){SIM.run();}},
+  {cap:"It grabs a <b>whole receipt</b> — all the details of one sale — and finishes in a blink. Thousands of these per hour.", dur:4600, on(){SIM.run();}},
+  {cap:"That's why a till's database stores each sale's fields together (row-oriented) — fetching one receipt is cheap.", dur:4400},
+  {cap:"Now the <b>year-end accountant</b> — that's <b>OLAP.</b>", dur:3600, on(){SIM.setMode('olap');}},
+  {cap:"One enormous question: \"total revenue this year.\" It sweeps <b>one column of figures across every single sale.</b>", dur:4800, on(){SIM.run();}},
+  {cap:"For that, you want the figures stored <b>column-together</b> (column-oriented) so the sweep reads only what it needs.", dur:4800, on(){SIM.run();}},
+  {cap:"Few queries, but each is huge. The accountant's tool is built for giant sweeps, not thousands of tiny sales.", dur:4400},
+  {cap:"Your turn 👉 flip <b>🔀 Till / Accountant</b> and <b>▶️ do the job</b> to compare a single receipt with a column-wide sweep.", dur:5200},
+  {cap:"Most businesses run both: a fast till database (OLTP) for sales, and a separate analytics warehouse (OLAP) for the big questions.", dur:4800}
+]});
+
+</script>
+</body></html>

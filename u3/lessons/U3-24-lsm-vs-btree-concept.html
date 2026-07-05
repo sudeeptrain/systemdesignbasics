@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSM-Tree vs B-Tree Storage · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.slot{position:absolute; width:30px; height:24px; border-radius:5px; border:1.5px solid var(--line2); background:#fff; font-family:var(--fmono); font-size:10px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:.2s; z-index:2}
+.slot.set{background:#eaf2fe; border-color:var(--accent); color:var(--accent-d)}
+.slot.hot{box-shadow:0 0 0 4px rgba(31,111,230,.18)}
+.lbl2{position:absolute; font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">LSM-Tree vs B-Tree Storage</h1>
+  <p class="subtitle">Two ways to store data on disk. A B-tree updates rows in place — great reads, but scattered random writes. An LSM-tree appends everything to a log, then merges sorted files in the background — blazing writes, with reads paying a little more.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Writes</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Engine</div><div class="stat-v" id="statMode">B-Tree</div></div>
+  <div class="stat"><div class="stat-k">Write pattern</div><div class="stat-v" id="statPat">random (in-place)</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">✍️</div><div class="lbl"><span class="k">Write</span></div></div>
+<div class="lbl2" id="zonelbl" style="left:62%;top:14%">B-tree pages (update in place)</div>
+<div id="zone"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 B-Tree / LSM</button>
+  <button class="act ok" id="actWrite">✍️ Write a key</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const zone=document.getElementById('zone'), zonelbl=document.getElementById('zonelbl');
+  const elW=document.getElementById('statWrites'), elM=document.getElementById('statMode'), elP=document.getElementById('statPat');
+  let mode='btree', writes=0, running=false, lsmPos=0, slots=[];
+  function buildBtree(){ zone.innerHTML=''; slots=[]; // scattered grid
+    for(let r=0;r<3;r++) for(let c=0;c<6;c++){ const s=document.createElement('div'); s.className='slot'; s.style.left=(48+c*8)+'%'; s.style.top=(26+r*18)+'%'; s.dataset.k='b'+(r*6+c); zone.appendChild(s); slots.push(s); } }
+  function buildLsm(){ zone.innerHTML=''; slots=[]; lsmPos=0; // single sequential row (log)
+    for(let c=0;c<10;c++){ const s=document.createElement('div'); s.className='slot'; s.style.left=(46+c*5)+'%'; s.style.top='44%'; zone.appendChild(s); slots.push(s); } }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes;
+    let target;
+    if(mode==='btree'){ target=slots[Math.floor(Math.random()*slots.length)]; } // random slot
+    else { target=slots[lsmPos%slots.length]; lsmPos++; } // sequential append
+    const tx=parseFloat(target.style.left), ty=parseFloat(target.style.top);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=(mode==='btree'?520:340)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); target.classList.add('set','hot'); target.textContent='✓'; setTimeout(()=>target.classList.remove('hot'),300); setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='btree'?'B-Tree':'LSM-Tree'; elM.className='stat-v '+(m==='btree'?'accent':'good');
+    elP.textContent=m==='btree'?'random (in-place)':'sequential (append)'; elP.className='stat-v '+(m==='btree'?'warn':'good');
+    zonelbl.textContent=m==='btree'?'B-tree pages (update in place)':'LSM log (append, then compact →)';
+    if(m==='btree') buildBtree(); else buildLsm(); }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 800*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='btree'?'lsm':'btree');
+  document.getElementById('actWrite').onclick=write;
+  setMode('btree'); running=true; loop();
+  return {write,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Where does a database actually <em>put</em> a new row on disk? Two popular engines answer very differently.", dur:4600},
+  {cap:"A <b>B-tree</b> updates data <b>in place</b>: it finds the right page and overwrites it — wherever that page happens to live.", dur:4600, on(){SIM.write();}},
+  {cap:"Watch the writes land in <span class='hl-warn'>scattered spots.</span> That's random disk I/O — fine on SSDs, but not the fastest for heavy writes.", dur:4600, on(){SIM.write();}},
+  {cap:"The upside: data stays sorted and compact, so <b>reads are excellent</b> — one lookup goes straight to the page.", dur:4400, on(){SIM.write();}},
+  {cap:"Now switch to an <b>LSM-tree.</b>", dur:3400, on(){SIM.setMode('lsm');}},
+  {cap:"It just <b>appends</b> every write to the end of a log — pure sequential writes, the fastest thing a disk can do.", dur:4600, on(){SIM.write();}},
+  {cap:"In the background it merges and sorts these segments — <b>compaction</b> — to keep things tidy and reads reasonable.", dur:4600, on(){SIM.write();}},
+  {cap:"The trade: a read may have to check several segments (helped by Bloom filters), so reads cost a bit more than a B-tree.", dur:4800},
+  {cap:"Your turn 👉 flip <b>🔀 B-Tree / LSM</b> and <b>✍️ write keys</b> to see random-in-place vs sequential-append.", dur:5200},
+  {cap:"Rule of thumb: B-trees (Postgres, MySQL) favor reads; LSM-trees (Cassandra, RocksDB) favor write-heavy workloads.", dur:4800}
+]});
+
+</script>
+</body></html>

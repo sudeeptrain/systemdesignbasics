@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSM vs B-Tree — File Now or Sort Later · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.slot{position:absolute; width:30px; height:24px; border-radius:5px; border:1.5px solid var(--line2); background:#fff; font-family:var(--fmono); font-size:10px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:.2s; z-index:2}
+.slot.set{background:#eaf2fe; border-color:var(--accent); color:var(--accent-d)}
+.slot.hot{box-shadow:0 0 0 4px rgba(31,111,230,.18)}
+.lbl2{position:absolute; font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">LSM vs B-Tree — File Now or Sort Later</h1>
+  <p class="subtitle">Two desk habits. One person files every paper into the right cabinet drawer the moment it arrives — tidy, but lots of walking. The other tosses each paper into an inbox tray and sorts the whole pile later — fast to drop, but reads need a tidy-up first.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Papers handled</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">Habit</div><div class="stat-v" id="statMode">File immediately</div></div>
+  <div class="stat"><div class="stat-k">Filing pattern</div><div class="stat-v" id="statPat">walk to the right drawer</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:50%"><div class="box sm">📄</div><div class="lbl"><span class="k">New paper</span></div></div>
+<div class="lbl2" id="zonelbl" style="left:62%;top:14%">cabinet drawers (filed in place)</div>
+<div id="zone"></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 File now / Inbox tray</button>
+  <button class="act ok" id="actWrite">📄 Handle a paper</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const zone=document.getElementById('zone'), zonelbl=document.getElementById('zonelbl');
+  const elW=document.getElementById('statWrites'), elM=document.getElementById('statMode'), elP=document.getElementById('statPat');
+  let mode='btree', writes=0, running=false, lsmPos=0, slots=[];
+  function buildBtree(){ zone.innerHTML=''; slots=[]; for(let r=0;r<3;r++) for(let c=0;c<6;c++){ const s=document.createElement('div'); s.className='slot'; s.style.left=(48+c*8)+'%'; s.style.top=(26+r*18)+'%'; zone.appendChild(s); slots.push(s); } }
+  function buildLsm(){ zone.innerHTML=''; slots=[]; lsmPos=0; for(let c=0;c<10;c++){ const s=document.createElement('div'); s.className='slot'; s.style.left=(46+c*5)+'%'; s.style.top='44%'; zone.appendChild(s); slots.push(s); } }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes;
+    let target;
+    if(mode==='btree'){ target=slots[Math.floor(Math.random()*slots.length)]; }
+    else { target=slots[lsmPos%slots.length]; lsmPos++; }
+    const tx=parseFloat(target.style.left), ty=parseFloat(target.style.top);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=(mode==='btree'?520:340)*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=tx+'%'; d.style.top=ty+'%'; });
+    setTimeout(()=>{ d.classList.add('done'); target.classList.add('set','hot'); target.textContent='✓'; setTimeout(()=>target.classList.remove('hot'),300); setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function setMode(m){ mode=m; elM.textContent=m==='btree'?'File immediately':'Inbox tray'; elM.className='stat-v '+(m==='btree'?'accent':'good');
+    elP.textContent=m==='btree'?'walk to the right drawer':'drop in the next slot';
+    zonelbl.textContent=m==='btree'?'cabinet drawers (filed in place)':'inbox tray (drop in order, sort later →)';
+    if(m==='btree') buildBtree(); else buildLsm(); }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 800*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='btree'?'lsm':'btree');
+  document.getElementById('actWrite').onclick=write;
+  setMode('btree'); running=true; loop();
+  return {write,setMode};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Papers land on your desk all day. Two filing habits — and they're exactly the two ways databases store data on disk.", dur:4800},
+  {cap:"Habit one: <b>file immediately.</b> Each paper goes straight to its correct drawer in the cabinet, wherever that is.", dur:4600, on(){SIM.write();}},
+  {cap:"Watch you <span class='hl-warn'>walk all over</span> to the right drawer each time. Tidy result — but lots of back-and-forth. That's a <b>B-tree.</b>", dur:4800, on(){SIM.write();}},
+  {cap:"The payoff: everything's already sorted in place, so <b>finding a paper later is instant</b> — one trip to one drawer.", dur:4600, on(){SIM.write();}},
+  {cap:"Habit two: an <b>inbox tray.</b> Just drop each paper on top of the pile and move on.", dur:4000, on(){SIM.setMode('lsm');}},
+  {cap:"Dropping is <span class='hl-good'>blazing fast</span> — no walking at all, papers just stack up in order. That's an <b>LSM-tree.</b>", dur:4600, on(){SIM.write();}},
+  {cap:"Later, you <b>sort the pile</b> into neat batches in the background — that tidy-up is called compaction.", dur:4600, on(){SIM.write();}},
+  {cap:"The trade: finding a paper means checking a few batches, not one drawer — reads cost a bit more than the file-now habit.", dur:4800},
+  {cap:"Your turn 👉 flip <b>🔀 File now / Inbox tray</b> and <b>📄 handle papers</b> to feel walk-to-file vs drop-and-sort-later.", dur:5200},
+  {cap:"B-trees file in place (great reads); LSM-trees append fast then compact (great writes). Read-heavy vs write-heavy decides.", dur:4800}
+]});
+
+</script>
+</body></html>

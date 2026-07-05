@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blob Storage — A Self-Storage Warehouse · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.bucket{position:absolute; right:7%; top:18%; width:40%; min-height:62%; border:2px solid var(--accent); border-radius:14px; background:#f3f8ff; z-index:2; padding:10px; display:flex; flex-wrap:wrap; gap:7px; align-content:flex-start}
+.obj{font-family:var(--fmono); font-size:10px; padding:6px 8px; border-radius:7px; background:#fff; border:1.5px solid var(--line2); text-align:center; transition:.3s; opacity:0; transform:scale(.8)}
+.obj.on{opacity:1; transform:none} .obj.hit{border-color:var(--good); background:#e7f7ef}
+.bhdr{position:absolute; right:7%; top:11%; font-family:var(--fmono); font-size:12px; font-weight:700; color:var(--accent-d); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Blob Storage — A Self-Storage Warehouse</h1>
+  <p class="subtitle">You don't keep the sofa in your filing cabinet. Bulky things go to a self-storage warehouse: each unit has a numbered label, you store and fetch the whole thing by that label, and it scales endlessly and cheaply — but you can't 'query' what's inside a unit.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Units stored</div><div class="stat-v accent" id="statObjects">0</div></div>
+  <div class="stat"><div class="stat-k">Fetched by</div><div class="stat-v good" id="statKey">unit label</div></div>
+  <div class="stat"><div class="stat-k">Search inside?</div><div class="stat-v bad" id="statQ">no — whole items</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:16%;top:48%"><div class="box">📦</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="bhdr">🏬 Storage facility</div>
+<div class="bucket" id="bucket"></div>
+<div class="acts">
+  <button class="act ok" id="actUpload">⬆️ Store an item</button>
+  <button class="act" id="actGet">⬇️ Fetch by label</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const bucket=document.getElementById('bucket');
+  const kinds=[['🛋️','unit-01'],['🚲','unit-02'],['📚','unit-03'],['🎸','unit-04'],['🧳','unit-05'],['🪑','unit-06']];
+  let objs=[], count=0, running=false;
+  const elO=document.getElementById('statObjects');
+  function upload(){ if(document.hidden) return; if(objs.length>=8) { bucket.innerHTML=''; objs=[]; }
+    count++; elO.textContent=count; const k=kinds[(count-1)%kinds.length];
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='60%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); const el=document.createElement('div'); el.className='obj'; el.innerHTML=k[0]+'<br>'+k[1]; el.dataset.key=k[1]; bucket.appendChild(el); requestAnimationFrame(()=>el.classList.add('on')); objs.push(el); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function get(){ if(document.hidden||!objs.length) return; const t=objs[Math.floor(Math.random()*objs.length)];
+    objs.forEach(o=>o.classList.remove('hit'));
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='58%'; });
+    setTimeout(()=>{ d.classList.add('done'); t.classList.add('hit'); d.style.left='16%'; setTimeout(()=>d.remove(),420*simRate()); }, leg);
+  }
+  function loop(){ if(!running)return; (Math.random()<0.6?upload:get)(); setTimeout(loop, 1500*simRate()); }
+  document.getElementById('actUpload').onclick=upload;
+  document.getElementById('actGet').onclick=get;
+  running=true; loop();
+  return {upload,get};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You'd never cram a sofa into your desk drawer. Bulky things go to a <b>self-storage warehouse</b> — and so do big files.", dur:4800},
+  {cap:"That warehouse is <b>object storage</b> like Amazon S3. Each item goes in a unit with a <b>numbered label.</b>", dur:4600, on(){SIM.upload();}},
+  {cap:"The item is just its contents plus a tag — bike, books, guitar — stored whole and addressed by that label, or <b>key.</b>", dur:4600, on(){SIM.upload();}},
+  {cap:"There's no clever filing system inside, just label → unit. That flat simplicity is why it scales almost endlessly and cheaply.", dur:4800, on(){SIM.upload();}},
+  {cap:"To get something back, you <b>fetch by its label</b> and collect the whole unit. Quick and direct.", dur:4600, on(){SIM.get();}},
+  {cap:"Perfect for the big, bulky stuff: photos, videos, backups, datasets. Cheap, durable, effectively unlimited room.", dur:4400, on(){SIM.upload();}},
+  {cap:"But know the limits: you <b>can't search inside a unit</b>, can't edit part of it, and there are no transactions. Whole items only.", dur:4800, on(){SIM.get();}},
+  {cap:"So the classic combo: keep the <b>item in storage</b>, and keep its <b>label and notes in the database</b> for searching.", dur:4600},
+  {cap:"Your turn 👉 <b>⬆️ Store items</b> in the facility and <b>⬇️ fetch them by label.</b>", dur:5200},
+  {cap:"Object storage is the internet's self-storage: dirt-cheap, massive room for big files — paired with a database for the labels.", dur:4800}
+]});
+
+</script>
+</body></html>

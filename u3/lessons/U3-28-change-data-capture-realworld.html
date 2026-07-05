@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CDC — The School Announcement · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.stream{position:absolute; left:46%; top:14%; bottom:14%; width:16px; transform:translateX(-50%); border-radius:10px; background:linear-gradient(180deg,#cfe0fb,#9cc0f3); border:1.5px solid var(--accent); z-index:1}
+.streamlbl{position:absolute; left:46%; top:7%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--accent-d); font-weight:600}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">CDC — The School Announcement</h1>
+  <p class="subtitle">When the timetable changes, the office doesn't run to every room. It makes one announcement over the tannoy, and whoever needs to act — classrooms, the canteen, the library — hears it and updates themselves. One source, broadcast to all who care.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Announcements</div><div class="stat-v accent" id="statChanges">0</div></div>
+  <div class="stat"><div class="stat-k">Who's listening</div><div class="stat-v" id="statCons">3</div></div>
+  <div class="stat"><div class="stat-k">Office tells</div><div class="stat-v good" id="statApp">just the tannoy</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:15%;top:50%"><div class="box">🏫</div><div class="lbl"><span class="k">Office</span><br><span class="k" style="font-weight:400">(makes a change)</span></div></div>
+<div class="streamlbl">📢 Tannoy</div>
+<div class="stream"></div>
+<div id="consumers"></div>
+<div class="acts">
+  <button class="act ok" id="actChange">📢 Announce a change</button>
+  <button class="act" id="actAddConsumer">➕ Someone starts listening</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const STREAMX=46, DBX=15;
+  let consumers=[{n:'Classrooms',e:'🧑‍🏫'},{n:'Canteen',e:'🍽️'},{n:'Library',e:'📚'}], changes=0, running=false;
+  const wrap=document.getElementById('consumers');
+  const elC=document.getElementById('statChanges'), elCo=document.getElementById('statCons');
+  function ys(n){const a=[],top=22,bot=86;for(let i=0;i<n;i++)a.push(n===1?54:top+(bot-top)*i/(n-1));return a;}
+  function render(){ wrap.innerHTML=''; const y=ys(consumers.length);
+    consumers.forEach((c,i)=>{ c.y=y[i]; const el=document.createElement('div'); el.className='wbox'; el.textContent=c.e; el.style.left='76%'; el.style.top=y[i]+'%'; wrap.appendChild(el);
+      const lab=document.createElement('div'); lab.className='nlbl'; lab.style.left='76%'; lab.style.top=(y[i]+11)+'%'; lab.textContent=c.n; wrap.appendChild(lab); c.el=el; });
+    elCo.textContent=consumers.length; }
+  function change(){ if(document.hidden) return; changes++; elC.textContent=changes;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=DBX+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left=STREAMX+'%'; });
+    setTimeout(()=>{ d.remove();
+      consumers.forEach(c=>{ const f=document.createElement('div'); f.className='dot'; f.style.left=STREAMX+'%'; f.style.top=c.y+'%'; scene.appendChild(f);
+        requestAnimationFrame(()=>{ f.style.transition='left '+leg+'ms'; f.style.left='76%'; });
+        setTimeout(()=>{ f.classList.add('done'); if(c.el){c.el.classList.add('busy'); setTimeout(()=>c.el.classList.remove('busy'),300);} setTimeout(()=>f.remove(),300); }, leg); });
+    }, leg);
+  }
+  function addConsumer(){ const pool=[{n:'Buses',e:'🚌'},{n:'Parents app',e:'📱'},{n:'Caretaker',e:'🧹'}];
+    if(consumers.length<6){ consumers.push(pool[(consumers.length-3)%pool.length]); render(); } }
+  function loop(){ if(!running)return; change(); setTimeout(loop, 2000*simRate()); }
+  document.getElementById('actChange').onclick=change;
+  document.getElementById('actAddConsumer').onclick=addConsumer;
+  render(); running=true; loop();
+  return {change,addConsumer};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"The school timetable changes. Now the canteen, the library, and every classroom need to know. How does the office tell them all?", dur:4800},
+  {cap:"The clumsy way: a clerk runs to each room in turn. Slow, and easy to forget someone.", dur:4400},
+  {cap:"Instead, the office makes <b>one announcement over the tannoy.</b> That's <b>Change Data Capture</b> — broadcast the change once.", dur:4800, on(){SIM.change();}},
+  {cap:"Whoever needs to act <b>hears it and updates themselves</b> — the canteen adjusts lunch, the library reshelves, classes move.", dur:4800, on(){SIM.change();}},
+  {cap:"The office only ever <b>spoke to the tannoy.</b> It doesn't run around, and it doesn't even track who's listening. Decoupled.", dur:4800},
+  {cap:"Someone new needs the updates — the bus drivers? They just <b>start listening</b> to the tannoy. The office changes nothing.", dur:4600, on(){SIM.addConsumer();}},
+  {cap:"That's the power: add new listeners without touching the source. The announcement stream feeds everyone who cares.", dur:4400, on(){SIM.change();}},
+  {cap:"In databases, the 'tannoy' is the change log; CDC turns every insert, update, and delete into a broadcast event.", dur:4600},
+  {cap:"Your turn 👉 <b>📢 Announce a change</b> and <b>➕ add listeners</b> to watch the broadcast fan out.", dur:5200},
+  {cap:"CDC streams your database's changes to caches, search, and warehouses in real time — keeping everything in sync from one source.", dur:4800}
+]});
+
+</script>
+</body></html>

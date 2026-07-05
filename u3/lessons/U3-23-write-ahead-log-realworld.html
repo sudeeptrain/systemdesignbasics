@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WAL — A Kitchen Order Ticket · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.log{position:absolute; left:46%; top:16%; width:26%; height:66%; border:1.5px solid var(--accent); border-radius:9px; background:#f3f8ff; z-index:2; padding:7px; display:flex; flex-direction:column; gap:4px; overflow:hidden}
+.logh{position:absolute; left:46%; top:10%; font-family:var(--fmono); font-size:11px; font-weight:700; color:var(--accent-d); z-index:3}
+.lrow{font-family:var(--fmono); font-size:10.5px; padding:3px 6px; border-radius:5px; background:#fff; border-left:3px solid var(--accent); opacity:0; transition:.3s}
+.lrow.on{opacity:1} .lrow.applied{border-left-color:var(--good); opacity:.55}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 3 · Database Design</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">WAL — A Kitchen Order Ticket</h1>
+  <p class="subtitle">A busy kitchen writes every order on a ticket and spikes it on the rail before cooking. If chaos erupts and a pan is dropped, the tickets still say exactly what was ordered — so the kitchen recovers and finishes every dish. Log first, cook second.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Orders taken</div><div class="stat-v accent" id="statWrites">0</div></div>
+  <div class="stat"><div class="stat-k">On the rail, not cooked</div><div class="stat-v" id="statPend">0</div></div>
+  <div class="stat"><div class="stat-k">Recoverable?</div><div class="stat-v good" id="statRec">yes — re-read tickets</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:48%"><div class="box sm">🧑‍🍳</div><div class="lbl"><span class="k">New order</span></div></div>
+<div class="logh">📋 Order rail (tickets)</div>
+<div class="log" id="log"></div>
+<div class="node abs" data-show="1" style="left:86%;top:48%"><div class="box sm data">🍽️</div><div class="lbl"><span class="k">Plated dishes</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">📝 Take an order</button>
+  <button class="act bad" id="actCrash">💥 Kitchen chaos & recover</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const log=document.getElementById('log');
+  let writes=0, entries=[], running=false, seq=0;
+  const dishes=['🍕 pizza','🍔 burger','🍝 pasta','🥗 salad','🍜 ramen'];
+  const elW=document.getElementById('statWrites'), elP=document.getElementById('statPend'), dataEl=document.querySelector('.data');
+  function render(){ log.innerHTML=''; entries.slice(-6).forEach(e=>{ const r=document.createElement('div'); r.className='lrow'+(e.applied?' applied':''); r.textContent='#'+e.id+' '+e.v+(e.applied?' ✓':''); log.appendChild(r); requestAnimationFrame(()=>r.classList.add('on')); });
+    elP.textContent=entries.filter(e=>!e.applied).length; }
+  function write(){ if(document.hidden) return; writes++; elW.textContent=writes; seq++; const e={id:seq,v:dishes[seq%dishes.length],applied:false}; entries.push(e);
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='48%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='46%'; });
+    setTimeout(()=>{ d.classList.add('done'); render();
+      d.style.left='86%'; setTimeout(()=>{ e.applied=true; if(dataEl){dataEl.classList.add('healthy'); setTimeout(()=>dataEl.classList.remove('healthy'),300);} render(); d.remove(); }, leg*1.4);
+    }, leg);
+  }
+  function crashRecover(){ seq++; const e={id:seq,v:dishes[seq%dishes.length],applied:false}; entries.push(e); render();
+    const d=document.createElement('div'); d.className='dot fail'; d.style.left='86%'; d.style.top='48%'; scene.appendChild(d);
+    if(dataEl)dataEl.classList.add('crash'); setTimeout(()=>d.remove(),520*simRate());
+    setTimeout(()=>{ if(dataEl)dataEl.classList.remove('crash'); entries.filter(x=>!x.applied).forEach((x,k)=>setTimeout(()=>{ x.applied=true; if(dataEl){dataEl.classList.add('healthy'); setTimeout(()=>dataEl.classList.remove('healthy'),250);} render(); const r=document.createElement('div'); r.className='dot done'; r.style.left='46%'; r.style.top='48%'; scene.appendChild(r); requestAnimationFrame(()=>{r.style.transition='left .4s'; r.style.left='86%';}); setTimeout(()=>r.remove(),460); }, k*420*simRate())); }, 1400*simRate());
+  }
+  function loop(){ if(!running)return; write(); setTimeout(loop, 1900*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actCrash').onclick=crashRecover;
+  render(); running=true; loop();
+  return {write,crashRecover,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A packed kitchen takes orders non-stop. How does it never forget a dish, even when things get hectic? With <b>tickets.</b>", dur:4600},
+  {cap:"The rule: <b>write the ticket first</b> and spike it on the rail — <em>before</em> the chef starts cooking. Order recorded, then made.", dur:4800, on(){SIM.write();}},
+  {cap:"Only after the ticket is safely on the rail does the dish get cooked and plated. Ticket first, food second.", dur:4600, on(){SIM.write();}},
+  {cap:"Scribbling a ticket is quick — far faster than cooking. Cheap insurance taken on every single order.", dur:4400, on(){SIM.write();}},
+  {cap:"Now disaster: a <span class='hl-bad'>pan is dropped, the line freezes</span> — an order was on the rail but not yet plated.", dur:4400, on(){SIM.crashRecover();}},
+  {cap:"No problem: the kitchen <b>re-reads the tickets</b> and cooks anything that was ordered but never finished.", dur:4800},
+  {cap:"Every order gets fulfilled; nothing is lost. The rail of tickets is the source of truth the plates catch up to.", dur:4600},
+  {cap:"That's a <b>write-ahead log</b>: record the change first, apply it second, and replay the log to recover after a crash.", dur:4600},
+  {cap:"Your turn 👉 <b>📝 Take orders</b> (ticket then dish) and <b>💥 trigger chaos</b> to watch the tickets save the day.", dur:5200, on(){SIM.render();}},
+  {cap:"Write-ahead logging is how databases survive crashes: log the intent before doing the work, then replay to finish or undo.", dur:4800}
+]});
+
+</script>
+</body></html>
