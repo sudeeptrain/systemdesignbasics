@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strangler Fig (Migration Pattern) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.epbox{position:absolute; right:6%; top:18%; width:30%; display:flex; flex-direction:column; gap:7px; z-index:2}
+.ep{display:flex; align-items:center; justify-content:space-between; font-family:var(--fmono); font-size:12px; background:#fff; border:1.5px solid var(--line2); border-radius:8px; padding:6px 9px; transition:.3s}
+.ep .to{font-weight:700}
+.ep.legacy .to{color:var(--warn)} .ep.newsvc{border-color:var(--good)} .ep.newsvc .to{color:var(--good)}
+.prog{position:absolute; left:8%; bottom:13%; width:40%; height:14px; border:1.5px solid var(--line2); border-radius:8px; background:#eef5fd; overflow:hidden; z-index:2}
+.progf{position:absolute; left:0; top:0; bottom:0; width:0%; background:linear-gradient(90deg,#3fcf8e,#0f8f5b); transition:width .4s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Strangler Fig (Migration Pattern)</h1>
+  <p class="subtitle">You rarely rewrite a legacy system in one risky leap. The strangler fig wraps it in a facade, then reroutes one feature at a time to new services — until the old system has nothing left to do and quietly retires.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Requests routed</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Migrated</div><div class="stat-v" id="statMig">0 / 5</div></div>
+  <div class="stat"><div class="stat-k">Legacy load</div><div class="stat-v warn" id="statLeg">100%</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:30%"><div class="box sm">🚪</div><div class="lbl"><span class="k">Facade</span></div></div>
+<div class="node abs" data-show="1" style="left:12%;top:72%"><div class="box leg">🏚️</div><div class="lbl"><span class="k">Legacy monolith</span></div></div>
+<div class="epbox" id="epbox"></div>
+<div class="prog"><div class="progf" id="progf"></div></div>
+<div class="acts">
+  <button class="act ok" id="actMigrate">➡️ Migrate next feature</button>
+  <button class="act" id="actBurst">📨 Send traffic burst</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const names=['Login','Catalog','Cart','Checkout','Profile']; let target=names.map(()=>'legacy');
+  let reqs=0, running=false, rr=0;
+  const box=document.getElementById('epbox'), elR=document.getElementById('statReqs'), elM=document.getElementById('statMig'), elLeg=document.getElementById('statLeg'), progf=document.getElementById('progf');
+  function migrated(){ return target.filter(t=>t==='new').length; }
+  function render(){ box.innerHTML=''; names.forEach((n,i)=>{ const r=document.createElement('div'); r.className='ep '+(target[i]==='new'?'newsvc':'legacy');
+    r.innerHTML='<span>'+n+'</span><span class="to">'+(target[i]==='new'?'→ new svc ✅':'→ legacy')+'</span>'; r.dataset.i=i; box.appendChild(r); });
+    const m=migrated(); elM.textContent=m+' / 5'; const legPct=Math.round((5-m)/5*100); elLeg.textContent=legPct+'%'; elLeg.className='stat-v '+(legPct===0?'good':legPct<60?'warn':'bad');
+    progf.style.width=(m/5*100)+'%'; }
+  function route(){ if(document.hidden) return; const i=rr++%5; const toNew=target[i]==='new';
+    const rows=[...box.children]; const row=rows[i]; const ry=18 + i*(60/5) + 6;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='12%'; d.style.top='30%'; scene.appendChild(d);
+    const leg=420*simRate();
+    requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; if(toNew){ d.style.left='66%'; d.style.top=ry+'%'; } else { d.style.left='12%'; d.style.top='72%'; } });
+    setTimeout(()=>{ d.classList.add('done'); if(row){row.style.boxShadow='0 0 0 3px rgba(31,111,230,.18)'; setTimeout(()=>row.style.boxShadow='',300);} reqs++; elR.textContent=reqs; setTimeout(()=>d.remove(),260); }, leg);
+  }
+  function migrate(){ const i=target.indexOf('legacy'); if(i>=0){ target[i]='new'; render(); } }
+  function burst(){ for(let k=0;k<5;k++) setTimeout(route, k*120*simRate()); }
+  function loop(){ if(!running)return; route(); setTimeout(loop, 700*simRate()); }
+  document.getElementById('actMigrate').onclick=migrate;
+  document.getElementById('actBurst').onclick=burst;
+  render(); running=true; loop();
+  return {migrate,burst,render};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You've got a creaky <b>legacy monolith</b>. A big-bang rewrite is risky and slow. The <b>strangler fig</b> offers a safer path.", dur:4800},
+  {cap:"First, put a <b>facade</b> in front so every request is routed through one place. For now, it all goes to the legacy app.", dur:4800, on(){SIM.burst();}},
+  {cap:"Now migrate <b>one feature at a time.</b> Build Login as a new service and point just that route at it.", dur:4600, on(){SIM.migrate();}},
+  {cap:"The facade sends Login to the new service; everything else still hits the legacy app. Small, reversible step.", dur:4600, on(){SIM.burst();}},
+  {cap:"Migrate the next feature… and the next. Each one moves traffic off the monolith and onto fresh code.", dur:4400, on(){SIM.migrate();}},
+  {cap:"Watch the <b>legacy load shrink</b> as the migration bar fills. You're strangling the old system gradually.", dur:4400, on(){SIM.migrate();}},
+  {cap:"Because each step is tiny and isolated, you can test it, ship it, and roll it back without drama.", dur:4400, on(){SIM.migrate();}},
+  {cap:"Eventually the last feature moves over. The legacy app has nothing left to do and is <span class='hl-good'>retired.</span>", dur:4600, on(){SIM.migrate();}},
+  {cap:"Your turn 👉 <b>➡️ Migrate features</b> one by one and <b>📨 send traffic</b> to watch the legacy load fall to zero.", dur:5200},
+  {cap:"Strangler fig = incremental migration behind a facade. Low risk, always shippable — the grown-up way to replace a monolith.", dur:4800}
+]});
+
+</script>
+</body></html>

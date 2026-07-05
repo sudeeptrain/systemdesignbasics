@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-Phase Commit — Wedding Vows · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.phaselbl{position:absolute; left:50%; top:9%; transform:translateX(-50%); font-family:var(--fmono); font-size:13px; font-weight:700; color:var(--accent-d); z-index:5}
+.part .box{transition:.3s}
+.part.yes .box{border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.18)}
+.part.no .box{border-color:var(--bad); box-shadow:0 0 0 4px rgba(216,58,46,.2)}
+.part.committed .box{border-color:var(--good); background:linear-gradient(180deg,#eafaf2,#d8f3e6)}
+.part.aborted .box{border-color:var(--bad); background:linear-gradient(180deg,#fdeceb,#f7d6d3)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Two-Phase Commit — Wedding Vows</h1>
+  <p class="subtitle">A wedding is a two-phase commit. First the officiant asks each person, one at a time, "do you?" — collecting votes. Only when everyone has said "I do" does the officiant pronounce them married. A single "no" calls the whole thing off.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Ceremonies</div><div class="stat-v accent" id="statTxns">0</div></div>
+  <div class="stat"><div class="stat-k">Phase</div><div class="stat-v" id="statPhase">idle</div></div>
+  <div class="stat"><div class="stat-k">Outcome</div><div class="stat-v good" id="statOut">—</div></div>
+</div>
+<div class="phaselbl" id="phaselbl"></div>
+<div class="node abs" data-show="1" style="left:50%;top:30%"><div class="box coord">💒</div><div class="lbl"><span class="k">Officiant</span></div></div>
+<div class="node abs part p-0" data-show="1" style="left:20%;top:74%"><div class="box sm">👰</div><div class="lbl"><span class="k">Partner A</span></div></div>
+<div class="node abs part p-1" data-show="1" style="left:50%;top:74%"><div class="box sm">🤵</div><div class="lbl"><span class="k">Partner B</span></div></div>
+<div class="node abs part p-2" data-show="1" style="left:80%;top:74%"><div class="box sm">📋</div><div class="lbl"><span class="k">Registrar</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actCommit">💍 Ceremony (all say "I do")</button>
+  <button class="act bad" id="actAbort">🚫 Partner B hesitates</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const CO={x:50,y:30}, P=[{x:20,y:74},{x:50,y:74},{x:80,y:74}];
+  const parts=[0,1,2].map(i=>scene.querySelector('.p-'+i));
+  let txns=0, busy=false, running=false;
+  const elT=document.getElementById('statTxns'), elPh=document.getElementById('statPhase'), elOut=document.getElementById('statOut'), lbl=document.getElementById('phaselbl');
+  function clear(){ parts.forEach(p=>p.className=p.className.replace(/\b(yes|no|committed|aborted)\b/g,'').trim()); }
+  function hop(fx,fy,tx,ty,cls,then){ const d=document.createElement('div'); d.className='dot'+(cls?' '+cls:''); d.style.left=fx+'%'; d.style.top=fy+'%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .42s, top .42s'; d.style.left=tx+'%'; d.style.top=ty+'%'; }); setTimeout(()=>{ if(then)then(); setTimeout(()=>d.remove(),220); }, 420*simRate()); }
+  function run(noVoter){ busy=true; txns++; elT.textContent=txns; clear(); elOut.textContent='…'; elOut.className='stat-v';
+    elPh.textContent='1 · "DO YOU?"'; elPh.className='stat-v warn'; lbl.textContent='Phase 1 — officiant asks each person to vote';
+    let votes=0, anyNo=false;
+    P.forEach((p,i)=>{ hop(CO.x,CO.y,p.x,p.y,'',()=>{ const no = (i===noVoter);
+      parts[i].classList.add(no?'no':'yes'); if(no)anyNo=true;
+      hop(p.x,p.y,CO.x,CO.y, no?'fail':'done', ()=>{ votes++; if(votes===3){ phase2(anyNo); } });
+    }); });
+  }
+  function phase2(anyNo){
+    const commit=!anyNo;
+    elPh.textContent='2 · '+(commit?'"I NOW PRONOUNCE…"':'CALLED OFF'); elPh.className='stat-v '+(commit?'good':'bad');
+    lbl.textContent='Phase 2 — '+(commit?'everyone said "I do" → MARRIED':'someone hesitated → ceremony stops');
+    P.forEach((p,i)=>hop(CO.x,CO.y,p.x,p.y, commit?'done':'fail', ()=>{ parts[i].classList.add(commit?'committed':'aborted'); }));
+    setTimeout(()=>{ elOut.textContent=commit?'MARRIED 💍':'CALLED OFF ✗'; elOut.className='stat-v '+(commit?'good':'bad'); busy=false; }, 500*simRate());
+  }
+  function loop(){ if(!running)return; if(!busy) run(-1); setTimeout(loop, 4000*simRate()); }
+  document.getElementById('actCommit').onclick=()=>{ if(!busy)run(-1); };
+  document.getElementById('actAbort').onclick=()=>{ if(!busy)run(1); };
+  running=true; loop();
+  return {commit:()=>run(-1),abort:()=>run(1)};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A wedding is a textbook <b>two-phase commit.</b> The officiant needs everyone to agree before anything becomes official.", dur:4600},
+  {cap:"<b>Phase 1 — the vows:</b> the officiant asks each person, one by one, \"do you take…?\" — collecting a yes or no.", dur:4800, on(){SIM.commit();}},
+  {cap:"Each person answers for themselves. The officiant simply <b>gathers the votes</b> and waits.", dur:4400},
+  {cap:"Everyone said <span class='hl-good'>\"I do\"</span> — so the officiant moves to Phase 2 and <b>pronounces them married.</b>", dur:4600},
+  {cap:"Now it's official for all parties at once — the registrar records it. Atomic: all agreed, all committed. 💍", dur:4400},
+  {cap:"But what if someone hesitates? Run it again, and <b>Partner B falters</b> at the vow.", dur:3800, on(){SIM.abort();}},
+  {cap:"A single \"no\" is decisive — the officiant <span class='hl-bad'>calls the whole ceremony off.</span> Nobody is half-married.", dur:4800},
+  {cap:"That's 2PC: a coordinator asks everyone to prepare and vote, then commits only if <em>all</em> say yes.", dur:4600},
+  {cap:"Your turn 👉 <b>💍 Run a ceremony</b>, then trigger <b>🚫 a hesitation</b> to watch it abort for everyone.", dur:5200},
+  {cap:"The catch mirrors real life: while the officiant waits on votes, everyone's standing there blocked. 2PC is safe but slow.", dur:4800}
+]});
+
+</script>
+</body></html>

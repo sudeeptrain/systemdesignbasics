@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CQRS — A Library · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.lane{position:absolute; font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">CQRS — A Library</h1>
+  <p class="subtitle">Adding a book to a library is slow and careful: catalogue it, assign a shelf, file the record. Finding a book is fast: you flip the public index. Different jobs, different tools — so the library keeps the two completely separate.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Actions</div><div class="stat-v accent" id="statOps">0</div></div>
+  <div class="stat"><div class="stat-k">Catalogue</div><div class="stat-v" id="statW">v0</div></div>
+  <div class="stat"><div class="stat-k">Public index</div><div class="stat-v" id="statR">v0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">🧑</div><div class="lbl"><span class="k">People</span></div></div>
+<div class="lane" style="left:42%;top:16%">📚 add a book (careful, slow)</div>
+<div class="node abs" data-show="1" style="left:60%;top:26%"><div class="box wm">🗂️</div><div class="lbl"><span class="k">Cataloguing desk</span><br><span class="k" style="font-weight:400">authoritative</span></div></div>
+<div class="lane" style="left:42%;top:74%">🔎 find a book (instant)</div>
+<div class="node abs" data-show="1" style="left:60%;top:76%"><div class="box rm">📇</div><div class="lbl"><span class="k">Public index</span><br><span class="k" style="font-weight:400">fast lookups</span></div></div>
+<div class="wireline" id="syncw" style="left:60%;width:3px;top:34%;height:36%;background:var(--line2)"></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">📚 Add a book (write)</button>
+  <button class="act" id="actRead">🔎 Find a book (read)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let ops=0, wv=0, rv=0, running=false;
+  const elOps=document.getElementById('statOps'), elW=document.getElementById('statW'), elR=document.getElementById('statR');
+  const wm=scene.querySelector('.wm'), rm=scene.querySelector('.rm');
+  function fmt(){ elW.textContent='v'+wv; elR.textContent='v'+rv; elR.className='stat-v '+(rv<wv?'warn':'good'); }
+  function write(){ if(document.hidden) return; ops++; elOps.textContent=ops; wv++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .45s, top .45s'; d.style.left='60%'; d.style.top='26%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(wm){wm.classList.add('active'); setTimeout(()=>wm.classList.remove('active'),250);} fmt();
+      d.style.transition='top .5s'; d.style.top='76%'; setTimeout(()=>{ rv=wv; if(rm){rm.classList.add('active'); setTimeout(()=>rm.classList.remove('active'),250);} fmt(); d.remove(); }, 520*simRate());
+    }, 450*simRate());
+  }
+  function read(){ if(document.hidden) return; ops++; elOps.textContent=ops;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left='60%'; d.style.top='76%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(rm){rm.classList.add('active'); setTimeout(()=>rm.classList.remove('active'),200);} d.style.transition='left .4s, top .4s'; d.style.left='14%'; d.style.top='50%'; setTimeout(()=>d.remove(),420*simRate()); }, 400*simRate());
+  }
+  function loop(){ if(!running)return; (Math.random()<0.4?write:read)(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actRead').onclick=read;
+  fmt(); running=true; loop();
+  return {write,read,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A library does two very different things, and it refuses to use the same tool for both. That's the heart of <b>CQRS.</b>", dur:4600},
+  {cap:"<b>Adding a book</b> (a write) is slow and careful: catalogue it, assign a shelf, file the master record correctly.", dur:4600, on(){SIM.write();}},
+  {cap:"<b>Finding a book</b> (a read) is instant: you just flip the <b>public index</b>, organized for fast lookups.", dur:4600, on(){SIM.read();}},
+  {cap:"After a book is catalogued, the change is <b>copied into the public index</b> so searchers can find it.", dur:4600, on(){SIM.write();}},
+  {cap:"Now each side is optimized for its job: the careful catalogue for correctness, the index for speed.", dur:4400, on(){SIM.read();}},
+  {cap:"And readers vastly outnumber cataloguers — so you can add many copies of the index without slowing down filing.", dur:4600},
+  {cap:"The catch: right after a book is added, the index lags for a moment before it appears. Briefly <span class='hl-warn'>out of date.</span>", dur:4600},
+  {cap:"So CQRS shines when reads and writes have very different shapes or volumes — and is overkill for a tiny collection.", dur:4400},
+  {cap:"Your turn 👉 <b>📚 Add books</b> and <b>🔎 find books</b> to watch the two sides update on their own paths.", dur:5200, on(){SIM.fmt();}},
+  {cap:"CQRS = separate the careful write side from the fast read side. More moving parts, but each is simple and scalable alone.", dur:4800}
+]});
+
+</script>
+</body></html>

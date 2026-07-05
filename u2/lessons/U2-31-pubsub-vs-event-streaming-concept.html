@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pub/Sub vs Event Streaming · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.logbar{position:absolute; left:34%; top:46%; transform:translate(-50%,-50%); display:flex; gap:4px; z-index:2}
+.cell2{width:22px; height:22px; border-radius:5px; background:#eef5fd; border:1.5px solid var(--line2); font-family:var(--fmono); font-size:10px; display:flex; align-items:center; justify-content:center; color:var(--muted)}
+.cell2.filled{background:#dbe8fb; border-color:var(--accent); color:var(--accent-d)}
+.ptr{position:absolute; font-family:var(--fmono); font-size:11px; z-index:4; transition:.3s}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Pub/Sub vs Event Streaming</h1>
+  <p class="subtitle">Both broadcast messages to many consumers, but differently. Classic pub/sub pushes a message and forgets it — miss it and it's gone. Event streaming keeps a durable, replayable log where each consumer reads at its own offset.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Messages</div><div class="stat-v accent" id="statMsgs">0</div></div>
+  <div class="stat"><div class="stat-k">Mode</div><div class="stat-v" id="statMode">Pub/Sub</div></div>
+  <div class="stat"><div class="stat-k">Retained?</div><div class="stat-v bad" id="statRet">no — transient</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:13%;top:46%"><div class="box sm">📤</div><div class="lbl"><span class="k">Publisher</span></div></div>
+<div class="nlbl" id="midlbl" style="left:34%;top:30%">Topic</div>
+<div class="logbar" id="logbar"></div>
+<div class="node abs" data-show="1" style="left:78%;top:24%"><div class="box sm c-0">🅰️</div><div class="lbl"><span class="k">Consumer A</span></div></div>
+<div class="node abs" data-show="1" style="left:78%;top:68%"><div class="box sm c-1">🅱️</div><div class="lbl"><span class="k">Consumer B</span></div></div>
+<div class="acts">
+  <button class="act" id="actMode">🔀 Pub/Sub / Streaming</button>
+  <button class="act ok" id="actReplay">⏪ Replay (streaming only)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const logbar=document.getElementById('logbar');
+  let mode='pubsub', msgs=0, log=[], running=false, bOffline=false;
+  const elM=document.getElementById('statMsgs'), elMode=document.getElementById('statMode'), elRet=document.getElementById('statRet'), midlbl=document.getElementById('midlbl');
+  const cons=[scene.querySelector('.c-0'),scene.querySelector('.c-1')];
+  function renderLog(){ if(mode!=='stream'){ logbar.innerHTML=''; return; } logbar.innerHTML=''; log.slice(-7).forEach((m,i)=>{ const c=document.createElement('div'); c.className='cell2 filled'; c.textContent=m; logbar.appendChild(c); }); }
+  function deliver(toB){ const cy= toB?68:24; const ci= toB?1:0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='34%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='78%'; d.style.top=cy+'%'; });
+    setTimeout(()=>{ if(toB && bOffline && mode==='pubsub'){ d.classList.add('fail'); setTimeout(()=>d.remove(),300); return; }
+      d.classList.add('done'); if(cons[ci]){cons[ci].classList.add('active'); setTimeout(()=>cons[ci].classList.remove('active'),200);} setTimeout(()=>d.remove(),220); }, leg);
+  }
+  function publish(){ if(document.hidden) return; msgs++; elM.textContent=msgs; const sym=String.fromCharCode(64+((msgs-1)%26)+1);
+    if(mode==='stream'){ log.push(sym); renderLog(); }
+    const d=document.createElement('div'); d.className='dot'; d.style.left='13%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=320*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='34%'; });
+    setTimeout(()=>{ d.remove(); deliver(false); deliver(true); }, leg);
+  }
+  function setMode(m){ mode=m; elMode.textContent=m==='stream'?'Streaming (log)':'Pub/Sub'; midlbl.textContent=m==='stream'?'Durable log':'Topic';
+    elRet.textContent=m==='stream'?'yes — replayable':'no — transient'; elRet.className='stat-v '+(m==='stream'?'good':'bad'); renderLog(); }
+  function replay(){ if(mode!=='stream') return; log.slice(-7).forEach((m,i)=>setTimeout(()=>{ const cells=logbar.children; if(cells[i]){cells[i].style.boxShadow='0 0 0 3px rgba(31,111,230,.25)'; setTimeout(()=>cells[i].style.boxShadow='',300);} deliver(false); }, i*240*simRate())); }
+  function loop(){ if(!running)return; publish(); setTimeout(loop, 1400*simRate()); }
+  document.getElementById('actMode').onclick=()=>setMode(mode==='pubsub'?'stream':'pubsub');
+  document.getElementById('actReplay').onclick=replay;
+  function demoMiss(){ const d=document.createElement('div'); d.className='dot'; d.style.left='34%'; d.style.top='46%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='78%'; d.style.top='68%'; });
+    setTimeout(()=>{ d.classList.add('fail'); setTimeout(()=>d.remove(),320); }, leg); }
+  setMode('pubsub'); running=true; loop();
+  return {publish,setMode,replay,demoMiss,goOffline:()=>{bOffline=true;}, online:()=>{bOffline=false;}};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Both pub/sub and event streaming broadcast messages to many consumers — but they remember very differently.", dur:4600},
+  {cap:"<b>Classic pub/sub:</b> the publisher pushes a message to a topic, which fans it out to subscribers — then forgets it.", dur:4800, on(){SIM.publish();}},
+  {cap:"It's <b>fire-and-forget.</b> If a subscriber is offline when the message goes out…", dur:4000, on(){SIM.goOffline();}},
+  {cap:"…it <span class='hl-bad'>misses the message entirely.</span> There's no copy to go back and read. Transient delivery.", dur:4600, on(){SIM.demoMiss();}},
+  {cap:"Now switch to <b>event streaming</b> — like Kafka. Messages are appended to a <b>durable, retained log.</b>", dur:4600, on(){SIM.setMode('stream');SIM.online();}},
+  {cap:"Every message is kept. Each consumer tracks its own <b>offset</b> — its position in the log — and reads at its own pace.", dur:4800, on(){SIM.publish();}},
+  {cap:"A consumer that was offline just resumes from its last offset. Nothing is lost — it catches up on the retained log.", dur:4600, on(){SIM.publish();}},
+  {cap:"And because the log persists, you can <b>replay</b> from any point — reprocess history, seed a new consumer, debug.", dur:4600, on(){SIM.replay();}},
+  {cap:"Your turn 👉 <b>🔀 switch modes</b> and hit <b>⏪ Replay</b> (streaming only) to feel transient vs durable delivery.", dur:5200},
+  {cap:"Pub/Sub = lightweight, transient fan-out. Streaming = durable, replayable log. Choose by whether you must keep history.", dur:4800}
+]});
+
+</script>
+</body></html>

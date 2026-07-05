@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bulkhead — Watertight Ship Compartments · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.pool{position:absolute; width:54px; height:70px; transform:translateX(-50%); border:2px solid var(--line2); border-radius:10px; background:#eef5fd; overflow:hidden; z-index:1}
+.pfill{position:absolute; left:0; right:0; bottom:0; height:0%; background:linear-gradient(180deg,#6fb1ff,#1f6fe6); transition:height .3s}
+.pool.full .pfill{background:linear-gradient(180deg,#f08070,#d83a2e)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Bulkhead — Watertight Ship Compartments</h1>
+  <p class="subtitle">A ship's hull is divided into watertight compartments by bulkheads. Hole one compartment and only it floods — the others stay dry and the ship stays afloat. Remove the walls and a single breach sinks everything.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Cargo moved</div><div class="stat-v accent" id="statReqs">0</div></div>
+  <div class="stat"><div class="stat-k">Bulkheads</div><div class="stat-v good" id="statMode">ON (sealed)</div></div>
+  <div class="stat"><div class="stat-k">Dry compartments</div><div class="stat-v good" id="statOk">3 / 3</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:52%"><div class="box">🚢</div><div class="lbl"><span class="k">Ship</span></div></div>
+<div class="pool p-0" style="left:46%;top:24%"><div class="pfill"></div></div>
+<div class="nlbl" style="left:46%;top:40%">🛠️ Engine room</div>
+<div class="pool p-1" style="left:46%;top:52%"><div class="pfill"></div></div>
+<div class="nlbl" style="left:46%;top:68%">📦 Cargo hold</div>
+<div class="pool p-2" style="left:46%;top:80%"><div class="pfill"></div></div>
+<div class="nlbl" style="left:46%;top:96%">🛏️ Crew quarters</div>
+<div class="node abs" data-show="1" style="left:82%;top:24%"><div class="box sm">🛠️</div></div>
+<div class="node abs" data-show="1" style="left:82%;top:52%"><div class="box sm d-search">📦</div></div>
+<div class="node abs" data-show="1" style="left:82%;top:80%"><div class="box sm">🛏️</div></div>
+<div class="acts">
+  <button class="act bad" id="actFlood">🌊 Breach the cargo hold</button>
+  <button class="act" id="actMode">🔀 Bulkheads ON / OFF</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const pools=[0,1,2].map(i=>({el:scene.querySelector('.p-'+i),fill:scene.querySelector('.p-'+i+' .pfill'),y:[24,52,80][i],load:0,cap:5}));
+  let reqs=0, flooded=false, isolated=true, running=false, rr=0;
+  const elR=document.getElementById('statReqs'), elM=document.getElementById('statMode'), elOk=document.getElementById('statOk');
+  function setFill(p){ const eff = isolated? p.load/p.cap : (pools.reduce((a,b)=>a+b.load,0))/(pools.length*p.cap);
+    const pct=Math.min(100, eff*100); p.fill.parentElement.classList.toggle('full',pct>=100);
+    p.fill.style.height=pct+'%'; return pct>=100; }
+  function fmt(){ elM.textContent=isolated?'ON (sealed)':'OFF (open hull)'; elM.className='stat-v '+(isolated?'good':'bad');
+    let ok=0; pools.forEach(p=>{ if(!setFill(p)) ok++; }); elOk.textContent=ok+' / 3'; elOk.className='stat-v '+(ok===3?'good':ok>=2?'warn':'bad'); }
+  function req(){ if(document.hidden) return;
+    const idx = rr++%3; const p=pools[idx]; const slow = flooded && idx===1;
+    const saturated = isolated ? p.load>=p.cap : pools.reduce((a,b)=>a+b.load,0) >= p.cap*1.2;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='52%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='46%'; d.style.top=p.y+'%'; });
+    setTimeout(()=>{ if(saturated){ d.classList.add('fail'); setTimeout(()=>d.remove(),320); return; }
+      p.load++; fmt(); d.style.left='82%'; const hold=(slow?1600:500)*simRate();
+      setTimeout(()=>{ d.classList.add('done'); reqs++; elR.textContent=reqs; p.load=Math.max(0,p.load-1); fmt(); setTimeout(()=>d.remove(),240); }, hold);
+    }, leg);
+  }
+  function forceFail(){ const p=pools[1]; const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='52%'; scene.appendChild(d);
+    const leg=380*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='46%'; d.style.top=p.y+'%'; });
+    setTimeout(()=>{ d.classList.add('fail'); p.el.classList.add('full'); setTimeout(()=>d.remove(),360); }, leg); }
+  function loop(){ if(!running)return; req(); setTimeout(loop, 300*simRate()); }
+  document.getElementById('actFlood').onclick=()=>{ flooded=true; const s=scene.querySelector('.d-search'); if(s)s.classList.add('busy'); fmt(); };
+  document.getElementById('actMode').onclick=()=>{ isolated=!isolated; fmt(); };
+  fmt(); running=true; loop();
+  return {fmt,forceFail,flood:()=>{flooded=true; const s=scene.querySelector('.d-search'); if(s)s.classList.add('busy'); fmt();}, setIsolated:(b)=>{isolated=b;fmt();}};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A ship's hull is split into <b>watertight compartments</b> by walls called bulkheads — engine room, cargo, crew quarters.", dur:4800},
+  {cap:"Normally cargo and crew move between them freely, each compartment well within its limits.", dur:4200},
+  {cap:"Now a hull breach <b>floods the cargo hold</b> — water pours in.", dur:4000, on(){SIM.flood();}},
+  {cap:"With bulkheads <b>sealed</b>, the flooding is <span class='hl-warn'>trapped</span> in that one compartment. Engine and crew stay dry.", dur:4800, on(){SIM.forceFail();}},
+  {cap:"The ship rides lower, but it <span class='hl-good'>stays afloat.</span> One breach is survivable.", dur:4200},
+  {cap:"Now imagine the hull with <b>no bulkheads</b> — one big open space.", dur:3800, on(){SIM.setIsolated(false);}},
+  {cap:"The same breach <span class='hl-bad'>floods the entire hull</span> and the ship goes down. One hole sinks everything.", dur:4600},
+  {cap:"Software bulkheads do the same: give each dependency its own resource pool so one failure can't drown the whole app.", dur:4600, on(){SIM.setIsolated(true);}},
+  {cap:"Your turn 👉 <b>🌊 Breach the cargo hold</b> and toggle <b>🔀 bulkheads</b> to see containment vs sinking.", dur:5200, on(){SIM.fmt();}},
+  {cap:"The Titanic flooded because too many compartments were breached at once. Bulkheads buy survival — design them in.", dur:4800}
+]});
+
+</script>
+</body></html>

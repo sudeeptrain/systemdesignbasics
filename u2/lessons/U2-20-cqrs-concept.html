@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CQRS (Command Query Responsibility Segregation) · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.lane{position:absolute; font-family:var(--fmono); font-size:11px; color:var(--faint); z-index:2}
+.sync{position:absolute; left:50%; top:38%; width:0; height:0; }</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">CQRS (Command Query Responsibility Segregation)</h1>
+  <p class="subtitle">Reads and writes have opposite needs. CQRS splits them: commands go to a write model built for correctness; queries hit a separate read model built for speed. Each side scales and is shaped on its own.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Operations</div><div class="stat-v accent" id="statOps">0</div></div>
+  <div class="stat"><div class="stat-k">Write model</div><div class="stat-v" id="statW">v0</div></div>
+  <div class="stat"><div class="stat-k">Read model</div><div class="stat-v" id="statR">v0</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:14%;top:50%"><div class="box">📱</div><div class="lbl"><span class="k">Clients</span></div></div>
+<div class="lane" style="left:42%;top:16%">✍️ command (write) path</div>
+<div class="node abs" data-show="1" style="left:60%;top:26%"><div class="box wm">🖊️</div><div class="lbl"><span class="k">Write model</span><br><span class="k" style="font-weight:400">normalized</span></div></div>
+<div class="lane" style="left:42%;top:74%">🔎 query (read) path</div>
+<div class="node abs" data-show="1" style="left:60%;top:76%"><div class="box rm">📖</div><div class="lbl"><span class="k">Read model</span><br><span class="k" style="font-weight:400">denormalized</span></div></div>
+<div class="wireline" id="syncw" style="left:60%;width:3px;top:34%;height:36%;background:var(--line2)"></div>
+<div class="acts">
+  <button class="act ok" id="actWrite">✍️ Send a command (write)</button>
+  <button class="act" id="actRead">🔎 Run a query (read)</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let ops=0, wv=0, rv=0, running=false;
+  const elOps=document.getElementById('statOps'), elW=document.getElementById('statW'), elR=document.getElementById('statR');
+  const wm=scene.querySelector('.wm'), rm=scene.querySelector('.rm');
+  function fmt(){ elW.textContent='v'+wv; elR.textContent='v'+rv; elR.className='stat-v '+(rv<wv?'warn':'good'); }
+  function write(){ if(document.hidden) return; ops++; elOps.textContent=ops; wv++;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .45s, top .45s'; d.style.left='60%'; d.style.top='26%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(wm){wm.classList.add('active'); setTimeout(()=>wm.classList.remove('active'),250);} fmt();
+      // project/sync down to read model
+      d.style.transition='top .5s'; d.style.top='76%'; setTimeout(()=>{ rv=wv; if(rm){rm.classList.add('active'); setTimeout(()=>rm.classList.remove('active'),250);} fmt(); d.remove(); }, 520*simRate());
+    }, 450*simRate());
+  }
+  function read(){ if(document.hidden) return; ops++; elOps.textContent=ops;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='14%'; d.style.top='50%'; scene.appendChild(d);
+    requestAnimationFrame(()=>{ d.style.transition='left .4s, top .4s'; d.style.left='60%'; d.style.top='76%'; });
+    setTimeout(()=>{ d.classList.add('done'); if(rm){rm.classList.add('active'); setTimeout(()=>rm.classList.remove('active'),200);} d.style.transition='left .4s, top .4s'; d.style.left='14%'; d.style.top='50%'; setTimeout(()=>d.remove(),420*simRate()); }, 400*simRate());
+  }
+  function loop(){ if(!running)return; (Math.random()<0.4?write:read)(); setTimeout(loop, 1300*simRate()); }
+  document.getElementById('actWrite').onclick=write;
+  document.getElementById('actRead').onclick=read;
+  fmt(); running=true; loop();
+  return {write,read,fmt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Most systems use one model for everything. <b>CQRS</b> asks: why force reads and writes through the same shape?", dur:4600},
+  {cap:"<b>Commands</b> (writes) need correctness and rules. They go to a <b>write model</b> — normalized, validated, consistent.", dur:4600, on(){SIM.write();}},
+  {cap:"<b>Queries</b> (reads) need speed. They hit a separate <b>read model</b> — denormalized and pre-shaped for fast lookups.", dur:4600, on(){SIM.read();}},
+  {cap:"After a write commits, the change is <b>projected down</b> to the read model so queries see it shortly after.", dur:4600, on(){SIM.write();}},
+  {cap:"Now each side is independent: reads usually vastly outnumber writes, so you can scale the read model way up.", dur:4600, on(){SIM.read();}},
+  {cap:"You can even shape <em>multiple</em> read models from the same writes — one for search, one for a dashboard, etc.", dur:4600},
+  {cap:"The trade-off: the read model lags the write model briefly — it's <span class='hl-warn'>eventually consistent.</span>", dur:4400},
+  {cap:"So CQRS shines when reads and writes have very different loads or shapes; it's overkill for a simple CRUD app.", dur:4400},
+  {cap:"Your turn 👉 <b>✍️ Send commands</b> and <b>🔎 run queries</b> to watch the two models update on their own paths.", dur:5200, on(){SIM.fmt();}},
+  {cap:"CQRS = separate the write side from the read side. More moving parts, but each is simple, fast, and scalable alone.", dur:4800}
+]});
+
+</script>
+</body></html>

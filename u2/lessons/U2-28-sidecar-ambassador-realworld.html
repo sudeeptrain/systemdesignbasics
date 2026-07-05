@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sidecar &amp; Ambassador — A Motorcycle Sidecar · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.helper{position:absolute; width:36px; height:36px; border-radius:9px; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:16px;
+  background:#eaf2fe; border:1.5px solid var(--accent); z-index:3; transition:.3s}
+.helper.armed{background:#e7f7ef; border-color:var(--good); box-shadow:0 0 0 4px rgba(18,163,104,.16)}
+.tagsm{position:absolute; font-family:var(--fmono); font-size:10px; color:var(--good); z-index:4; opacity:0; transition:.3s}
+.tagsm.on{opacity:1}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Sidecar &amp; Ambassador — A Motorcycle Sidecar</h1>
+  <p class="subtitle">A motorcycle sidecar carries a passenger who handles everything but driving — the map, the first-aid kit, the radio. The rider just rides. Send that helper ahead to scout the route, and they become an ambassador for the journey.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Trips made</div><div class="stat-v accent" id="statCalls">0</div></div>
+  <div class="stat"><div class="stat-k">Sidecar</div><div class="stat-v" id="statSide">empty</div></div>
+  <div class="stat"><div class="stat-k">Scout ahead</div><div class="stat-v" id="statAmb">no</div></div>
+</div>
+<div class="node abs" data-show="1" style="left:12%;top:50%"><div class="box sm">🧍</div><div class="lbl"><span class="k">Passenger</span></div></div>
+<div class="helper side" style="left:34%;top:36%">🔲</div>
+<div class="tagsm" id="sideTag" style="left:34%;top:24%">+ map · first-aid</div>
+<div class="node abs" data-show="1" style="left:42%;top:50%"><div class="box">🏍️</div><div class="lbl"><span class="k">Rider</span></div></div>
+<div class="helper amb" style="left:64%;top:36%">🔲</div>
+<div class="tagsm" id="ambTag" style="left:64%;top:24%">+ scouts the route</div>
+<div class="node abs" data-show="1" style="left:86%;top:50%"><div class="box sm">📍</div><div class="lbl"><span class="k">Destination</span></div></div>
+<div class="acts">
+  <button class="act ok" id="actSidecar">🧰 Seat a helper (map + kit)</button>
+  <button class="act ok" id="actAmbassador">🔭 Send a scout ahead</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let calls=0, sidecar=false, amb=false, running=false;
+  const elC=document.getElementById('statCalls'), elS=document.getElementById('statSide'), elA=document.getElementById('statAmb');
+  const sideEl=scene.querySelector('.side'), ambEl=scene.querySelector('.amb'), sideTag=document.getElementById('sideTag'), ambTag=document.getElementById('ambTag');
+  function call(){ if(document.hidden) return;
+    const stops=[12,34,42,64,86]; const tops=[50,36,50,36,50]; let i=0;
+    const d=document.createElement('div'); d.className='dot'; d.style.left=stops[0]+'%'; d.style.top='50%'; scene.appendChild(d);
+    const leg=320*simRate();
+    (function go(){ i++; if(i>=stops.length){ d.classList.add('done'); d.style.left='42%'; d.style.top='50%'; calls++; elC.textContent=calls; setTimeout(()=>d.remove(),leg); return; }
+      d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left=stops[i]+'%'; d.style.top=tops[i]+'%';
+      if(i===1 && sidecar && sideEl){ sideEl.classList.add('armed'); }
+      if(i===3 && amb && ambEl){ ambEl.classList.add('armed'); d.classList.add('done'); }
+      setTimeout(go,leg);
+    })();
+  }
+  function loop(){ if(!running)return; call(); setTimeout(loop, 1100*simRate()); }
+  document.getElementById('actSidecar').onclick=()=>{ sidecar=true; if(sideEl){sideEl.classList.add('armed'); sideEl.textContent='🧰';} sideTag.classList.add('on'); elS.textContent='map + kit'; elS.className='stat-v good'; };
+  document.getElementById('actAmbassador').onclick=()=>{ amb=true; if(ambEl){ambEl.classList.add('armed'); ambEl.textContent='🔭';} ambTag.classList.add('on'); elA.textContent='yes'; elA.className='stat-v good'; };
+  running=true; loop();
+  return {call};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A motorcycle <b>rider</b> should focus on one thing: riding. Everything else can ride alongside in the <b>sidecar.</b>", dur:4600},
+  {cap:"<b>Seat a helper</b> in the sidecar — they carry the map, the first-aid kit, the radio. The rider just rides.", dur:4600, on(){SIM.call();}},
+  {cap:"Now navigation and safety are handled <b>beside</b> the rider, without cluttering the handlebars. That's a <b>sidecar.</b>", dur:4600, on(){SIM.call();}},
+  {cap:"In software, a sidecar is a helper deployed next to your app — adding logging, encryption, metrics — with zero app changes.", dur:4600},
+  {cap:"There's a special job for the helper too: <b>send them ahead to scout the route.</b>", dur:4400},
+  {cap:"As an <b>ambassador</b>, the scout deals with the messy road ahead — detours, tolls, traffic — and waves the rider through.", dur:4800, on(){SIM.call();}},
+  {cap:"That mirrors the ambassador pattern: a helper that proxies your app's <em>outbound</em> calls, handling retries and routing.", dur:4600},
+  {cap:"Either way, the rider's job stays simple. The cross-cutting work lives in the sidecar, reusable across many trips.", dur:4400},
+  {cap:"Your turn 👉 <b>🧰 Seat a helper</b> and <b>🔭 send a scout ahead</b> to offload the navigation and the road.", dur:5200},
+  {cap:"Sidecar = a helper beside your app; ambassador = its outbound scout. Together they're the parts a service mesh is built from.", dur:4800}
+]});
+
+</script>
+</body></html>

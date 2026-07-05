@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event Sourcing · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.log{position:absolute; right:7%; top:16%; width:40%; height:66%; border:1.5px solid var(--line2); border-radius:10px; background:#fbfdff; overflow:hidden; z-index:2; padding:8px; display:flex; flex-direction:column; gap:5px}
+.ev{font-family:var(--fmono); font-size:12px; padding:5px 8px; border-radius:6px; background:#eef5fd; border-left:3px solid var(--accent); opacity:0; transform:translateX(10px); transition:.3s}
+.ev.on{opacity:1; transform:none}
+.ev.plus{border-left-color:var(--good)} .ev.minus{border-left-color:var(--bad)}
+.bal{position:absolute; left:16%; top:40%; transform:translateX(-50%); text-align:center; z-index:2}
+.bal .v{font-family:var(--fmono); font-size:34px; font-weight:800; color:var(--ink)}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Event Sourcing</h1>
+  <p class="subtitle">Instead of storing only the current state, event sourcing stores every change as an immutable event in an append-only log. The current state is just a replay of those events — giving you a perfect history and audit trail.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Events stored</div><div class="stat-v accent" id="statEvents">0</div></div>
+  <div class="stat"><div class="stat-k">Stored as</div><div class="stat-v good" id="statStore">events, not state</div></div>
+  <div class="stat"><div class="stat-k">Rebuildable?</div><div class="stat-v good" id="statReb">yes — replay</div></div>
+</div>
+<div class="bal"><div class="stat-k">Account balance</div><div class="v" id="bal">$0</div><div class="stat-sub">= replay of all events</div></div>
+<div class="log" id="log"></div>
+<div class="acts">
+  <button class="act ok" id="actEvent">➕ Append an event</button>
+  <button class="act" id="actReplay">⏪ Replay from log</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  const log=document.getElementById('log'), balEl=document.getElementById('bal'), elE=document.getElementById('statEvents');
+  let events=[], running=false;
+  const kinds=[{t:'Deposited $100',v:100,c:'plus'},{t:'Withdrew $40',v:-40,c:'minus'},{t:'Deposited $60',v:60,c:'plus'},{t:'Withdrew $25',v:-25,c:'minus'},{t:'Deposited $30',v:30,c:'plus'}];
+  function render(){ log.innerHTML=''; events.forEach(e=>{ const r=document.createElement('div'); r.className='ev '+e.c; r.textContent='• '+e.t; log.appendChild(r); requestAnimationFrame(()=>r.classList.add('on')); }); elE.textContent=events.length; }
+  function balance(){ return events.reduce((a,e)=>a+e.v,0); }
+  function setBal(v){ balEl.textContent=(v<0?'-$':'$')+Math.abs(v); }
+  function append(){ if(document.hidden) return; const k=kinds[events.length%kinds.length]; events.push(k);
+    // dot flies into log
+    const d=document.createElement('div'); d.className='dot'; d.style.left='16%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms, top '+leg+'ms'; d.style.left='60%'; d.style.top='30%'; });
+    setTimeout(()=>{ d.classList.add('done'); render(); setBal(balance()); setTimeout(()=>d.remove(),240); }, leg);
+  }
+  function replay(){ setBal(0); let run=0; events.forEach((e,i)=>setTimeout(()=>{ run+=e.v; setBal(run);
+    const rows=[...log.children]; if(rows[i]){ rows[i].style.boxShadow='0 0 0 3px rgba(31,111,230,.18)'; setTimeout(()=>rows[i].style.boxShadow='',300);} }, i*360*simRate())); }
+  function loop(){ if(!running)return; append(); setTimeout(loop, 1700*simRate()); }
+  document.getElementById('actEvent').onclick=append;
+  document.getElementById('actReplay').onclick=replay;
+  render(); setBal(0); running=true; loop();
+  return {append,replay};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"Most apps store only the <b>current state</b> — a balance of $120. But <em>how</em> it got there is lost forever.", dur:4600},
+  {cap:"<b>Event sourcing</b> flips that: store every change as an immutable <b>event</b> in an append-only log.", dur:4600, on(){SIM.append();}},
+  {cap:"\"Deposited $100,\" \"Withdrew $40\" — each is a fact that happened, recorded and never edited or deleted.", dur:4600, on(){SIM.append();}},
+  {cap:"The current balance isn't stored directly. It's <b>derived</b> — just add up every event in order.", dur:4600, on(){SIM.append();}},
+  {cap:"Need to rebuild the state from scratch? <b>Replay the log</b> from the beginning and watch the balance reconstruct itself.", dur:4800, on(){SIM.replay();}},
+  {cap:"Because nothing is overwritten, you get a perfect <b>audit trail</b> and can ask: what was the balance last Tuesday?", dur:4800},
+  {cap:"You can even <b>time-travel</b> — replay up to any point — or build brand-new views from the same event history.", dur:4600},
+  {cap:"It pairs naturally with CQRS: events are the write side; you project them into read models for queries.", dur:4600, on(){SIM.append();}},
+  {cap:"Your turn 👉 <b>➕ Append events</b> to grow the log, then <b>⏪ Replay</b> to rebuild the balance from zero.", dur:5200},
+  {cap:"Event sourcing = the log <em>is</em> the source of truth. Full history and auditability, at the cost of more storage and replay logic.", dur:4800}
+]});
+
+</script>
+</body></html>

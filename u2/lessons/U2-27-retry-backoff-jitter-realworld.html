@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retry &amp; Backoff — Knocking on a Door · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gap{position:absolute; bottom:24%; height:18px; border-radius:5px; background:var(--bad); opacity:.8; z-index:2; transition:.3s}
+.gaplbl{position:absolute; bottom:30%; font-family:var(--fmono); font-size:11px; color:var(--bad); z-index:3}
+.nextin{position:absolute; left:50%; bottom:13%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag real">🌍 Real-world</span></div>
+  <h1 class="title">Retry &amp; Backoff — Knocking on a Door</h1>
+  <p class="subtitle">Nobody answers the door, so you knock again. Pounding non-stop is rude and pointless; instead you wait a bit longer between knocks. And if a whole street knocks in unison, you each pick slightly different moments — that's jitter.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Knocks</div><div class="stat-v accent" id="statAttempts">0</div></div>
+  <div class="stat"><div class="stat-k">Next wait</div><div class="stat-v" id="statWait">1s</div></div>
+  <div class="stat"><div class="stat-k">Friend</div><div class="stat-v good" id="statDown">Home</div></div>
+</div>
+<div class="wireline" style="left:20%;width:40%;top:40%"></div>
+<div class="node abs" data-show="1" style="left:18%;top:40%"><div class="box">🧑</div><div class="lbl"><span class="k">You</span></div></div>
+<div class="node abs" data-show="1" style="left:62%;top:40%"><div class="box down">🚪</div><div class="lbl"><span class="k">Their door</span></div></div>
+<div class="nlbl" style="left:50%;bottom:42%">waits between knocks grow →</div>
+<div class="nextin" id="nextin"></div>
+<div class="acts">
+  <button class="act bad" id="actBreak">🚶 Friend goes out</button>
+  <button class="act ok" id="actHeal">🏠 Friend comes home</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let attempts=0, fails=0, healthy=true, running=false, jitter=true;
+  const elA=document.getElementById('statAttempts'), elW=document.getElementById('statWait'), elD=document.getElementById('statDown');
+  const nextin=document.getElementById('nextin');
+  function fmt(){ elD.textContent=healthy?'Home':'Out'; elD.className='stat-v '+(healthy?'good':'bad');
+    const base=Math.min(8, Math.pow(2,fails)); elW.textContent=base+'s'+(jitter?' ± jitter':''); }
+  function drawGap(){ const base=Math.min(8,Math.pow(2,fails)); const w=10+base*5; const x=18+Math.min(60, fails*11);
+    const g=document.createElement('div'); g.className='gap'; g.style.left=x+'%'; g.style.width=w+'px'; scene.appendChild(g);
+    const l=document.createElement('div'); l.className='gaplbl'; l.style.left=x+'%'; l.textContent=base+'s'; scene.appendChild(l);
+    setTimeout(()=>{g.remove(); l.remove();}, 4200*simRate()); }
+  function attempt(){ if(document.hidden) return; attempts++; elA.textContent=attempts;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='62%'; });
+    setTimeout(()=>{
+      if(healthy){ d.classList.add('done'); fails=0; fmt(); nextin.textContent='✓ they answered — reset'; setTimeout(()=>d.remove(),300);
+        schedule(900); }
+      else { d.classList.add('fail'); setTimeout(()=>d.remove(),300); fails++; drawGap();
+        const base=Math.min(8,Math.pow(2,fails))*1000; const wait= jitter? base*(0.5+Math.random()*0.5) : base; fmt();
+        nextin.textContent='knock again in '+(wait/1000).toFixed(1)+'s…'; schedule(wait); }
+    }, leg);
+  }
+  let timer=null;
+  function schedule(ms){ clearTimeout(timer); timer=setTimeout(()=>{ if(running)attempt(); }, Math.max(500, ms*0.45)*simRate()); }
+  function brk(){ healthy=false; if(scene.querySelector('.down'))scene.querySelector('.down').classList.add('crash'); fmt(); }
+  function heal(){ healthy=true; fails=0; const de=scene.querySelector('.down'); if(de)de.classList.remove('crash'); fmt(); nextin.textContent='they came home'; }
+  document.getElementById('actBreak').onclick=brk;
+  document.getElementById('actHeal').onclick=heal;
+  fmt(); running=true; attempt();
+  return {brk,heal,fmt,attempt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"You knock on a friend's door. If they're home, they answer right away — done.", dur:4000},
+  {cap:"But today they've <span class='hl-bad'>stepped out.</span> You knock… and nobody answers.", dur:3800, on(){SIM.brk();}},
+  {cap:"Pounding the door <em>non-stop</em> is rude, tiring, and pointless — it won't make them appear any faster.", dur:4400},
+  {cap:"So you use <b>backoff</b>: wait 1 second, then 2, then 4, then 8 — a little longer between each knock.", dur:4600, on(){SIM.attempt();}},
+  {cap:"See the gaps between knocks <span class='hl-warn'>growing.</span> Patient, polite, and far less wasteful.", dur:4400, on(){SIM.attempt();}},
+  {cap:"Now imagine the whole street locked out, everyone knocking at <em>exactly</em> 1s, 2s, 4s — a synchronized racket.", dur:4800},
+  {cap:"If they all rushed back at once, it'd be chaos. So each person adds a little randomness — that's <b>jitter.</b>", dur:4800, on(){SIM.attempt();}},
+  {cap:"Jitter spreads the knocks out smoothly. When your friend returns, the next knock <span class='hl-good'>gets answered.</span>", dur:4600, on(){SIM.heal();}},
+  {cap:"Your turn 👉 <b>🚶 Send your friend out</b> to watch the waits grow, then <b>🏠 bring them home.</b>", dur:5200, on(){SIM.fmt();}},
+  {cap:"Apps retry failed calls the same way: back off so you don't hammer a busy server, and jitter so clients don't stampede.", dur:4800}
+]});
+
+</script>
+</body></html>

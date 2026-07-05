@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retry with Exponential Backoff &amp; Jitter · System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<style>.gap{position:absolute; bottom:24%; height:18px; border-radius:5px; background:var(--bad); opacity:.8; z-index:2; transition:.3s}
+.gaplbl{position:absolute; bottom:30%; font-family:var(--fmono); font-size:11px; color:var(--bad); z-index:3}
+.nextin{position:absolute; left:50%; bottom:13%; transform:translateX(-50%); font-family:var(--fmono); font-size:12px; color:var(--muted); z-index:3}</style>
+</head><body>
+<div class="wrap">
+  <div class="topbar"><span class="tag">System Design</span><span class="tag unit">Unit 2 · Concepts &amp; Patterns</span><span class="tag">💡 Concept</span></div>
+  <h1 class="title">Retry with Exponential Backoff &amp; Jitter</h1>
+  <p class="subtitle">Retrying a failed call immediately just hammers a struggling service. Exponential backoff waits longer after each failure (1s, 2s, 4s…), and jitter randomizes the waits so a thousand clients don't all retry in sync.</p>
+  <div class="stage">
+    <div class="scene" id="scene">
+<div class="stats">
+  <div class="stat"><div class="stat-k">Attempts</div><div class="stat-v accent" id="statAttempts">0</div></div>
+  <div class="stat"><div class="stat-k">Next wait</div><div class="stat-v" id="statWait">1s</div></div>
+  <div class="stat"><div class="stat-k">Downstream</div><div class="stat-v good" id="statDown">Healthy</div></div>
+</div>
+<div class="wireline" style="left:20%;width:40%;top:40%"></div>
+<div class="node abs" data-show="1" style="left:18%;top:40%"><div class="box">🖥️</div><div class="lbl"><span class="k">Client</span></div></div>
+<div class="node abs" data-show="1" style="left:62%;top:40%"><div class="box down">🗄️</div><div class="lbl"><span class="k">Service</span></div></div>
+<div class="nlbl" style="left:50%;bottom:42%">retry waits grow after each failure →</div>
+<div class="nextin" id="nextin"></div>
+<div class="acts">
+  <button class="act bad" id="actBreak">🔥 Break service</button>
+  <button class="act ok" id="actHeal">🔧 Heal service</button>
+</div>
+    </div>
+    <div class="progress" id="prog"></div>
+    <div class="bar">
+      <div class="cap" id="cap"></div>
+      <div class="controls-row">
+        <span class="counter" id="counter"></span>
+        <div class="ctrl">
+          <button class="btn" id="btnReplay"><span class="i">◀</span><span class="t">Replay</span></button>
+          <button class="btn pri" id="btnPlay"><span class="i">⏸</span><span class="t">Pause</span></button>
+          <button class="btn" id="btnSpd"><span>⚡</span><span class="t">Slow</span></button>
+          <button class="btn pri" id="btnLoop"><span>↻</span><span class="t">Loop on</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="../assets/engine.js"></script>
+<script>
+const SIM=(function(){
+  const scene=document.getElementById('scene');
+  let attempts=0, fails=0, healthy=true, running=false, jitter=true;
+  const elA=document.getElementById('statAttempts'), elW=document.getElementById('statWait'), elD=document.getElementById('statDown');
+  const nextin=document.getElementById('nextin');
+  function fmt(){ elD.textContent=healthy?'Healthy':'Failing'; elD.className='stat-v '+(healthy?'good':'bad');
+    const base=Math.min(8, Math.pow(2,fails)); elW.textContent=base+'s'+(jitter?' ± jitter':''); }
+  function drawGap(){ const base=Math.min(8,Math.pow(2,fails)); const w=10+base*5; const x=18+Math.min(60, fails*11);
+    const g=document.createElement('div'); g.className='gap'; g.style.left=x+'%'; g.style.width=w+'px'; scene.appendChild(g);
+    const l=document.createElement('div'); l.className='gaplbl'; l.style.left=x+'%'; l.textContent=base+'s'; scene.appendChild(l);
+    setTimeout(()=>{g.remove(); l.remove();}, 4200*simRate()); }
+  function attempt(){ if(document.hidden) return; attempts++; elA.textContent=attempts;
+    const d=document.createElement('div'); d.className='dot'; d.style.left='18%'; d.style.top='40%'; scene.appendChild(d);
+    const leg=420*simRate(); requestAnimationFrame(()=>{ d.style.transition='left '+leg+'ms'; d.style.left='62%'; });
+    setTimeout(()=>{
+      if(healthy){ d.classList.add('done'); fails=0; fmt(); nextin.textContent='✓ success — backoff reset'; setTimeout(()=>d.remove(),300);
+        schedule(900); }
+      else { d.classList.add('fail'); setTimeout(()=>d.remove(),300); fails++; drawGap();
+        const base=Math.min(8,Math.pow(2,fails))*1000; const wait= jitter? base*(0.5+Math.random()*0.5) : base; fmt();
+        nextin.textContent='retry in '+(wait/1000).toFixed(1)+'s…'; schedule(wait); }
+    }, leg);
+  }
+  let timer=null;
+  function schedule(ms){ clearTimeout(timer); timer=setTimeout(()=>{ if(running)attempt(); }, Math.max(500, ms*0.45)*simRate()); }
+  function brk(){ healthy=false; if(scene.querySelector('.down'))scene.querySelector('.down').classList.add('crash'); fmt(); }
+  function heal(){ healthy=true; fails=0; const de=scene.querySelector('.down'); if(de)de.classList.remove('crash'); fmt(); nextin.textContent='recovered'; }
+  document.getElementById('actBreak').onclick=brk;
+  document.getElementById('actHeal').onclick=heal;
+  fmt(); running=true; attempt();
+  return {brk,heal,fmt,attempt};
+})();
+</script>
+<script>
+SD.run({steps:[
+  {cap:"A client calls a service. While it's healthy, calls just succeed — quick and steady.", dur:4200},
+  {cap:"Now the service <span class='hl-bad'>breaks.</span> The call fails. What should the client do?", dur:3800, on(){SIM.brk();}},
+  {cap:"Retrying <em>instantly</em>, over and over, just <b>hammers</b> the struggling service and keeps it down.", dur:4400},
+  {cap:"Instead, use <b>exponential backoff</b>: wait 1s, then 2s, then 4s, then 8s — doubling after each failure.", dur:4600, on(){SIM.attempt();}},
+  {cap:"See the gaps between retries <span class='hl-warn'>growing.</span> The client backs off, giving the service room to breathe.", dur:4600, on(){SIM.attempt();}},
+  {cap:"But there's a trap: if a thousand clients all failed at once, they'd all retry at exactly 1s, 2s, 4s — in lockstep.", dur:4800},
+  {cap:"That synchronized stampede re-crushes the service. The fix is <b>jitter</b> — randomize each wait a little.", dur:4600, on(){SIM.attempt();}},
+  {cap:"With jitter, retries spread out smoothly instead of arriving in waves. Heal the service and the next try succeeds.", dur:4600, on(){SIM.heal();}},
+  {cap:"Your turn 👉 <b>🔥 Break</b> the service to watch the waits grow, then <b>🔧 Heal</b> it to reset the backoff.", dur:5200, on(){SIM.fmt();}},
+  {cap:"Retry smart: exponential backoff to stop hammering, plus jitter to avoid synchronized stampedes. Always cap the max wait.", dur:4800}
+]});
+
+</script>
+</body></html>
