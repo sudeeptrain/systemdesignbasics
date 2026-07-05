@@ -1,0 +1,1958 @@
+[
+  {
+    "file": "U4-01-tcp-handshake-concept.html",
+    "id": "U4-01-tcp-handshake-concept",
+    "title": "TCP Three-Way Handshake",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statConns"
+    ],
+    "buttons": [
+      "actConnect",
+      "actData"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-01-tcp-handshake-realworld.html",
+    "id": "U4-01-tcp-handshake-realworld",
+    "title": "TCP Handshake — A Phone Call Greeting",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statConns"
+    ],
+    "buttons": [
+      "actConnect",
+      "actData"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-02-tcp-vs-udp-concept.html",
+    "id": "U4-02-tcp-vs-udp-concept",
+    "title": "TCP vs UDP",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSent"
+    ],
+    "buttons": [
+      "actMode",
+      "actSend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-02-tcp-vs-udp-realworld.html",
+    "id": "U4-02-tcp-vs-udp-realworld",
+    "title": "TCP vs UDP — Registered Post vs Postcards",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statSent"
+    ],
+    "buttons": [
+      "actMode",
+      "actSend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-03-http-request-lifecycle-concept.html",
+    "id": "U4-03-http-request-lifecycle-concept",
+    "title": "HTTP Request Lifecycle",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actMethod"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-03-http-request-lifecycle-realworld.html",
+    "id": "U4-03-http-request-lifecycle-realworld",
+    "title": "HTTP Lifecycle — Ordering at a Counter",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actMethod"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-04-http-versions-concept.html",
+    "id": "U4-04-http-versions-concept",
+    "title": "HTTP/1 vs HTTP/2 vs HTTP/3",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLoads"
+    ],
+    "buttons": [
+      "actMode",
+      "actLoad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-04-http-versions-realworld.html",
+    "id": "U4-04-http-versions-realworld",
+    "title": "HTTP Versions — Lanes on a Highway",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLoads"
+    ],
+    "buttons": [
+      "actMode",
+      "actLoad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-05-websocket-concept.html",
+    "id": "U4-05-websocket-concept",
+    "title": "WebSocket Connection",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actServerPush",
+      "actClientSend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-05-websocket-realworld.html",
+    "id": "U4-05-websocket-realworld",
+    "title": "WebSocket — An Open Phone Line",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actServerPush",
+      "actClientSend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-06-dns-resolution-concept.html",
+    "id": "U4-06-dns-resolution-concept",
+    "title": "DNS Resolution",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLookups"
+    ],
+    "buttons": [
+      "actResolve",
+      "actCache"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-06-dns-resolution-realworld.html",
+    "id": "U4-06-dns-resolution-realworld",
+    "title": "DNS — Looking Up a Phone Number",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLookups"
+    ],
+    "buttons": [
+      "actResolve",
+      "actCache"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-07-cdn-concept.html",
+    "id": "U4-07-cdn-concept",
+    "title": "CDN (Push vs Pull)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-07-cdn-realworld.html",
+    "id": "U4-07-cdn-realworld",
+    "title": "CDN — Local Library Branches",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-08-tls-handshake-concept.html",
+    "id": "U4-08-tls-handshake-concept",
+    "title": "TLS Handshake",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSessions"
+    ],
+    "buttons": [
+      "actHandshake",
+      "actData"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-08-tls-handshake-realworld.html",
+    "id": "U4-08-tls-handshake-realworld",
+    "title": "TLS — A Sealed Diplomatic Pouch",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statSessions"
+    ],
+    "buttons": [
+      "actHandshake",
+      "actData"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-09-rest-api-concept.html",
+    "id": "U4-09-rest-api-concept",
+    "title": "REST API",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actVerb",
+      "actCall"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-09-rest-api-realworld.html",
+    "id": "U4-09-rest-api-realworld",
+    "title": "REST — A Standard Restaurant Menu",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actVerb",
+      "actCall"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-10-graphql-concept.html",
+    "id": "U4-10-graphql-concept",
+    "title": "GraphQL",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actMode",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-10-graphql-realworld.html",
+    "id": "U4-10-graphql-realworld",
+    "title": "GraphQL — À La Carte vs a Set Plate",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statQueries"
+    ],
+    "buttons": [
+      "actMode",
+      "actQuery"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-11-grpc-concept.html",
+    "id": "U4-11-grpc-concept",
+    "title": "gRPC",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actMode",
+      "actStream"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-11-grpc-realworld.html",
+    "id": "U4-11-grpc-realworld",
+    "title": "gRPC — Two Pros Talking in Shorthand",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actMode",
+      "actStream"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-12-webhooks-concept.html",
+    "id": "U4-12-webhooks-concept",
+    "title": "Webhooks",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actMode",
+      "actEvent"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-12-webhooks-realworld.html",
+    "id": "U4-12-webhooks-realworld",
+    "title": "Webhooks — A Doorbell, Not a Peephole",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actMode",
+      "actEvent"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-13-api-gateway-concept.html",
+    "id": "U4-13-api-gateway-concept",
+    "title": "API Gateway",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actPolicy"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-13-api-gateway-realworld.html",
+    "id": "U4-13-api-gateway-realworld",
+    "title": "API Gateway — A Building Reception Desk",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actPolicy"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-14-rate-limiting-concept.html",
+    "id": "U4-14-rate-limiting-concept",
+    "title": "Rate Limiting",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actBurst",
+      "actRefill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-14-rate-limiting-realworld.html",
+    "id": "U4-14-rate-limiting-realworld",
+    "title": "Rate Limiting — A Nightclub Bouncer",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actBurst",
+      "actRefill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-15-api-versioning-concept.html",
+    "id": "U4-15-api-versioning-concept",
+    "title": "API Versioning",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actVersion",
+      "actDeprecate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-15-api-versioning-realworld.html",
+    "id": "U4-15-api-versioning-realworld",
+    "title": "API Versioning — A New Edition of a Textbook",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statCalls"
+    ],
+    "buttons": [
+      "actVersion",
+      "actDeprecate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-16-client-server-architecture-concept.html",
+    "id": "U4-16-client-server-architecture-concept",
+    "title": "Client-Server Architecture",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actAddClient"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-16-client-server-architecture-realworld.html",
+    "id": "U4-16-client-server-architecture-realworld",
+    "title": "Client-Server — Diners and the Kitchen",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actAddClient"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-17-l4-vs-l7-load-balancer-concept.html",
+    "id": "U4-17-l4-vs-l7-load-balancer-concept",
+    "title": "L4 vs L7 Load Balancer",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-17-l4-vs-l7-load-balancer-realworld.html",
+    "id": "U4-17-l4-vs-l7-load-balancer-realworld",
+    "title": "L4 vs L7 — Sorting Mail by Zip vs by Reading It",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-18-consistent-hashing-concept.html",
+    "id": "U4-18-consistent-hashing-concept",
+    "title": "Consistent Hashing",
+    "variant": "concept",
+    "legend": [],
+    "counters": [
+      "statKeys"
+    ],
+    "buttons": [
+      "actAddNode",
+      "actRemoveNode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-18-consistent-hashing-realworld.html",
+    "id": "U4-18-consistent-hashing-realworld",
+    "title": "Consistent Hashing — Hosts Around a Round Table",
+    "variant": "real",
+    "legend": [],
+    "counters": [
+      "statKeys"
+    ],
+    "buttons": [
+      "actAddNode",
+      "actRemoveNode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-19-health-checks-concept.html",
+    "id": "U4-19-health-checks-concept",
+    "title": "Health Checks",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actSick",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-19-health-checks-realworld.html",
+    "id": "U4-19-health-checks-realworld",
+    "title": "Health Checks — A Shift Manager's Roll-Call",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actSick",
+      "actHeal"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-20-global-load-balancing-concept.html",
+    "id": "U4-20-global-load-balancing-concept",
+    "title": "Global Load Balancing",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRegionDown",
+      "actRecover"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-20-global-load-balancing-realworld.html",
+    "id": "U4-20-global-load-balancing-realworld",
+    "title": "Global Load Balancing — Your Nearest Branch",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRegionDown",
+      "actRecover"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-21-authentication-flow-concept.html",
+    "id": "U4-21-authentication-flow-concept",
+    "title": "Authentication Flow",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statLogins"
+    ],
+    "buttons": [
+      "actLogin",
+      "actWrong"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-21-authentication-flow-realworld.html",
+    "id": "U4-21-authentication-flow-realworld",
+    "title": "Authentication — Showing ID at the Door",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statLogins"
+    ],
+    "buttons": [
+      "actLogin",
+      "actWrong"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-22-authorization-concept.html",
+    "id": "U4-22-authorization-concept",
+    "title": "Authorization",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statChecks"
+    ],
+    "buttons": [
+      "actAllowed",
+      "actForbidden"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-22-authorization-realworld.html",
+    "id": "U4-22-authorization-realworld",
+    "title": "Authorization — A Hotel Keycard",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statChecks"
+    ],
+    "buttons": [
+      "actAllowed",
+      "actForbidden"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-23-oauth-concept.html",
+    "id": "U4-23-oauth-concept",
+    "title": "OAuth 2.0 Login",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statLogins"
+    ],
+    "buttons": [
+      "actLogin",
+      "actDeny"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-23-oauth-realworld.html",
+    "id": "U4-23-oauth-realworld",
+    "title": "OAuth — A Valet Key for Your Car",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statLogins"
+    ],
+    "buttons": [
+      "actLogin",
+      "actDeny"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-24-jwt-flow-concept.html",
+    "id": "U4-24-jwt-flow-concept",
+    "title": "JWT Flow",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actTamper"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-24-jwt-flow-realworld.html",
+    "id": "U4-24-jwt-flow-realworld",
+    "title": "JWT — A Festival Wristband",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actRequest",
+      "actTamper"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-25-sso-concept.html",
+    "id": "U4-25-sso-concept",
+    "title": "SSO (Single Sign-On)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statApps"
+    ],
+    "buttons": [
+      "actLogin",
+      "actOpenApp"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-25-sso-realworld.html",
+    "id": "U4-25-sso-realworld",
+    "title": "SSO — One Conference Badge",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statApps"
+    ],
+    "buttons": [
+      "actLogin",
+      "actOpenApp"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-26-malware-concept.html",
+    "id": "U4-26-malware-concept",
+    "title": "Malware Attack & Defense",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statThreats"
+    ],
+    "buttons": [
+      "actAttack",
+      "actDefend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-26-malware-realworld.html",
+    "id": "U4-26-malware-realworld",
+    "title": "Malware — Catching a Cold (and Good Hygiene)",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statThreats"
+    ],
+    "buttons": [
+      "actAttack",
+      "actDefend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-27-firewall-concept.html",
+    "id": "U4-27-firewall-concept",
+    "title": "Firewall",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statPackets"
+    ],
+    "buttons": [
+      "actSend",
+      "actRule"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-27-firewall-realworld.html",
+    "id": "U4-27-firewall-realworld",
+    "title": "Firewall — A Gated Community Guard",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statPackets"
+    ],
+    "buttons": [
+      "actSend",
+      "actRule"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-28-cicd-deployment-concept.html",
+    "id": "U4-28-cicd-deployment-concept",
+    "title": "CI/CD Deployment",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statShipped"
+    ],
+    "buttons": [
+      "actCommit",
+      "actBad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-28-cicd-deployment-realworld.html",
+    "id": "U4-28-cicd-deployment-realworld",
+    "title": "CI/CD — A Car Assembly Line",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statShipped"
+    ],
+    "buttons": [
+      "actCommit",
+      "actBad"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-29-monitoring-concept.html",
+    "id": "U4-29-monitoring-concept",
+    "title": "Monitoring (Prometheus & Grafana)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statScrapes"
+    ],
+    "buttons": [
+      "actSpike",
+      "actResolve"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-29-monitoring-realworld.html",
+    "id": "U4-29-monitoring-realworld",
+    "title": "Monitoring — A Car Dashboard",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statScrapes"
+    ],
+    "buttons": [
+      "actSpike",
+      "actResolve"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-30-forward-vs-reverse-proxy-concept.html",
+    "id": "U4-30-forward-vs-reverse-proxy-concept",
+    "title": "Forward vs Reverse Proxy",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-30-forward-vs-reverse-proxy-realworld.html",
+    "id": "U4-30-forward-vs-reverse-proxy-realworld",
+    "title": "Forward vs Reverse Proxy — Personal Shopper vs Receptionist",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-31-quic-concept.html",
+    "id": "U4-31-quic-concept",
+    "title": "QUIC",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statConns"
+    ],
+    "buttons": [
+      "actConnect",
+      "actMigrate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-31-quic-realworld.html",
+    "id": "U4-31-quic-realworld",
+    "title": "QUIC — A Courier Who Knows You, Not Your Address",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statConns"
+    ],
+    "buttons": [
+      "actConnect",
+      "actMigrate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-32-server-sent-events-concept.html",
+    "id": "U4-32-server-sent-events-concept",
+    "title": "Server-Sent Events (SSE)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actPush",
+      "actReconnect"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-32-server-sent-events-realworld.html",
+    "id": "U4-32-server-sent-events-realworld",
+    "title": "SSE — A Live Radio Broadcast",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statEvents"
+    ],
+    "buttons": [
+      "actPush",
+      "actReconnect"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-33-realtime-techniques-concept.html",
+    "id": "U4-33-realtime-techniques-concept",
+    "title": "Short Poll · Long Poll · SSE · WebSocket",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actMode",
+      "actEvent"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-33-realtime-techniques-realworld.html",
+    "id": "U4-33-realtime-techniques-realworld",
+    "title": "Getting News — Four Ways to Stay Updated",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actMode",
+      "actEvent"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-34-message-queues-concept.html",
+    "id": "U4-34-message-queues-concept",
+    "title": "Message Queues",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actBurst",
+      "actSlow"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-34-message-queues-realworld.html",
+    "id": "U4-34-message-queues-realworld",
+    "title": "Message Queues — A Deli Ticket Counter",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actBurst",
+      "actSlow"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-35-kafka-concept.html",
+    "id": "U4-35-kafka-concept",
+    "title": "Apache Kafka",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actProduce",
+      "actReplay"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-35-kafka-realworld.html",
+    "id": "U4-35-kafka-realworld",
+    "title": "Kafka — A Newspaper Archive You Can Re-read",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statMsgs"
+    ],
+    "buttons": [
+      "actProduce",
+      "actReplay"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-36-dead-letter-queue-concept.html",
+    "id": "U4-36-dead-letter-queue-concept",
+    "title": "Dead Letter Queue (DLQ)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actPoison",
+      "actInspect"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-36-dead-letter-queue-realworld.html",
+    "id": "U4-36-dead-letter-queue-realworld",
+    "title": "Dead Letter Queue — The Returns Bin",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statDone"
+    ],
+    "buttons": [
+      "actPoison",
+      "actInspect"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-37-idempotency-keys-concept.html",
+    "id": "U4-37-idempotency-keys-concept",
+    "title": "Idempotency Keys in APIs",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actSubmit",
+      "actRetry"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-37-idempotency-keys-realworld.html",
+    "id": "U4-37-idempotency-keys-realworld",
+    "title": "Idempotency Keys — A Coat-Check Ticket",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actSubmit",
+      "actRetry"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-38-api-pagination-concept.html",
+    "id": "U4-38-api-pagination-concept",
+    "title": "API Pagination (offset vs cursor)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statPages"
+    ],
+    "buttons": [
+      "actMode",
+      "actNext"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-38-api-pagination-realworld.html",
+    "id": "U4-38-api-pagination-realworld",
+    "title": "Pagination — Page Numbers vs a Bookmark",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statPages"
+    ],
+    "buttons": [
+      "actMode",
+      "actNext"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-39-mtls-concept.html",
+    "id": "U4-39-mtls-concept",
+    "title": "mTLS (Mutual TLS)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statConns"
+    ],
+    "buttons": [
+      "actMode",
+      "actConnect"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-39-mtls-realworld.html",
+    "id": "U4-39-mtls-realworld",
+    "title": "mTLS — Two Spies Trading Passwords",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statConns"
+    ],
+    "buttons": [
+      "actMode",
+      "actConnect"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-40-service-discovery-concept.html",
+    "id": "U4-40-service-discovery-concept",
+    "title": "Service Discovery",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLookups"
+    ],
+    "buttons": [
+      "actRegister",
+      "actLookup"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-40-service-discovery-realworld.html",
+    "id": "U4-40-service-discovery-realworld",
+    "title": "Service Discovery — A Taxi Dispatch Board",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statLookups"
+    ],
+    "buttons": [
+      "actRegister",
+      "actLookup"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-41-sticky-vs-stateless-sessions-concept.html",
+    "id": "U4-41-sticky-vs-stateless-sessions-concept",
+    "title": "Sticky vs Stateless Sessions",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-41-sticky-vs-stateless-sessions-realworld.html",
+    "id": "U4-41-sticky-vs-stateless-sessions-realworld",
+    "title": "Sticky vs Stateless — Your Regular Barista",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-42-web-security-concept.html",
+    "id": "U4-42-web-security-concept",
+    "title": "Web Security: XSS, CSRF, SQLi",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAttacks"
+    ],
+    "buttons": [
+      "actAttack",
+      "actDefend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-42-web-security-realworld.html",
+    "id": "U4-42-web-security-realworld",
+    "title": "Web Security — Don't Trust Notes from Strangers",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statAttacks"
+    ],
+    "buttons": [
+      "actAttack",
+      "actDefend"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-43-ddos-concept.html",
+    "id": "U4-43-ddos-concept",
+    "title": "DDoS Attacks & Mitigation",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actAttack",
+      "actMitigate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-43-ddos-realworld.html",
+    "id": "U4-43-ddos-realworld",
+    "title": "DDoS — A Mob Jamming the Phone Line",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statServed"
+    ],
+    "buttons": [
+      "actAttack",
+      "actMitigate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-44-waf-concept.html",
+    "id": "U4-44-waf-concept",
+    "title": "WAF (Web Application Firewall)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAttack",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-44-waf-realworld.html",
+    "id": "U4-44-waf-realworld",
+    "title": "WAF — A Bouncer Who Checks Your Bag",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actAttack",
+      "actMode"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-45-encryption-at-rest-in-transit-concept.html",
+    "id": "U4-45-encryption-at-rest-in-transit-concept",
+    "title": "Encryption at Rest & in Transit",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statData"
+    ],
+    "buttons": [
+      "actTransit",
+      "actRest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-45-encryption-at-rest-in-transit-realworld.html",
+    "id": "U4-45-encryption-at-rest-in-transit-realworld",
+    "title": "Encryption — A Sealed Envelope and a Locked Diary",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statData"
+    ],
+    "buttons": [
+      "actTransit",
+      "actRest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-46-secrets-management-concept.html",
+    "id": "U4-46-secrets-management-concept",
+    "title": "Secrets Management (Vault)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statFetches"
+    ],
+    "buttons": [
+      "actFetch",
+      "actRotate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-46-secrets-management-realworld.html",
+    "id": "U4-46-secrets-management-realworld",
+    "title": "Secrets Management — A Bank Safe-Deposit Box",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statFetches"
+    ],
+    "buttons": [
+      "actFetch",
+      "actRotate"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-47-rbac-vs-abac-concept.html",
+    "id": "U4-47-rbac-vs-abac-concept",
+    "title": "RBAC vs ABAC",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statChecks"
+    ],
+    "buttons": [
+      "actMode",
+      "actAccess"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-47-rbac-vs-abac-realworld.html",
+    "id": "U4-47-rbac-vs-abac-realworld",
+    "title": "RBAC vs ABAC — Job Title vs House Rules",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statChecks"
+    ],
+    "buttons": [
+      "actMode",
+      "actAccess"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-48-zero-trust-concept.html",
+    "id": "U4-48-zero-trust-concept",
+    "title": "Zero Trust Architecture",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-48-zero-trust-realworld.html",
+    "id": "U4-48-zero-trust-realworld",
+    "title": "Zero Trust — ID Checked at Every Door",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actMode",
+      "actRequest"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-49-containers-docker-concept.html",
+    "id": "U4-49-containers-docker-concept",
+    "title": "Containers (Docker)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statRuns"
+    ],
+    "buttons": [
+      "actBuild",
+      "actRun"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-49-containers-docker-realworld.html",
+    "id": "U4-49-containers-docker-realworld",
+    "title": "Containers — A Shipping Container",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statRuns"
+    ],
+    "buttons": [
+      "actBuild",
+      "actRun"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-50-kubernetes-concept.html",
+    "id": "U4-50-kubernetes-concept",
+    "title": "Container Orchestration (Kubernetes)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actScale",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-50-kubernetes-realworld.html",
+    "id": "U4-50-kubernetes-realworld",
+    "title": "Kubernetes — A Stage Manager with Understudies",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done",
+      "fail"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actScale",
+      "actKill"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-51-terraform-iac-concept.html",
+    "id": "U4-51-terraform-iac-concept",
+    "title": "Infrastructure as Code (Terraform)",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statResources"
+    ],
+    "buttons": [
+      "actApply",
+      "actChange"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-51-terraform-iac-realworld.html",
+    "id": "U4-51-terraform-iac-realworld",
+    "title": "Infrastructure as Code — A LEGO Instruction Booklet",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statResources"
+    ],
+    "buttons": [
+      "actApply",
+      "actChange"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-52-deployment-strategies-concept.html",
+    "id": "U4-52-deployment-strategies-concept",
+    "title": "Deployment Strategies",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actStrategy",
+      "actDeploy"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-52-deployment-strategies-realworld.html",
+    "id": "U4-52-deployment-strategies-realworld",
+    "title": "Deployment Strategies — Refreshing a Restaurant's Menu",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actStrategy",
+      "actDeploy"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-53-feature-flags-concept.html",
+    "id": "U4-53-feature-flags-concept",
+    "title": "Feature Flags",
+    "variant": "concept",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actToggle",
+      "actRollout"
+    ],
+    "steps": 10
+  },
+  {
+    "file": "U4-53-feature-flags-realworld.html",
+    "id": "U4-53-feature-flags-realworld",
+    "title": "Feature Flags — A Theatre Soft Opening",
+    "variant": "real",
+    "legend": [
+      "dot",
+      "done"
+    ],
+    "counters": [
+      "statReqs"
+    ],
+    "buttons": [
+      "actToggle",
+      "actRollout"
+    ],
+    "steps": 10
+  }
+]

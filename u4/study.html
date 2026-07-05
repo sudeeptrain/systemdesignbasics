@@ -1,0 +1,351 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Design · Unit 4 — Study Slides</title>
+<style>
+:root{--bg:#eef3f9;--surface:#fff;--ink:#13202f;--muted:#3f5266;--faint:#65788e;--line:#d3deeb;--line2:#b9c9dd;--accent:#1f6fe6;--accentd:#1657bf;--good:#0f8f5b;--warn:#b9730b;--bad:#d83a2e;--violet:#6a4fe0;--pink:#cc2f86;}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:linear-gradient(160deg,#eef3f9,#e6eef7);font-size:18px;line-height:1.5}
+#stage{height:100vh;display:flex;flex-direction:column;padding:18px 22px 64px;max-width:1180px;margin:0 auto}
+.head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:8px;margin-bottom:10px}
+.unit{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accentd);background:rgba(31,111,230,.08);border:1px solid var(--line2);padding:4px 10px;border-radius:999px}
+.tnum{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--faint)}
+.ttl{font-family:'Space Grotesk',ui-sans-serif,system-ui;font-weight:700;font-size:27px;letter-spacing:-.01em;flex:1;min-width:200px}
+.rating{font-size:14px;color:var(--warn)}
+.slide{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px -24px rgba(40,70,120,.5);padding:20px 26px;overflow:auto}
+.slide h2{font-family:'Space Grotesk',ui-sans-serif;font-size:21px;margin:0 0 12px;color:var(--accentd);display:flex;align-items:center;gap:8px}
+.slide h2 .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block}
+ul{margin:6px 0 12px;padding-left:24px}
+li{margin:5px 0}
+li b{color:var(--accentd)}
+.sub{font-weight:700;color:var(--ink);margin:12px 0 4px;font-size:18px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:8px 0 12px}
+.kv .k{font-weight:700;color:var(--violet)}
+.kv .v{color:var(--muted)}
+table{border-collapse:collapse;width:100%;margin:8px 0 12px;font-size:16.5px}
+th,td{border:1px solid var(--line2);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:#eef4ff;color:var(--accentd);font-family:'IBM Plex Mono',monospace;font-size:14px}
+.note{margin:8px 0;padding:9px 13px;border-left:4px solid var(--good);background:#e9f7f0;border-radius:0 8px 8px 0;font-size:16.5px}
+.note.warn{border-left-color:var(--warn);background:#fff6e8}
+.note.key{border-left-color:var(--accent);background:#eaf2fe}
+.note.rw{border-left-color:var(--pink);background:#fdeef6}
+.foot{position:fixed;left:0;right:0;bottom:0;height:50px;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:15px}
+.foot button{font:inherit;font-size:15px;padding:6px 14px;border:1px solid var(--line2);background:#f3f7fc;border-radius:8px;cursor:pointer;color:var(--ink)}
+.foot button:hover{border-color:var(--accent);color:var(--accentd)}
+.counter{font-family:'IBM Plex Mono',monospace;color:var(--faint)}
+.spacer{flex:1}
+select{font:inherit;font-size:15px;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff;max-width:42vw}
+.hint{color:var(--faint);font-size:13px}
+@media print{.foot{display:none}#stage{height:auto}.slide{break-inside:avoid;box-shadow:none}}
+</style><style>.mnav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;gap:8px;justify-content:center;align-items:center;padding:7px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid #d3deeb;flex-wrap:wrap}.mnav a{font:600 14px ui-sans-serif,system-ui;color:#1657bf;text-decoration:none;padding:5px 12px;border:1px solid #b9c9dd;border-radius:999px;background:#fff}.mnav a:hover{border-color:#1f6fe6}.mnav a.cur{background:#1f6fe6;color:#fff;border-color:#1f6fe6}#stage{padding-top:50px!important}</style></head><body><div class="mnav"><a href="../index.html">🏠 All Units</a><a href="index.html">▶ Animated Lessons</a><a class="cur">📊 Study Slides</a></div>
+<div id="stage">
+  <div class="head"><span class="unit">Unit 4 · Networking, APIs, Security, DevOps</span><span class="tnum" id="tnum"></span><span class="ttl" id="ttl"></span><span class="rating" id="rating"></span></div>
+  <div class="slide" id="slide"></div>
+</div>
+<div class="foot">
+  <button onclick="prev()">◀ Prev</button><button onclick="next()">Next ▶</button>
+  <span class="counter" id="counter"></span><span class="spacer"></span><span class="hint">← → keys</span>
+  <select id="jump" onchange="jumpTo(this.value)"></select>
+</div>
+<script>
+const TOPICS=[
+{n:1,t:"TCP Handshake (Three-Way)",r:"★★★★★",slides:[
+ {h:"SYN · SYN-ACK · ACK",body:["Before any data, TCP opens a connection with 3 messages: client <b>SYN</b> → server <b>SYN-ACK</b> → client <b>ACK</b>.","Both sides confirm they can send AND receive, and agree initial sequence numbers.","Costs one round trip of setup (why reusing connections / keep-alive matters).",{kv:[["Connection close","4-way: FIN/ACK each direction"],["Reliability","sequence numbers + ACKs + retransmission"]]},{note:"TCP = reliable, ordered, connection-oriented. The handshake is the price of that reliability.",cls:"key"}]}
+]},
+{n:2,t:"TCP vs UDP",r:"★★★★★",slides:[
+ {h:"Reliable vs fast",body:[{tbl:{head:["","TCP","UDP"],rows:[["Connection","yes (handshake)","none"],["Delivery","reliable, ordered, retransmit","best-effort, may drop/reorder"],["Speed","slower (overhead)","fast, low latency"],["Use","web, files, email, DB","video, voice, gaming, DNS"]]}},{note:"TCP when every byte must arrive in order; UDP when speed beats the occasional lost packet.",cls:"key"}]}
+]},
+{n:3,t:"HTTP Request Lifecycle",r:"★★★★★",slides:[
+ {h:"Request → response",body:["Client sends <b>method</b> (GET/POST/PUT/DELETE) + path + headers (+ body); server processes and returns <b>status code</b> + headers + body.",{kv:[["2xx","success (200 OK, 201 Created)"],["3xx","redirect"],["4xx","client error (404, 401, 429)"],["5xx","server error (500, 503)"]]},"HTTP is <b>stateless</b> — identity rides in headers (cookies/tokens) each request.",{note:"Know the status families; statelessness is what enables horizontal scaling of web servers.",cls:"key"}]}
+]},
+{n:4,t:"HTTP/1 vs HTTP/2 vs HTTP/3",r:"★★★★★",slides:[
+ {h:"Evolution",body:[{tbl:{head:["","HTTP/1.1","HTTP/2","HTTP/3"],rows:[["Requests","one at a time/conn","multiplexed streams","multiplexed"],["Transport","TCP","TCP","QUIC (UDP)"],["Blocking","head-of-line","HOL at TCP layer","none (independent streams)"]]}},"H2 adds multiplexing + header compression; H3 moves to QUIC so one lost packet doesn't stall all streams.",{note:"Each version removed a bottleneck: serial → multiplexed → loss-resilient over QUIC.",cls:"key"}]}
+]},
+{n:5,t:"WebSocket",r:"★★★★",slides:[
+ {h:"Persistent two-way channel",body:["Starts as an HTTP request with an <b>Upgrade</b> header, then becomes a persistent, full-duplex TCP connection.","Server can <b>push</b> anytime; client can send anytime — low latency, no per-message handshake.","Use: chat, live dashboards, multiplayer games, collaborative editing.",{note:"WebSocket = open phone line (two-way). Use SSE if you only need server→client.",cls:"key"}]}
+]},
+{n:6,t:"DNS Resolution",r:"★★★★★",slides:[
+ {h:"Name → IP",body:["Resolver walks a hierarchy: <b>root → TLD (.com) → authoritative</b> server, then returns the IP; results are <b>cached</b> with a TTL at each level.","Record types: A/AAAA (IP), CNAME (alias), MX (mail), NS, TXT.","Caching (browser, OS, resolver) makes most lookups instant.",{note:"DNS is also a load-balancing & failover tool (geo-DNS, weighted records). First 'hop' of nearly every request.",cls:"key"}]}
+]},
+{n:7,t:"CDN (Push vs Pull)",r:"★★★★★",slides:[
+ {h:"Serve content from the edge",body:["Caches static content on <b>edge servers</b> near users → lower latency, less origin load.",{kv:[["Pull CDN","edge fetches from origin on first miss, then caches (lazy)"],["Push CDN","you upload assets to edges in advance (good for big, known-popular files)"]]},"Governed by TTL; supports purge/invalidation on deploy.",{note:"Pull = lazy & easy (default); push = pre-staged for predictable big assets.",cls:"key"}]}
+]},
+{n:8,t:"TLS Handshake",r:"★★★★★",slides:[
+ {h:"Establishing a secure channel",body:["Before data: client hello → server sends <b>certificate</b> (proves identity, signed by a CA) → agree a <b>shared symmetric key</b> via public-key crypto → encrypted from then on.","Provides <b>encryption</b> (privacy), <b>authentication</b> (cert), <b>integrity</b> (tamper detection).","TLS 1.3 cuts it to ~1 round trip (0-RTT on resume).",{note:"The 'S' in HTTPS. Eavesdroppers see only ciphertext after the handshake.",cls:"key"}]}
+]},
+{n:9,t:"REST API",r:"★★★★★",slides:[
+ {h:"Resources + HTTP verbs",body:["Model the system as <b>resources at URLs</b> (/users, /users/42); act with HTTP verbs: GET (read), POST (create), PUT/PATCH (update), DELETE.","<b>Stateless</b>, uses status codes, usually JSON, cacheable, uniform interface.","Maps cleanly to CRUD → predictable & ubiquitous.",{note:"Simple & uniform. Downsides: over/under-fetching, many round trips (GraphQL/gRPC address these).",cls:"key"}]}
+]},
+{n:10,t:"GraphQL",r:"★★★★★",slides:[
+ {h:"Client-specified queries",body:["Single endpoint; client asks for <b>exactly the fields it needs</b> → no over-fetch / under-fetch, one round trip for nested data.","Strongly typed <b>schema</b>; queries, mutations, subscriptions.",{sub:"Trade-offs"},"More server complexity (resolvers), harder caching (POST to one URL), risk of expensive nested queries (need depth/cost limits).",{note:"REST = fixed responses per endpoint; GraphQL = client shapes the response. Great for varied clients (mobile).",cls:"warn"}]}
+]},
+{n:11,t:"gRPC",r:"★★★★",slides:[
+ {h:"Binary RPC over HTTP/2",body:["Uses <b>Protocol Buffers</b> (compact binary) over HTTP/2; a shared <b>.proto contract</b> generates client & server code in many languages.","Fast, small payloads, supports <b>streaming</b> (client/server/bi-directional).","Best for <b>internal service-to-service</b> calls.",{note:"Not browser-native; binary isn't human-readable. REST stays king for public APIs; gRPC shines internally.",cls:"warn"}]}
+]},
+{n:12,t:"Webhooks",r:"★★★★",slides:[
+ {h:"Reverse API ('don't call us, we'll call you')",body:["You register a URL; when an event happens the provider sends an HTTP <b>POST</b> to you — no polling.","Efficient & real-time vs polling (which wastes calls and adds lag).",{sub:"Must handle"},"Public reachable endpoint, <b>signature verification</b>, retries & idempotency (duplicate deliveries).",{note:"Webhooks = push notifications between services. Always verify the signature and dedupe.",cls:"key"}]}
+]},
+{n:13,t:"API Gateway",r:"★★★★★",slides:[
+ {h:"One front door to many services",body:["Single entry point that <b>routes</b> requests to backend services and centralizes cross-cutting concerns: <b>authentication, rate limiting, TLS termination, logging, caching, request shaping</b>.","Clients see one stable address; services stay simple.","Often paired with BFF per client type.",{note:"Keeps auth/throttling/observability out of every service — but don't let it become a monolithic bottleneck.",cls:"key"}]}
+]},
+{n:14,t:"Rate Limiting",r:"★★★★★",slides:[
+ {h:"Cap request rate per client",body:["Protects services from abuse/overload; returns <b>429 Too Many Requests</b> when exceeded.",{kv:[["Token bucket","tokens refill at rate; allows bursts (most common)"],["Leaky bucket","smooths to a constant rate"],["Fixed/Sliding window","count per time window"]]},"Usually keyed per API key / IP / user; enforced at gateway.",{note:"Token bucket allows short bursts up to bucket size while capping the sustained rate.",cls:"key"}]}
+]},
+{n:15,t:"API Versioning",r:"★★★★★",slides:[
+ {h:"Evolve without breaking clients",body:["Run old & new versions side by side; clients migrate, then you deprecate the old.",{kv:[["URL","/v1/, /v2/ (most common)"],["Header","Accept-Version / custom header"],["Media type","Accept: application/vnd.api.v2+json"]]},"Communicate deprecation timelines; keep changes backward-compatible where possible.",{note:"Never silently break callers — version, migrate, then sunset.",cls:"warn"}]}
+]},
+{n:16,t:"Client-Server Architecture",r:"★★★★",slides:[
+ {h:"The foundational pattern",body:["<b>Clients</b> request; a shared <b>server</b> holds data & business logic and responds. One server serves many independent clients.","Clients handle presentation/interaction; server is the single source of truth.","Basis of the web; clients never talk to each other directly.",{note:"Centralization gives one place for data & rules — and is why the server must be scaled & protected.",cls:"key"}]}
+]},
+{n:17,t:"L4 vs L7 Load Balancer",r:"★★★★★",slides:[
+ {h:"Transport vs application routing",body:[{tbl:{head:["","L4","L7"],rows:[["Sees","IP + port","full HTTP (path, headers, cookies)"],["Routing","fast, blind","content-aware (/api, /images)"],["Features","raw speed","TLS term, sticky sessions, rewrites, A/B"],["Cost","cheap","more CPU"]]}},{note:"L4 = fast & dumb; L7 = smart & content-aware. Big systems stack L4 in front of L7.",cls:"key"}]}
+]},
+{n:18,t:"Consistent Hashing",r:"★★★★★",slides:[
+ {h:"Minimal reshuffle on change",body:["Place servers and keys on a hash <b>ring</b>; each key is owned by the next server clockwise.","Add/remove a node → only the keys in that <b>arc</b> move (≈ K/N), not the whole keyspace (unlike key mod N).","<b>Virtual nodes</b> spread load evenly & avoid hotspots.",{note:"Used by caches, sharded DBs, and LBs to scale up/down without remapping everything.",cls:"key"}]}
+]},
+{n:19,t:"Health Checks",r:"★★★★",slides:[
+ {h:"Keep traffic off dead nodes",body:["LB periodically pings backends; failing ones are <b>removed from rotation</b>; recovered ones rejoin automatically.",{kv:[["Liveness","is the process up?"],["Readiness","can it actually serve (DB reachable, warmed up)?"]]},"Good checks test real readiness, not just 'process alive'.",{note:"Health checks are the LB's eyes — they make failover automatic and invisible to users.",cls:"key"}]}
+]},
+{n:20,t:"Global Load Balancing",r:"★★★★★",slides:[
+ {h:"Route users to the nearest region",body:["Direct each user to the closest healthy region (via <b>geo-DNS</b> or <b>anycast</b>) → low latency + spread load.","On a region outage, <b>fail over</b> to the next-closest region automatically.","Pairs with multi-region replication & CDNs.",{note:"Proximity for speed, failover for resilience — the planet-scale layer above regional LBs.",cls:"key"}]}
+]},
+{n:21,t:"Authentication",r:"★★★★★",slides:[
+ {h:"Who are you?",body:["Verify identity via credentials; on success issue a <b>session token / cookie</b> carried on later requests (so you log in once).","Passwords stored as <b>salted hashes</b> (bcrypt/argon2), never plaintext.","<b>MFA</b> adds a second factor so a stolen password isn't enough.",{kv:[["401","not authenticated (who are you?)"],["403","authenticated but not allowed"]]},{note:"AuthN = identity. Next comes AuthZ = permissions.",cls:"key"}]}
+]},
+{n:22,t:"Authorization",r:"★★★★",slides:[
+ {h:"What are you allowed to do?",body:["After identity is known, decide access to each resource/action; enforce on the <b>server</b>, per request.","Models: RBAC (by role), ABAC (by attributes/context), ACLs.","Principle of <b>least privilege</b>.",{note:"AuthN proves who you are; AuthZ decides what you may do. 403 = known but forbidden.",cls:"key"}]}
+]},
+{n:23,t:"OAuth 2.0",r:"★★★★★",slides:[
+ {h:"Delegated access without sharing passwords",body:["Lets an app act on your behalf via a <b>limited access token</b> — like a valet key. ('Log in with Google.')","Flow: app redirects you to the provider → you consent → provider returns an <b>authorization code</b> → app exchanges it for an <b>access token</b> (scoped, revocable).","You never give the app your password; you control the scopes.",{note:"OAuth = authorization (delegated access). OpenID Connect adds authentication on top.",cls:"key"}]}
+]},
+{n:24,t:"JWT",r:"★★★★★",slides:[
+ {h:"Self-contained signed token",body:["<b>header.payload.signature</b> — server signs at login; client sends it each request; server just <b>verifies the signature</b> (no session lookup) → stateless, scales out.","Tamper the payload → signature breaks → rejected.","Payload is <b>readable</b> (base64, not encrypted) — don't store secrets; keep it short-lived; can't easily revoke before expiry.",{note:"JWT = tamper-evident, stateless auth. Use short TTLs + refresh tokens; pair with a denylist if revocation matters.",cls:"warn"}]}
+]},
+{n:25,t:"SSO (Single Sign-On)",r:"★★★★★",slides:[
+ {h:"One login, many apps",body:["Authenticate once at a central <b>Identity Provider</b>; connected apps trust that login — no re-entering credentials.","Built on <b>SAML</b> or <b>OpenID Connect</b> (on OAuth2).","Bonus: central place to enforce MFA/policy and instantly revoke access on offboarding.",{note:"Convenient for users; far easier & safer for admins to control centrally.",cls:"key"}]}
+]},
+{n:26,t:"Malware Attack & Defense",r:"★★★★",slides:[
+ {h:"Hostile software & layered defense",body:["Viruses, ransomware, trojans, spyware, worms — usually enter via phishing/dodgy downloads (human error).","Defenses (defense-in-depth): antivirus, sandboxing, <b>least privilege</b>, prompt <b>patching</b>, network segmentation, backups (anti-ransomware), user training.",{note:"No single layer is perfect — stack them, and keep tested backups so ransomware can't hold you hostage.",cls:"warn"}]}
+]},
+{n:27,t:"Firewall",r:"★★★★",slides:[
+ {h:"Gatekeeper by rules",body:["Filters traffic by <b>IP, port, protocol, direction</b>; <b>default-deny</b> — only explicitly allowed traffic passes.","Types: network (L3/4) vs host-based; stateful (tracks connections) vs stateless.","Open only needed ports → smaller attack surface.",{note:"Default-deny + open the minimum. A WAF (L7) inspects request *content*; a firewall checks ports/IPs.",cls:"key"}]}
+]},
+{n:28,t:"CI/CD Deployment",r:"★★★★★",slides:[
+ {h:"Commit → production, automatically",body:["CI: build + test every change. CD: promote passing builds through build → test → staging → prod with a <b>quality gate</b> at each step.","Failing tests stop the pipeline before users are affected.","Pair with rolling/blue-green/canary deploys & feature flags.",{note:"Small, frequent, automated deploys = small blast radius & easy rollback.",cls:"key"}]}
+]},
+{n:29,t:"Monitoring (Prometheus & Grafana)",r:"★★★★",slides:[
+ {h:"See problems before users do",body:["Services expose <b>metrics</b>; Prometheus <b>scrapes</b> & stores time-series; Grafana visualizes; alerts fire on thresholds (page on-call).","Watch the <b>four golden signals</b>: latency, traffic, errors, saturation.","Complements logs & traces (the 3 pillars of observability).",{note:"Alert on symptoms users feel (error rate, p99), not every low-level metric.",cls:"key"}]}
+]},
+{n:30,t:"Forward vs Reverse Proxy",r:"★★★★",slides:[
+ {h:"Which side it fronts",body:[{tbl:{head:["","Forward proxy","Reverse proxy"],rows:[["Fronts","clients (outbound)","servers (inbound)"],["Hides","the clients","the backend servers"],["Use","corporate filter, VPN, anonymity","LB, caching, TLS term, security"],["Example","squid","Nginx, HAProxy"]]}},{note:"Forward = personal shopper for clients; reverse = receptionist for servers.",cls:"key"}]}
+]},
+{n:31,t:"QUIC",r:"★★★",slides:[
+ {h:"Transport behind HTTP/3",body:["Built on <b>UDP</b>; folds connection + TLS setup into one step (often <b>0-RTT</b> on resume).","Independent streams → no TCP head-of-line blocking (one lost packet only delays its stream).","<b>Connection migration</b>: survives network changes (Wi-Fi→cellular) via a connection ID, not IP.",{note:"Faster setup, no HOL blocking, and connections that follow you across networks.",cls:"key"}]}
+]},
+{n:32,t:"Server-Sent Events (SSE)",r:"★★★★",slides:[
+ {h:"One-way server→client stream",body:["Over one long-lived HTTP connection, the server <b>pushes</b> a text event stream; the browser just listens (EventSource).","<b>Auto-reconnects</b> and resumes from last event ID; simple, HTTP-native.","Server→client only & text-only (use WebSocket for two-way/binary).",{note:"Perfect for live feeds, notifications, dashboards, LLM token streaming.",cls:"key"}]}
+]},
+{n:33,t:"Realtime: Poll · Long-poll · SSE · WebSocket",r:"★★★★★",slides:[
+ {h:"From crude to slick",body:[{tbl:{head:["Technique","How"],rows:[["Short polling","ask repeatedly on a timer (wasteful, laggy)"],["Long polling","server holds request until news"],["SSE","one-way server push stream"],["WebSocket","full two-way persistent channel"]]}},{note:"Pick the lightest that fits: SSE for one-way feeds, WebSocket for interactive/two-way.",cls:"key"}]}
+]},
+{n:34,t:"Message Queues",r:"★★★★★",slides:[
+ {h:"Decouple producer & consumer",body:["Producer drops messages in and moves on; consumer pulls at its own pace. <b>Decoupling + buffering</b> absorbs spikes.","Add consumers to scale throughput; messages acked so none are lost.","Examples: RabbitMQ, SQS.",{note:"The backbone of async, resilient systems — work waits in line instead of crushing the consumer.",cls:"key"}]}
+]},
+{n:35,t:"Apache Kafka",r:"★★★★★",slides:[
+ {h:"Durable, replayable log",body:["An append-only <b>log</b> (not a drain-and-delete queue): events are <b>retained</b>; consumers track their own <b>offset</b> and can replay history.","Topics split into <b>partitions</b> across brokers → horizontal scale + ordering within a partition.","<b>Consumer groups</b> for parallel consumption; replication for durability."]},
+ {h:"Why it's used",body:["Millions of events/sec; many independent consumers read the same log.","Powers event streaming, analytics pipelines, event sourcing, CDC.",{note:"Queue = consume-and-forget; Kafka = retained history you can re-read.",cls:"key"}]}
+]},
+{n:36,t:"Dead Letter Queue (DLQ)",r:"★★★★★",slides:[
+ {h:"Quarantine poison messages",body:["A message that repeatedly fails (malformed, permanent error) is moved to a <b>DLQ</b> after N retries instead of blocking the main queue.","Keeps the pipeline flowing; failures preserved for inspection/replay.","A filling DLQ is an alarm that something is systematically wrong.",{note:"One 'poison' message shouldn't stall everything — set aside, alert, fix, replay.",cls:"key"}]}
+]},
+{n:37,t:"Idempotency Keys",r:"★★★★★",slides:[
+ {h:"Make retries safe",body:["Client attaches a unique <b>idempotency key</b>; server records it and returns the original result on a retry → no double charge/order.","Essential because flaky networks make clients retry non-idempotent writes (POST).","Server stores key→result for a window.",{note:"Same key = at most one effect; new key = a real new action. Foundational for reliable payments/APIs.",cls:"key"}]}
+]},
+{n:38,t:"API Pagination (offset vs cursor)",r:"★★★★★",slides:[
+ {h:"Return data in pages",body:[{tbl:{head:["","Offset (LIMIT/OFFSET)","Cursor (keyset)"],rows:[["Idea","skip N, take M","'after this item'"],["Deep pages","slow (scans skipped rows)","fast (anchored)"],["On inserts","drift: skip/duplicate rows","stable"],["Random page","easy","no jump-to-page"]]}},{note:"Offset is simple & jumpable but unstable & slow deep; cursor is stable & fast for infinite scroll.",cls:"key"}]}
+]},
+{n:39,t:"mTLS (Mutual TLS)",r:"★★★★",slides:[
+ {h:"Both sides present certificates",body:["Normal TLS authenticates only the server; <b>mTLS</b> requires the <b>client</b> to present a valid cert too → both identities proven.","A client without a valid cert is rejected at the handshake.","Foundation for <b>zero-trust</b> internal networks & service meshes.",{note:"Use mTLS to lock down who is even allowed to talk to your services.",cls:"key"}]}
+]},
+{n:40,t:"Service Discovery",r:"★★★★",slides:[
+ {h:"Find services dynamically",body:["Instances <b>register</b> with a registry (Consul, etcd, Eureka); clients <b>look up</b> a healthy address on demand — no hardcoded IPs.","Registry health-checks & drops dead instances; supports autoscaling & self-healing.",{kv:[["Client-side","client queries registry, picks instance"],["Server-side","LB/gateway resolves for the client"]]},{note:"In dynamic systems IPs change constantly — discovery replaces hardcoding with a live registry.",cls:"key"}]}
+]},
+{n:41,t:"Sticky vs Stateless Sessions",r:"★★★★★",slides:[
+ {h:"Where session state lives",body:[{kv:[["Sticky","session in one server's memory; LB pins user to it — lose the server, lose the session"],["Stateless","session in a shared store (Redis) or a token (JWT) — any server can serve any request"]]},"Stateless is the key enabler of clean horizontal scaling & resilience.",{note:"Prefer stateless sessions (shared store/token) so a node failure doesn't log everyone out.",cls:"key"}]}
+]},
+{n:42,t:"Web Security: XSS, CSRF, SQLi",r:"★★★★★",slides:[
+ {h:"Three classic injection/trust attacks",body:[{kv:[["XSS","inject <script> into pages → runs in others' browsers. Fix: escape output + CSP"],["CSRF","trick a logged-in browser into firing a real request. Fix: anti-CSRF token, SameSite cookies"],["SQLi","smuggle SQL via input. Fix: parameterized queries / prepared statements"]]},{note:"Root cause is trusting input. Discipline: escape it, tokenize it, parameterize it — never trust user input.",cls:"warn"}]}
+]},
+{n:43,t:"DDoS Attacks & Mitigation",r:"★★★★",slides:[
+ {h:"Flood to deny service",body:["Many machines (botnet) flood you with junk traffic to exhaust capacity so real users can't get through.","Layers: <b>volumetric</b> (bandwidth), <b>protocol</b> (SYN flood), <b>application</b> (expensive requests).","Mitigation: CDN/scrubbing service with huge capacity, rate limiting, IP reputation, CAPTCHAs, autoscaling, anycast.",{note:"Goal isn't theft but denial — absorb/filter the flood far from your origin.",cls:"key"}]}
+]},
+{n:44,t:"WAF (Web Application Firewall)",r:"★★★★★",slides:[
+ {h:"Filter HTTP at layer 7",body:["Inspects request <b>content</b> (URL, headers, body) and blocks attack patterns — SQLi, XSS, bad bots, scanners — before they reach the app.","Rule sets (e.g., OWASP CRS) + rate limiting + bot detection; often part of a CDN/DDoS service.","Defense-in-depth, not a substitute for secure code.",{note:"A firewall checks ports/IPs; a WAF reads what's *inside* the request — a bag-check bouncer.",cls:"key"}]}
+]},
+{n:45,t:"Encryption at Rest & in Transit",r:"★★★★★",slides:[
+ {h:"Two threats, two layers",body:[{kv:[["In transit","TLS encrypts data on the wire → defeats eavesdroppers"],["At rest","storage/disk/DB encrypted with keys → defeats stolen disks/dumps"]]},"You need <b>both</b> — they protect different attack points. Manage keys with a KMS; rotate keys.",{note:"Encrypt on the wire AND on disk; a wiretap and a stolen drive are different threats.",cls:"key"}]}
+]},
+{n:46,t:"Secrets Management",r:"★★★★★",slides:[
+ {h:"No hardcoded credentials",body:["Hardcoding passwords/API keys (in code/config/Git) is how breaches happen.","A secrets manager (Vault, AWS Secrets Manager) stores them <b>encrypted, centrally</b>; apps fetch at runtime with <b>short-lived leases</b>; every access is audited.","<b>Rotate</b> a secret in one place → all apps pick up the new version.",{note:"Vault, not 'key under the mat' — centralized, leased, audited, rotatable.",cls:"key"}]}
+]},
+{n:47,t:"RBAC vs ABAC",r:"★★★★★",slides:[
+ {h:"Role vs attribute access",body:[{tbl:{head:["","RBAC","ABAC"],rows:[["Decides by","role (admin/editor)","attributes + context (amount, time, dept, location)"],["Granularity","coarse, simple","fine-grained, dynamic"],["Mgmt","easy","complex policies"]]}},{note:"RBAC = by job title (simple); ABAC = by the whole situation (powerful). Many systems combine both.",cls:"key"}]}
+]},
+{n:48,t:"Zero Trust Architecture",r:"★★★★★",slides:[
+ {h:"Never trust, always verify",body:["Drop the 'castle & moat' assumption that inside-the-network = trusted. <b>Every</b> request is authenticated & authorized regardless of origin.","Pillars: strong identity, <b>least privilege</b>, mTLS, micro-segmentation, continuous verification, assume-breach.","Defends against insider threats & lateral movement.",{note:"Check ID at every door, not just the front gate. Location grants no trust.",cls:"key"}]}
+]},
+{n:49,t:"Containers (Docker)",r:"★★★★★",slides:[
+ {h:"Package app + environment",body:["A container bundles app + dependencies + config into one <b>image</b> that runs identically on any host → kills 'works on my machine'.","Lightweight: shares the host OS kernel (vs full VMs) → starts in ms, dense packing.","Immutable images; layered filesystem; registries (Docker Hub).",{note:"Like a shipping container — pack once, run anywhere. The foundation of modern deployment.",cls:"key"}]}
+]},
+{n:50,t:"Kubernetes",r:"★★★★★",slides:[
+ {h:"Container orchestration",body:["You declare a <b>desired state</b> ('run 3 replicas'); a controller continuously makes reality match — <b>self-healing</b> (restarts crashed pods), scheduling, rollouts.","Concepts: Pod, Deployment, Service, Ingress, ReplicaSet, HPA (autoscaler).","Handles scaling, service discovery, config/secrets, rolling updates.",{note:"Declarative + self-healing: say how many you want; K8s keeps it true. The 'stage manager' for containers.",cls:"key"}]}
+]},
+{n:51,t:"Infrastructure as Code (Terraform)",r:"★★★★",slides:[
+ {h:"Declare infra in code",body:["Define servers/networks/DBs as code; Terraform <b>plans</b> the diff vs reality, then <b>applies</b> it. Versioned, reviewed, reproducible.","Declarative + idempotent; <b>state file</b> tracks managed resources.","No more click-ops; spin up identical environments anytime.",{note:"Infra as a version-controlled artifact: plan the diff, apply, rebuild anywhere.",cls:"key"}]}
+]},
+{n:52,t:"Deployment Strategies",r:"★★★★★",slides:[
+ {h:"Ship new versions safely",body:[{tbl:{head:["Strategy","How / trait"],rows:[["Rolling","replace instances a few at a time (cheap; mixed versions briefly)"],["Blue-Green","full 2nd env, flip all traffic (instant switch + rollback; 2× infra)"],["Canary","tiny % first, watch, then ramp (lowest risk)"]]}},{note:"Rolling = gradual & cheap; blue-green = instant flip/rollback; canary = test on a few. Choose by risk tolerance.",cls:"key"}]}
+]},
+{n:53,t:"Feature Flags",r:"★★★★★",slides:[
+ {h:"Decouple deploy from release",body:["Runtime switches turn features on/off <b>without redeploying</b>. Ship code dark, enable for 5% of users, ramp to 100% — or kill instantly if it breaks.","Also power A/B tests, per-customer features, and kill switches for risky dependencies.","Manage flag lifecycle (remove stale flags).",{note:"Deploy ≠ release. Roll out gradually, observe, and instant-rollback by flipping a flag.",cls:"key"}]}
+]}
+];
+const DD="Deep dive: why · when · when-not";
+const EXTRA={
+1:[{h:DD,body:["<b>In one line:</b> SYN/SYN-ACK/ACK sets up a reliable, ordered connection before any data flows.",{sub:"Why it's needed"},"Both sides must agree sequence numbers and confirm two-way reachability for reliable delivery.",{sub:"Use it for"},"Everything reliability-critical: web, APIs, file transfer, databases.",{sub:"Avoid the overhead when"},"Latency-critical, loss-tolerant traffic — use UDP/QUIC.",{note:"Staff insight: the handshake costs a round trip — why keep-alive/connection reuse matters. TLS adds more RTTs (TLS 1.3 / QUIC cut this).",cls:"key"}]}],
+2:[{h:DD,body:["<b>In one line:</b> TCP = reliable/ordered/slower; UDP = best-effort/fast.",{sub:"Why it's needed"},"Different apps value delivery guarantees vs latency differently.",{sub:"Use it for"},"TCP → web, payments, files; UDP → video/voice, gaming, DNS.",{sub:"Avoid TCP when"},"A late packet is useless (a stale video frame) — drop it and move on.",{note:"Staff insight: QUIC gives UDP speed + TCP-like reliability per-stream — the modern best-of-both (HTTP/3).",cls:"key"}]}],
+3:[{h:DD,body:["<b>In one line:</b> request (method+path+headers+body) → response (status+headers+body); stateless.",{sub:"Why it's needed"},"A uniform, cacheable contract is what makes the web interoperable & scalable.",{sub:"Use it for"},"Virtually all client-server APIs and web traffic.",{sub:"N/A"},"Low-latency streaming/real-time (use WebSocket/gRPC streams).",{note:"Staff insight: statelessness enables horizontal scaling (any server handles any request). Know status families: 2/3/4/5xx.",cls:"key"}]}],
+4:[{h:DD,body:["<b>In one line:</b> 1.1 (serial) → 2 (multiplexed over TCP) → 3 (multiplexed over QUIC/UDP, no HOL blocking).",{sub:"Why it's needed"},"Pages need many resources; each version removed a transport bottleneck.",{sub:"Use it for"},"H2/H3 for modern web; H3 shines on lossy mobile networks.",{sub:"Watch out"},"H2 still suffers TCP head-of-line blocking under packet loss — that's why H3 exists.",{note:"Staff insight: enable HTTP/2+ and connection reuse; combined with a CDN it's the cheapest latency win available.",cls:"key"}]}],
+5:[{h:DD,body:["<b>In one line:</b> upgrade an HTTP request into a persistent, full-duplex channel.",{sub:"Why it's needed"},"Polling is wasteful & laggy; servers need to push instantly.",{sub:"Use it for"},"Chat, live dashboards, multiplayer games, collaborative editing, trading.",{sub:"Avoid when"},"One-way server→client suffices (use SSE) or rare updates (just poll).",{note:"Staff insight: WebSocket = open phone line (two-way). Persistent connections complicate load balancing & scaling — plan sticky/stateless carefully.",cls:"warn"}]}],
+6:[{h:DD,body:["<b>In one line:</b> resolve name→IP via root→TLD→authoritative, cached with TTLs.",{sub:"Why it's needed"},"Humans use names, machines need IPs; caching makes it instant.",{sub:"Use it for"},"Every request's first hop; also load balancing & failover (geo/weighted DNS).",{sub:"Watch out"},"DNS is a sneaky SPOF and TTLs slow failover (clients cache old IPs).",{note:"Staff insight: DNS is also a traffic-routing tool. Low TTL = faster failover but more lookups; it's the first thing to check in an outage.",cls:"warn"}]}],
+7:[{h:DD,body:["<b>In one line:</b> cache static content on edge servers near users (pull=lazy, push=pre-staged).",{sub:"Why it's needed"},"Cuts latency (distance) and massively offloads the origin's bandwidth.",{sub:"Use it for"},"Images, video, JS/CSS, downloads; any global static-heavy site.",{sub:"Avoid for"},"Highly dynamic/personalized responses (though edge compute is changing this).",{note:"Staff insight: TTL tuning is the dial (fresh vs origin load); purge on deploy. Pull is the easy default; push for big known-popular assets.",cls:"key"}]}],
+8:[{h:DD,body:["<b>In one line:</b> certificate proves identity, then both agree a symmetric key → encrypted channel.",{sub:"Why it's needed"},"Provides privacy + authentication + integrity over an untrusted network.",{sub:"Use it for"},"All public traffic (HTTPS), and internal service-to-service (mTLS).",{sub:"N/A"},"Never skip it for user data — there's no good reason in 2025.",{note:"Staff insight: TLS 1.3 is ~1-RTT (0-RTT on resume). Terminate TLS at the LB/gateway/CDN to offload servers; re-encrypt internally for zero-trust.",cls:"key"}]}],
+9:[{h:DD,body:["<b>In one line:</b> resources at URLs + HTTP verbs as actions; stateless, cacheable, uniform.",{sub:"Why it's needed"},"A predictable, universal grammar so any client can consume any API.",{sub:"Use it for"},"Public APIs, CRUD services, microservice boundaries.",{sub:"Avoid when"},"You need to avoid over/under-fetching (GraphQL) or low-latency internal RPC (gRPC).",{note:"Staff insight: REST's simplicity is its strength; its weaknesses (chatty, fixed shapes) are exactly what GraphQL/gRPC target.",cls:"key"}]}],
+10:[{h:DD,body:["<b>In one line:</b> one endpoint; client requests exactly the fields it needs in one round trip.",{sub:"Why it's needed"},"Kills over-fetch/under-fetch and chatty mobile calls of REST.",{sub:"Use it for"},"Many varied clients (web+mobile), complex nested data, rapidly-evolving frontends.",{sub:"Avoid when"},"Simple CRUD, or you need easy HTTP caching & low server complexity.",{note:"Staff insight: trades server complexity (resolvers, query-cost limits) and caching difficulty for client flexibility. Guard against expensive nested queries.",cls:"warn"}]}],
+11:[{h:DD,body:["<b>In one line:</b> binary Protobuf over HTTP/2 with a typed contract + codegen + streaming.",{sub:"Why it's needed"},"Internal services need fast, compact, strongly-typed RPC.",{sub:"Use it for"},"Service-to-service comms, low-latency/high-throughput internal APIs, polyglot backends.",{sub:"Avoid for"},"Browser-facing/public APIs (not natively browser-friendly; binary isn't human-readable).",{note:"Staff insight: gRPC internally, REST/GraphQL at the edge — a common Staff-level combo. The .proto contract is the source of truth.",cls:"key"}]}],
+12:[{h:DD,body:["<b>In one line:</b> reverse API — provider POSTs to your URL when an event happens (no polling).",{sub:"Why it's needed"},"Real-time, efficient integration vs wasteful polling.",{sub:"Use it for"},"Payment confirmations (Stripe), CI events, third-party integrations.",{sub:"Must handle"},"Signature verification, retries, idempotency (duplicate deliveries), a public endpoint.",{note:"Staff insight: always verify the signature and dedupe — webhook deliveries are at-least-once. Queue them and process async for reliability.",cls:"warn"}]}],
+13:[{h:DD,body:["<b>In one line:</b> single entry point that routes + centralizes auth, rate limiting, TLS, logging.",{sub:"Why it's needed"},"Keeps cross-cutting concerns out of every service; one stable client address.",{sub:"Use it for"},"Microservice systems; pair with BFF per client.",{sub:"Avoid when"},"A single service (no routing needed).",{note:"Staff insight: powerful but can become a monolithic bottleneck/SPOF — keep it stateless, scale it horizontally, don't put business logic in it.",cls:"warn"}]}],
+14:[{h:DD,body:["<b>In one line:</b> cap request rate per client; return 429 when exceeded (token bucket allows bursts).",{sub:"Why it's needed"},"Protects services from abuse, runaway clients, and accidental overload.",{sub:"Use it for"},"Public APIs, login endpoints (brute-force), expensive operations.",{sub:"N/A"},"Trusted internal low-volume calls (though still wise).",{note:"Staff insight: token bucket is the default (bursts + sustained cap). Enforce at the gateway, key by API-key/IP/user, and make limits distributed (Redis).",cls:"key"}]}],
+15:[{h:DD,body:["<b>In one line:</b> run old & new versions side by side; migrate clients, then deprecate.",{sub:"Why it's needed"},"Other teams/apps depend on your API — silent breaking changes cause outages.",{sub:"Use it for"},"Any public/shared API undergoing breaking changes.",{sub:"Avoid churn when"},"Changes can be backward-compatible (additive) — prefer that over a new version.",{note:"Staff insight: prefer additive, non-breaking changes; version (URL/header) only for true breaks. Communicate a sunset timeline.",cls:"warn"}]}],
+16:[{h:DD,body:["<b>In one line:</b> clients request; a shared server holds data+logic and responds.",{sub:"Why it's needed"},"Centralizes the source of truth; clients stay thin and independent.",{sub:"Use it for"},"Virtually all web/mobile apps.",{sub:"Contrast with"},"Peer-to-peer (no central server) for some file-sharing/blockchain cases.",{note:"Staff insight: the server is the thing you must scale & protect — clients never trust-the-client for security or truth.",cls:"key"}]}],
+17:[{h:DD,body:["<b>In one line:</b> L4 routes by IP/port (fast, blind); L7 reads HTTP and routes by content.",{sub:"Why it's needed"},"Smart routing (path-based, sticky, A/B, TLS term) needs L7; raw throughput favors L4.",{sub:"Use it for"},"L7 → app routing/canary/TLS; L4 → ultra-high-throughput or non-HTTP.",{sub:"N/A"},"Tiny single-server setups.",{note:"Staff insight: big systems stack L4 (edge, raw speed) in front of L7 (smart routing). L7 enables canary deploys & sticky sessions.",cls:"key"}]}],
+18:[{h:DD,body:["<b>In one line:</b> hash servers+keys onto a ring so adding/removing a node moves only ~K/N keys.",{sub:"Why it's needed"},"Naive key-mod-N remaps almost everything on resize → cache-wrecking churn.",{sub:"Use it for"},"Distributed caches, sharded DBs, load balancers that scale up/down.",{sub:"N/A"},"Fixed, never-changing node sets.",{note:"Staff insight: use <b>virtual nodes</b> for even load & no hotspots. This is THE technique behind elastic caches/shards.",cls:"key"}]}],
+19:[{h:DD,body:["<b>In one line:</b> LB pings backends; removes failing ones, re-adds recovered ones automatically.",{sub:"Why it's needed"},"Never route users to a dead node; enables automatic failover.",{sub:"Use it for"},"Every load-balanced service, Kubernetes pods (liveness/readiness).",{sub:"N/A"},"Single-instance services.",{note:"Staff insight: distinguish <b>liveness</b> (is it up?) from <b>readiness</b> (can it actually serve — DB reachable, warmed up?). Bad checks cause flapping.",cls:"warn"}]}],
+20:[{h:DD,body:["<b>In one line:</b> route users to the nearest healthy region (geo-DNS/anycast); fail over on region outage.",{sub:"Why it's needed"},"Cuts latency globally and survives whole-region failures.",{sub:"Use it for"},"Global products; multi-region active-active/passive.",{sub:"Avoid when"},"Single-region apps — multi-region adds big data-consistency complexity.",{note:"Staff insight: proximity for speed, failover for resilience — but multi-region writes reopen the CAP/consistency can of worms.",cls:"warn"}]}],
+21:[{h:DD,body:["<b>In one line:</b> prove identity (credentials), then carry a session token/cookie.",{sub:"Why it's needed"},"You must know who the caller is before deciding what they can do.",{sub:"Use it for"},"Every system with users/accounts.",{sub:"N/A"},"Truly public, read-only, anonymous endpoints.",{note:"Staff insight: store salted hashes (bcrypt/argon2), add MFA, and remember 401=who-are-you vs 403=not-allowed. Never roll your own crypto.",cls:"key"}]}],
+22:[{h:DD,body:["<b>In one line:</b> decide what an authenticated user may do; enforce server-side, per request.",{sub:"Why it's needed"},"Authentication alone doesn't stop a logged-in user from accessing others' data.",{sub:"Use it for"},"Any multi-user/multi-tenant system; admin vs user separation.",{sub:"N/A"},"Single-role internal tools (still wise).",{note:"Staff insight: principle of least privilege; never trust client-side checks. Broken object-level authZ (IDOR) is a top real-world vuln.",cls:"warn"}]}],
+23:[{h:DD,body:["<b>In one line:</b> delegated access via a scoped, revocable token — never share your password.",{sub:"Why it's needed"},"Lets third-party apps act on your behalf safely (a 'valet key').",{sub:"Use it for"},"'Log in with Google', third-party integrations, API access delegation.",{sub:"Don't confuse"},"OAuth = authorization; for login/identity add <b>OpenID Connect</b> on top.",{note:"Staff insight: use the authorization-code flow (+PKCE) for apps; scope tokens tightly and keep them short-lived + revocable.",cls:"key"}]}],
+24:[{h:DD,body:["<b>In one line:</b> signed, self-contained token; server verifies the signature, no session lookup.",{sub:"Why it's needed"},"Stateless auth that scales horizontally — any server validates any token.",{sub:"Use it for"},"APIs, microservices, SSO/OIDC tokens, mobile auth.",{sub:"Avoid/limit when"},"You need instant revocation — JWTs are valid until expiry.",{note:"Staff insight: payload is readable (not secret); keep TTLs short + use refresh tokens; add a denylist if you need revocation. Don't store sensitive data in it.",cls:"warn"}]}],
+25:[{h:DD,body:["<b>In one line:</b> authenticate once at an Identity Provider; all connected apps trust it.",{sub:"Why it's needed"},"Eliminates password fatigue and centralizes identity policy.",{sub:"Use it for"},"Enterprises with many internal apps; SaaS suites.",{sub:"N/A"},"A single standalone app.",{note:"Staff insight: built on SAML/OIDC. Central control = enforce MFA once and <b>instantly revoke</b> all access on offboarding — a big security win.",cls:"key"}]}],
+26:[{h:DD,body:["<b>In one line:</b> hostile software (ransomware/trojans/worms) entering via human error; stopped by layered defense.",{sub:"Why it's needed"},"A single careless click can compromise a whole network.",{sub:"Use it for"},"Endpoint/server hardening everywhere.",{sub:"N/A"},"No system is exempt.",{note:"Staff insight: defense-in-depth — antivirus + sandboxing + least privilege + patching + segmentation + tested backups (the real anti-ransomware). Train users.",cls:"warn"}]}],
+27:[{h:DD,body:["<b>In one line:</b> default-deny gatekeeper filtering by IP/port/protocol/direction.",{sub:"Why it's needed"},"Shrinks the attack surface — only explicitly-allowed traffic gets in.",{sub:"Use it for"},"Network perimeters, host hardening, security groups (cloud).",{sub:"Not sufficient for"},"Application-layer attacks (SQLi/XSS) — that needs a WAF.",{note:"Staff insight: default-deny + open only needed ports. A firewall checks ports/IPs (L3/4); a WAF inspects request content (L7) — use both.",cls:"key"}]}],
+28:[{h:DD,body:["<b>In one line:</b> automated commit→build→test→staging→prod with a quality gate at each step.",{sub:"Why it's needed"},"Manual, rare, big-bang deploys are slow and high-risk.",{sub:"Use it for"},"Every team shipping software regularly.",{sub:"Adapt for"},"Regulated systems (gate the final release, still automate everything before it).",{note:"Staff insight: small frequent deploys + canary + auto-rollback = tiny blast radius. Decouple deploy from release with feature flags.",cls:"key"}]}],
+29:[{h:DD,body:["<b>In one line:</b> expose metrics → scrape (Prometheus) → visualize (Grafana) → alert on thresholds.",{sub:"Why it's needed"},"You can't fix what you can't see; catch problems before users do.",{sub:"Use it for"},"Every production system; SLO tracking.",{sub:"N/A"},"Throwaway scripts.",{note:"Staff insight: watch the four golden signals (latency, traffic, errors, saturation); alert on user-facing symptoms, not raw CPU. Logs+metrics+traces = the 3 pillars.",cls:"key"}]}],
+30:[{h:DD,body:["<b>In one line:</b> forward proxy fronts clients (hides users); reverse proxy fronts servers (hides backend).",{sub:"Why it's needed"},"Two opposite jobs: outbound control/anonymity vs inbound LB/caching/TLS/security.",{sub:"Use it for"},"Forward → corporate filter/VPN; Reverse → Nginx/HAProxy LB, caching, TLS term.",{sub:"N/A"},"Trivial single-server setups.",{note:"Staff insight: ask 'whose side is it on?' Forward = personal shopper for clients; reverse = receptionist for servers. Reverse proxies are everywhere.",cls:"key"}]}],
+31:[{h:DD,body:["<b>In one line:</b> UDP-based transport (HTTP/3) with 0-RTT setup, independent streams, connection migration.",{sub:"Why it's needed"},"Eliminates TCP head-of-line blocking and survives network switches.",{sub:"Use it for"},"Modern web/mobile, lossy/changing networks (Wi-Fi↔cellular).",{sub:"Watch out"},"Some networks/middleboxes throttle UDP; fall back to TCP.",{note:"Staff insight: faster handshakes + per-stream loss isolation + a connection ID that follows you across IPs — the future default transport.",cls:"key"}]}],
+32:[{h:DD,body:["<b>In one line:</b> one-way, auto-reconnecting server→client event stream over plain HTTP.",{sub:"Why it's needed"},"Simpler than WebSocket when you only need server push.",{sub:"Use it for"},"Live feeds, notifications, dashboards, LLM token streaming.",{sub:"Avoid when"},"You need client→server messages or binary (use WebSocket).",{note:"Staff insight: SSE is HTTP-native, auto-reconnects, resumes via last-event-id — underrated for one-way realtime. Limited by browser per-domain connection caps.",cls:"key"}]}],
+33:[{h:DD,body:["<b>In one line:</b> short-poll → long-poll → SSE → WebSocket, crude to slick.",{sub:"Why it's needed"},"Match realtime mechanism to need; polling wastes resources.",{sub:"Use it for"},"Pick the lightest: SSE (one-way feeds), WebSocket (two-way chat/games).",{sub:"Avoid"},"WebSockets when simple polling/SSE suffices (they complicate scaling).",{note:"Staff insight: decision rule — one-way? SSE. Two-way/low-latency? WebSocket. Infrequent updates? Just poll.",cls:"key"}]}],
+34:[{h:DD,body:["<b>In one line:</b> decouple producer/consumer; buffer spikes; process async at the consumer's pace.",{sub:"Why it's needed"},"Slow/spiky work shouldn't block the request path or crash consumers.",{sub:"Use it for"},"Email/notification sending, order processing, video encoding, any heavy async task.",{sub:"Avoid when"},"You need an immediate synchronous response.",{note:"Staff insight: add consumers to scale throughput; make them <b>idempotent</b> (at-least-once delivery) and add a DLQ for poison messages.",cls:"key"}]}],
+35:[{h:DD,body:["<b>In one line:</b> durable, partitioned, replayable log; consumers track their own offset.",{sub:"Why it's needed"},"Need high-throughput streaming with multiple independent consumers and history replay.",{sub:"Use it for"},"Event streaming, analytics pipelines, event sourcing, CDC, log aggregation.",{sub:"Overkill for"},"Simple task queues (use SQS/RabbitMQ).",{note:"Staff insight: partitions give scale + ordering-within-partition; consumer groups give parallelism. Queue=consume-and-forget; Kafka=retained re-readable log.",cls:"key"}]}],
+36:[{h:DD,body:["<b>In one line:</b> after N failed retries, move the poison message aside so good ones keep flowing.",{sub:"Why it's needed"},"One unprocessable message can block an entire queue forever.",{sub:"Use it for"},"Any queue/stream consumer in production.",{sub:"N/A"},"Fire-and-forget where failures are irrelevant.",{note:"Staff insight: a filling DLQ is a high-priority alarm — set alerts, inspect, fix, and replay. Always pair queues with a DLQ.",cls:"key"}]}],
+37:[{h:DD,body:["<b>In one line:</b> a client-supplied unique key lets the server dedupe retries → same effect once.",{sub:"Why it's needed"},"Networks force retries; without it a retried POST = double charge/order.",{sub:"Use it for"},"Payments, order creation, any non-idempotent write API, queue consumers.",{sub:"N/A"},"Naturally idempotent ops (GET/PUT/DELETE).",{note:"Staff insight: store key→result for a window; this is non-negotiable for money. At-least-once delivery means consumers MUST dedupe.",cls:"key"}]}],
+38:[{h:DD,body:["<b>In one line:</b> offset = skip-N (simple, jumpable, unstable/slow deep); cursor = after-this-item (stable, fast).",{sub:"Why it's needed"},"Returning millions of rows is impossible; pages must be efficient & stable.",{sub:"Use it for"},"Cursor → infinite scroll/feeds/large lists; offset → small admin tables with page jumps.",{sub:"Avoid offset when"},"Deep pages or data changes during paging (skips/duplicates).",{note:"Staff insight: default to <b>cursor (keyset)</b> pagination for anything large or live — OFFSET gets slower the deeper you go.",cls:"warn"}]}],
+39:[{h:DD,body:["<b>In one line:</b> both client and server present certs → mutual authentication.",{sub:"Why it's needed"},"Plain TLS only verifies the server; internal traffic needs both sides proven.",{sub:"Use it for"},"Service-to-service auth, zero-trust networks, service meshes.",{sub:"Avoid for"},"Public user traffic (you can't issue every visitor a cert).",{note:"Staff insight: mTLS is the backbone of zero-trust internal comms; service meshes automate cert issuance/rotation so it scales.",cls:"key"}]}],
+40:[{h:DD,body:["<b>In one line:</b> instances register; clients look up a healthy address from a live registry.",{sub:"Why it's needed"},"In dynamic/autoscaling systems, IPs change constantly — hardcoding breaks.",{sub:"Use it for"},"Microservices, Kubernetes, anything with autoscaling/ephemeral instances.",{sub:"N/A"},"Static, fixed-address deployments.",{note:"Staff insight: registry (Consul/etcd) health-checks and drops dead instances → self-healing. Client-side vs server-side discovery is the key design choice.",cls:"key"}]}],
+41:[{h:DD,body:["<b>In one line:</b> sticky = session in one server's memory (fragile); stateless = shared store/token (resilient).",{sub:"Why it's needed"},"Where session state lives decides whether a node failure logs everyone out.",{sub:"Use it for"},"Stateless (Redis/JWT) for clean horizontal scaling — the default.",{sub:"Sticky only when"},"Forced by legacy in-memory state you can't externalize.",{note:"Staff insight: prefer stateless sessions so any server serves any request and node loss is invisible. Sticky sessions undermine scaling & resilience.",cls:"warn"}]}],
+42:[{h:DD,body:["<b>In one line:</b> XSS (escape output+CSP), CSRF (anti-CSRF token+SameSite), SQLi (parameterized queries).",{sub:"Why it's needed"},"These are the most common, damaging web vulns — all from trusting input.",{sub:"Use it for"},"Every web app handling user input or sessions.",{sub:"N/A"},"No app is exempt.",{note:"Staff insight: never trust input — escape it, tokenize it, parameterize it. Follow the OWASP Top 10; these three are perennial.",cls:"warn"}]}],
+43:[{h:DD,body:["<b>In one line:</b> botnet floods you to exhaust capacity so real users can't get through.",{sub:"Why it's needed"},"Availability attacks are cheap to launch and devastating; you must plan ahead.",{sub:"Use it for"},"Any internet-facing service (the bigger the target, the bigger the risk).",{sub:"N/A"},"Internal-only systems (lower exposure).",{note:"Staff insight: absorb/scrub at the edge (CDN/Cloudflare/anycast) with huge capacity + rate limiting + IP reputation + CAPTCHAs. Don't try to filter at your origin.",cls:"warn"}]}],
+44:[{h:DD,body:["<b>In one line:</b> L7 filter that inspects request content and blocks attack patterns before the app.",{sub:"Why it's needed"},"Network firewalls don't see SQLi/XSS payloads; a WAF does.",{sub:"Use it for"},"Public web apps/APIs; quick virtual-patching of known CVEs.",{sub:"Not a substitute for"},"Secure code — it's defense-in-depth, not a fix.",{note:"Staff insight: use managed rule sets (OWASP CRS) via your CDN; tune to avoid false positives. A bag-checking bouncer, not a replacement for a safe venue.",cls:"key"}]}],
+45:[{h:DD,body:["<b>In one line:</b> encrypt in transit (TLS) AND at rest (storage keys) — different threats.",{sub:"Why it's needed"},"TLS stops eavesdroppers; at-rest encryption stops stolen disks/DB dumps.",{sub:"Use it for"},"All sensitive data — usually compliance-mandated (PCI, HIPAA, GDPR).",{sub:"N/A"},"Truly public, non-sensitive data (still cheap to do).",{note:"Staff insight: you need both layers. Manage keys with a KMS and rotate them; encryption is worthless if keys are mishandled.",cls:"key"}]}],
+46:[{h:DD,body:["<b>In one line:</b> store credentials encrypted & central (Vault); apps fetch at runtime with short leases.",{sub:"Why it's needed"},"Hardcoded secrets in code/config/Git are the classic breach vector.",{sub:"Use it for"},"DB passwords, API keys, certs — every app with credentials.",{sub:"N/A"},"Nothing — never hardcode secrets.",{note:"Staff insight: central + leased + audited + <b>rotatable</b> in one place. Short-lived dynamic secrets beat long-lived static ones.",cls:"warn"}]}],
+47:[{h:DD,body:["<b>In one line:</b> RBAC = access by role (simple/coarse); ABAC = by attributes+context (fine/dynamic).",{sub:"Why it's needed"},"Different granularity needs: 'admins can edit' vs 'managers can approve <$5k in their dept during work hours'.",{sub:"Use it for"},"RBAC → most apps; ABAC → complex/regulated/context-sensitive access.",{sub:"Avoid ABAC when"},"Simple role checks suffice (policy complexity isn't free).",{note:"Staff insight: start RBAC, add ABAC rules where context matters. Many real systems combine both.",cls:"key"}]}],
+48:[{h:DD,body:["<b>In one line:</b> never trust by network location — authenticate & authorize every request.",{sub:"Why it's needed"},"The castle-and-moat model fails against insider threats & lateral movement.",{sub:"Use it for"},"Modern enterprise security, microservices, remote workforces.",{sub:"Overkill for"},"Tiny isolated systems.",{note:"Staff insight: pillars = strong identity + least privilege + mTLS + micro-segmentation + continuous verification + assume-breach. Check ID at every door.",cls:"key"}]}],
+49:[{h:DD,body:["<b>In one line:</b> package app+deps+config into one image that runs identically anywhere.",{sub:"Why it's needed"},"Kills 'works on my machine'; consistent dev→prod environments.",{sub:"Use it for"},"Almost all modern deployment; microservices; CI/CD.",{sub:"Less needed for"},"Simple serverless functions (platform handles packaging).",{note:"Staff insight: containers share the host kernel (vs VMs) → ms startup, dense packing. Immutable images = reproducible, easy rollback.",cls:"key"}]}],
+50:[{h:DD,body:["<b>In one line:</b> declare desired state ('3 replicas'); the controller self-heals/scales/rolls out.",{sub:"Why it's needed"},"Running hundreds of containers reliably by hand is impossible.",{sub:"Use it for"},"Large containerized microservice fleets needing scaling, self-healing, rollouts.",{sub:"Overkill for"},"A small app or two — managed PaaS/serverless is simpler.",{note:"Staff insight: declarative + self-healing is the magic, but K8s is operationally heavy — don't adopt it before you need it.",cls:"warn"}]}],
+51:[{h:DD,body:["<b>In one line:</b> define infra as code; plan the diff, apply, reproduce environments anywhere.",{sub:"Why it's needed"},"Click-ops isn't reproducible, reviewable, or recoverable; environments drift.",{sub:"Use it for"},"Provisioning cloud infra; multi-environment (dev/stage/prod) parity; DR rebuild.",{sub:"N/A"},"A single hand-managed box.",{note:"Staff insight: declarative + idempotent; the state file is critical (lock & store it remotely). Version & PR-review infra like application code.",cls:"key"}]}],
+52:[{h:DD,body:["<b>In one line:</b> rolling (gradual/cheap), blue-green (instant flip+rollback, 2× infra), canary (test on a few first).",{sub:"Why it's needed"},"Ship new versions without downtime and with controllable risk.",{sub:"Use it for"},"Canary for risky changes; blue-green for instant rollback; rolling as the default.",{sub:"N/A"},"Tiny apps where a brief restart is acceptable.",{note:"Staff insight: choose by risk tolerance & cost. Canary + automated metric-based rollback is the gold standard at scale.",cls:"key"}]}],
+53:[{h:DD,body:["<b>In one line:</b> runtime switches decouple deploy from release; ship dark, ramp, kill instantly.",{sub:"Why it's needed"},"Lets you release safely (gradual rollout) and disable bad features without a redeploy.",{sub:"Use it for"},"Gradual rollouts, A/B tests, per-customer features, kill switches for risky deps.",{sub:"Watch out"},"Flag debt — stale flags rot; remove them after rollout.",{note:"Staff insight: deploy ≠ release. Roll out to 1%→100%, observe, and instant-rollback by flipping a flag (no deploy). A Staff-level safety tool.",cls:"key"}]}]
+};
+const RW={
+1:"Every HTTPS connection begins with a TCP 3-way handshake (then a TLS handshake on top).",
+2:"Zoom, Google Meet and WebRTC use UDP for real-time media; the web rides on TCP.",
+3:"Every request to Google, Amazon or your bank is this request→response cycle with a status code.",
+4:"Google invented SPDY→HTTP/2 and QUIC→HTTP/3; Cloudflare serves HTTP/3 to billions of users.",
+5:"WhatsApp, Slack, Discord and Figma use persistent WebSocket connections for real-time updates.",
+6:"Cloudflare runs the 1.1.1.1 resolver; the 2016 Dyn DNS DDoS knocked out Twitter, Netflix & Reddit.",
+7:"Netflix built its own CDN (Open Connect); Cloudflare and Akamai serve much of the web's static traffic.",
+8:"Let's Encrypt issues free TLS certs to hundreds of millions of sites; every HTTPS lock is TLS.",
+9:"Twitter, GitHub and Stripe expose REST APIs used by millions of developers.",
+10:"Facebook created GraphQL; GitHub's v4 API and Shopify's storefront API use it.",
+11:"Google uses gRPC internally; Netflix and Uber use it for service-to-service calls.",
+12:"Stripe, GitHub and Slack push events to your server via webhooks.",
+13:"Netflix built the Zuul API gateway; AWS API Gateway fronts countless serverless APIs.",
+14:"GitHub and Twitter publish API rate limits; Stripe rate-limits to protect its platform.",
+15:"Stripe's date-based API versions are the gold standard for evolving APIs without breaking clients.",
+16:"The entire web is client-server — browsers/apps as clients, data centers as servers.",
+17:"AWS offers NLB (L4) and ALB (L7); Google's Maglev is a massive L4 load balancer.",
+18:"Amazon Dynamo popularized consistent hashing; Discord and memcached clients rely on it.",
+19:"Kubernetes uses liveness/readiness probes; AWS ELB auto-removes unhealthy targets.",
+20:"Cloudflare and Google use anycast; AWS Route 53 does latency/geo routing across regions.",
+21:"'Sign in with Google/Apple' authenticates billions of users every day.",
+22:"AWS IAM and Google IAM enforce fine-grained authorization across cloud resources.",
+23:"'Log in with Google/Facebook' and Spotify integrations are OAuth 2.0 flows.",
+24:"Auth0 and most modern stateless APIs use JWTs as auth tokens.",
+25:"Okta and Azure AD provide SSO so employees log in once across all corporate apps.",
+26:"The 2017 WannaCry ransomware hit 200k+ machines via an unpatched flaw — patching + backups are the defense.",
+27:"AWS security groups and Cloudflare act as cloud firewalls for millions of apps.",
+28:"Amazon deploys to prod roughly every 11.7 seconds; Etsy and Google ship continuously.",
+29:"SoundCloud created Prometheus; Netflix (Atlas) and Uber (M3) run monitoring at huge scale.",
+30:"Nginx and HAProxy are the web's ubiquitous reverse proxies; companies use forward proxies for egress.",
+31:"Google created QUIC for YouTube/Chrome; Cloudflare serves it as HTTP/3 worldwide.",
+32:"ChatGPT streams its answer token-by-token to the browser using Server-Sent Events.",
+33:"WhatsApp/Slack use WebSocket; ChatGPT/stock tickers use SSE; older apps used long-polling.",
+34:"Amazon SQS and Uber's queues decouple order processing from the request path.",
+35:"LinkedIn created Kafka (now ~7 trillion msgs/day); Uber and Netflix run it as their event backbone.",
+36:"AWS SQS provides built-in dead-letter queues; payment systems route un-processable messages there.",
+37:"Stripe's Idempotency-Key header is the textbook example of safe payment retries.",
+38:"Slack and Stripe use cursor pagination; X/Twitter timelines paginate by cursor for infinite scroll.",
+39:"Netflix and Google authenticate internal service calls with mTLS; service meshes automate it.",
+40:"Netflix built Eureka; Kubernetes uses DNS-based discovery; HashiCorp Consul is widely used.",
+41:"Modern apps use stateless JWT/Redis sessions so any server serves any request (AWS ELB also offers stickiness).",
+42:"Countless breaches trace to OWASP Top 10 flaws like SQL injection and XSS.",
+43:"Cloudflare absorbed record DDoS attacks (HTTP/2 Rapid Reset, 2023); GitHub survived 1.35 Tbps in 2018.",
+44:"Cloudflare WAF and AWS WAF block SQLi/XSS for millions of sites using managed OWASP rules.",
+45:"WhatsApp uses end-to-end encryption (Signal protocol); AWS KMS manages keys for encryption at rest.",
+46:"HashiCorp Vault and AWS Secrets Manager store and rotate credentials across the industry.",
+47:"AWS IAM supports both roles (RBAC) and attribute/tag-based policies (ABAC).",
+48:"Google pioneered Zero Trust with <b>BeyondCorp</b> — no trust based on network location.",
+49:"Docker standardized containers; Google has run everything in containers (Borg) for over a decade.",
+50:"Google created Kubernetes from Borg; Spotify, Airbnb and most cloud-native shops run on it.",
+51:"HashiCorp Terraform provisions cloud infrastructure as code across most of the industry.",
+52:"Netflix and Facebook use canary releases; many teams use blue-green for instant rollback.",
+53:"Facebook's Gatekeeper and LaunchDarkly let teams roll out (and kill) features without redeploying."
+};
+let flat=[], idx=0;
+const BUDGET=18;
+function wt(body){let w=0;body.forEach(b=>{ if(typeof b==='string')w+=1.1; else if(b.sub!==undefined)w+=0.8; else if(b.kv)w+=0.6*b.kv.length+0.5; else if(b.tbl)w+=1.0*(b.tbl.rows.length+1)+1; else if(b.note!==undefined)w+=1.6;});return w;}
+function buildFlat(){ flat=[]; TOPICS.forEach((tp,ti)=>{
+  const base=tp.slides.map(s=>({h:s.h,body:s.body.slice()}));
+  const ex=EXTRA[tp.n]; let slides=base;
+  if(ex&&ex[0]&&ex[0].body){ let xb=ex[0].body; if(RW[tp.n]) xb=xb.concat([{note:'🏢 Real-world — '+RW[tp.n],cls:'rw'}]); const last=base[base.length-1];
+    if(wt(last.body)+wt(xb)<=BUDGET){ last.body=last.body.concat([{sub:"⭐ Interview deep dive"}],xb); }
+    else { slides=base.concat([{h:ex[0].h||DD,body:xb}]); } }
+  slides.forEach((s,si)=>flat.push({tp,ti,s,si,sn:slides.length})); }); }
+function render(){ const f=flat[idx], tp=f.tp, s=f.s;
+  document.getElementById('tnum').textContent='Topic '+tp.n+'/'+TOPICS.length;
+  document.getElementById('ttl').textContent=tp.t; document.getElementById('rating').textContent=tp.r||'';
+  let html='<h2><span class="dot"></span>'+s.h+'</h2><ul>';
+  s.body.forEach(b=>{ if(typeof b==='string'){html+='<li>'+b+'</li>';return;}
+    if(b.sub!==undefined){html+='</ul><div class="sub">'+b.sub+'</div><ul>';return;}
+    if(b.kv){html+='</ul><div class="kv">'+b.kv.map(r=>'<div class="k">'+r[0]+'</div><div class="v">'+r[1]+'</div>').join('')+'</div><ul>';return;}
+    if(b.tbl){const hh='<tr>'+b.tbl.head.map(x=>'<th>'+x+'</th>').join('')+'</tr>';const rr=b.tbl.rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');html+='</ul><table>'+hh+rr+'</table><ul>';return;}
+    if(b.note!==undefined){html+='</ul><div class="note '+(b.cls||'')+'">'+b.note+'</div><ul>';return;} });
+  html+='</ul>'; const sl=document.getElementById('slide'); sl.innerHTML=html; sl.scrollTop=0;
+  document.getElementById('counter').textContent='Slide '+(f.si+1)+'/'+f.sn+'  ·  ('+(idx+1)+'/'+flat.length+' total)';
+}
+function next(){ if(idx<flat.length-1){idx++;render();} }
+function prev(){ if(idx>0){idx--;render();} }
+function jumpTo(v){ idx=flat.findIndex(f=>f.ti===+v); render(); }
+function buildJump(){ document.getElementById('jump').innerHTML=TOPICS.map((tp,i)=>'<option value="'+i+'">'+tp.n+'. '+tp.t+'</option>').join(''); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();next();} if(e.key==='ArrowLeft')prev(); });
+buildFlat(); buildJump(); render();
+</script><style>body.embed .mnav{display:none!important}body.embed #stage{padding-top:8px!important}body.embed .foot .hint{display:none}body.embed{background:#eef3f9}</style><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")==="1")document.body.classList.add("embed");var t=p.get("t");if(t!==null&&typeof flat!=="undefined"){var T=+t;if(p.get("only")==="1"){flat=flat.filter(function(f){return f.ti===T;});var j=document.getElementById("jump");if(j)j.style.display="none";idx=0;}else{var k=flat.findIndex(function(f){return f.ti===T;});idx=k<0?0:k;}if(typeof render==="function")render();}}catch(e){}})();</script><script>(function(){try{var p=new URLSearchParams(location.search);if(p.get("embed")!=="1")return;if(typeof next!=="function"||typeof prev!=="function")return;var _n=next,_p=prev;next=function(){ if(typeof idx!=="undefined"&&typeof flat!=="undefined"&&idx>=flat.length-1){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(1);return;} } _n(); };prev=function(){ if(typeof idx!=="undefined"&&idx<=0){ if(window.parent&&window.parent!==window&&window.parent.courseStep){window.parent.courseStep(-1);return;} } _p(); };}catch(e){}})();</script></body></html>
